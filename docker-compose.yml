@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+
+  DL:
+    build: .
+    image: rikai:1.1-to
+    container_name: ai-workspace
+    restart: always
+    ports:
+      - "8888:8888"
+    volumes:
+      - "${BASE_PATH}/wp/notebooks:/home/jovyan/work"
+      - "${BASE_PATH}/wp/datasets:/home/jovyan/datasets"
+      - "${BASE_PATH}/wp/modules:/home/jovyan/modules"
+      - "${BASE_PATH}/wp/models:/home/jovyan/models"
+    command: "start-notebook.sh --NotebookApp.password=${ACCESS_TOKEN}"
+
+  # deepspeed:
+  #   image: deepspeed/deepseed
+  #   build: .
+  #   volumes:
+  #       - ./models:/code/models
+  #       - ./utils:/code/utils
+  #       - ./data:/code/data

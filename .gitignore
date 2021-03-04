@@ -1,0 +1,6 @@
+
+# Exclude generated files and directories
+/.env
+/data
+/
+# /datasets
