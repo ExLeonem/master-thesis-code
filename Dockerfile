@@ -8,6 +8,10 @@ RUN conda update -n base conda
 # RUN conda install -c conda-forge tensorflow-probability 
 RUN conda install pytorch cudatoolkit=10.1 -c pytorch
 
+# Supplementary packages
+RUN conda install -c conda-forge tqdm
+
+
 # --------- Packages Computer Vision --------
 RUN conda install -c menpo opencv
 

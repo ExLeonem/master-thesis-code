@@ -4,26 +4,20 @@
 A simple workspace template for deep-/machine-learning projects using python/anaconda, jupyter and docker.
 
 
-# TODO:
+[How to win data-science competition, learn from top kagglers](https://www.coursera.org/learn/competitive-data-science)
 
-- [ ] Create windows/unix scripts to setup the directory structure, creating the env file ...
-- [ ] 
+[Lin Regression Pytorch](https://towardsdatascience.com/linear-regression-with-pytorch-eb6dedead817)
 
-
-
-# Datasets
-
-## Regression
-
-1. [Insurance Forecast](https://www.kaggle.com/mirichoi0218/insurance/discussion)
-
+[Probability concepts explained](https://towardsdatascience.com/probability-concepts-explained-maximum-likelihood-estimation-c7b4342fdbb1#:~:text=Maximum%20likelihood%20estimation%20is%20a%20method%20that%20will%20find%20the,that%20best%20fits%20the%20data.&text=The%20goal%20of%20maximum%20likelihood,probability%20of%20observing%20the%20data.)
 
 
 # Index
 
 1. [Prerequisite](#Prerequisite)
 2. [Setup](#Setup)
+3. [Datasets](#Datasets)
 3. [Contribution](#Contribution)
+
 
 
 ## Prerequisite
@@ -32,6 +26,8 @@ The following dependencies need to be installed to
 
 - [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
 - (optional) Anaconda/Python 3.7
+
+
 
 
 ## Setup
@@ -45,6 +41,32 @@ git clone https://github.com/ExLeonem/ai-workspace-template
 2. Run the setup scripts
 3. Configure the workspace depending your needs.
 
+
+## Read datasets from kaggle
+
+Create a kaggle.json file inside of the config directory.
+
+```json
+{
+    "username":"user_name",
+    "key":"key_from_kaggle"
+}
+```
+
+
+## Datasets
+
+### Regression
+
+1. [Insurance Forecast](https://www.kaggle.com/mirichoi0218/insurance/discussion)
+
+
+
+## Resources
+
+### Encoding
+
+[Categorical Data Encoding](https://towardsdatascience.com/all-about-categorical-variable-encoding-305f3361fd02)
 
 
 ## Contribution

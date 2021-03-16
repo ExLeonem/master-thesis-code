@@ -2,5 +2,10 @@
 # Exclude generated files and directories
 /.env
 /data
-/
+**__pycache__
+
+# Exclude datasets
 # /datasets
+
+# Exclude Config files
+/config/kaggle.json
