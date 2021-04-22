@@ -1,7 +1,15 @@
 
+
+# Exclude correlating Papers, references and documents
+/paper
+/ref
+/documents
+
+# Exclude datasets
+/wp/datasets
+
 # Exclude generated files and directories
 /.env
-/data
 **__pycache__
 
 # Exclude datasets

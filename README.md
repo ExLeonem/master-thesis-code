@@ -33,7 +33,7 @@ The following dependencies need to be installed to
 ## Setup
 
 1. Clone this repository
-
+ 
 ```
 git clone https://github.com/ExLeonem/ai-workspace-template
 ```
@@ -41,6 +41,25 @@ git clone https://github.com/ExLeonem/ai-workspace-template
 2. Run the setup scripts
 3. Configure the workspace depending your needs.
 
+
+### Performing Moment-Propagation
+
+Create new environment Anaconda environment with python version 3.8
+
+```
+    $ conda create -n <environment_name> python==3.7.0 ipython
+```
+
+
+Install pip for anaconda 
+
+```
+    $ conda install pip
+```
+
+
+
+Install packages of `requirements.txt` 
 
 ## Read datasets from kaggle
 
@@ -52,6 +71,8 @@ Create a kaggle.json file inside of the config directory.
     "key":"key_from_kaggle"
 }
 ```
+
+
 
 
 ## Datasets
