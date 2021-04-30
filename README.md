@@ -42,6 +42,20 @@ git clone https://github.com/ExLeonem/ai-workspace-template
 3. Configure the workspace depending your needs.
 
 
+### Multi Cuda Setup
+
+- cuda-toolkit-11.0 (for tensorflow 2.4.1)
+- cuda-toolkit-10.2 (for pytorch)
+
+```
+    $ sudo apt-get install cuda-toolkit-11-0
+```
+
+sudo apt-key adv --refresh-keys --keyserver keyserver.ubuntu.com
+
+https://medium.com/@peterjussi/multicuda-multiple-versions-of-cuda-on-one-machine-4b6ccda6faae
+
+
 ### Performing Moment-Propagation
 
 Create new environment Anaconda environment with python version 3.8

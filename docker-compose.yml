@@ -4,7 +4,8 @@ services:
 
   TH:
     build: .
-    image: rikai:1.1-to
+    image: rikai:1.3-to
+    # image: rikai:1.1-to
     container_name: ai-workspace
     restart: always
     ports:
@@ -15,6 +16,8 @@ services:
       - "${BASE_PATH}/wp/modules:/home/jovyan/modules"
       - "${BASE_PATH}/wp/models:/home/jovyan/models"
     command: "start-notebook.sh --NotebookApp.password=${ACCESS_TOKEN}"
+    
+
     
 
   # deepspeed:

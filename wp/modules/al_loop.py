@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 
 
-class AL:
+class ALL:
     """
         Entrypoint for active learning loop.
 
@@ -16,9 +16,16 @@ class AL:
             - unlabeled_pool () Pool with unlabeled data
     """
 
-    def __init__(self, data_pool):
+    def __init__(self, model, data_pool, config=None):
+
+        self.model = model
         self.unlabeled_pool = data_pool
         self.labeled_pool = []
+        self.criterion = nn.NLLLoss()
+
+
+    def add_labeled(self, point, label):
+        pass
 
 
     def start(self, model):
