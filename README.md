@@ -59,6 +59,9 @@ https://medium.com/@peterjussi/multicuda-multiple-versions-of-cuda-on-one-machin
 ### Performing Moment-Propagation
 
 Create new environment Anaconda environment with python version 3.8
+Moment Propagation file works with tensorflow(-gpu)==2.2.0 and 2.3.1. 
+Higher versions throw error.
+
 
 ```
     $ conda create -n <environment_name> python==3.7.0 ipython

@@ -8,6 +8,9 @@
 # Exclude datasets
 /wp/datasets
 
+# Exclude model checkpoints
+/wp/models/checkpoints
+
 # Exclude generated files and directories
 /.env
 **__pycache__

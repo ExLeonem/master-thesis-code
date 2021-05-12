@@ -471,6 +471,8 @@ class MP:
                 This is the main loop for creating the MP model based on the dropout input model.
                 We iterate through all layers and propagate the moments through the network
             '''
+
+            # Passed in object of type <class 'tensorflow.python.keras.engine.keras_tensor.KerasTensor'>, not tf.Tensor
             E, V = getattr(self, str(l.__class__.__name__))(E, V, l)
 
         ''' Check if variance is still None'''

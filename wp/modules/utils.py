@@ -58,4 +58,3 @@ def __remove_columns(dataset, column):
         return new_dataset
 
     # Can't remove columns because columns is not a string
-        
