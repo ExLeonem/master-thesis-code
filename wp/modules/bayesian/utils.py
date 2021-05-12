@@ -2,8 +2,6 @@ import numpy as np
 from tqdm import tqdm
 
 
-
-
 def disable_batch_norm(model):
     """
         Disable batch normalization for activation of dropout during prediction.

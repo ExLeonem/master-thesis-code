@@ -11,7 +11,7 @@ import bayesian.utils as butils
 
 import active_learning
 importlib.reload(active_learning)
-from active_learning import AcquisitionFunction, Checkpoint, Config, DataPool, LabelPool
+from active_learning import AcquisitionFunction, Checkpoint, Config, DataPool, LabeledPool
 
 
 # importlib.reload(active_learning)
@@ -57,8 +57,6 @@ class ActiveLearning:
 
 
         # Pool of labeled data
-        self.inputs = []
-        self.targets = []
         self.history = []
 
 
@@ -109,6 +107,9 @@ class ActiveLearning:
         batch_size = config["batch_size"]
         epochs = config["epochs"]
 
+        # inputs = self.labeled_pool.get_inputs()
+        # targets = self.labeled_pool.get_labels()
+        inputs, targets = self.labeled_pool[:]
         self.model.fit(x=self.inputs, y=self.targets, batch_size=batch_size, epochs=epochs)
 
 

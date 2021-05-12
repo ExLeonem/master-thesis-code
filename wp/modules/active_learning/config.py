@@ -1,12 +1,14 @@
+"""
+TODO:
+        - [ ] Add posibility to add default configurations to be filled if nothing supplied
+"""
+
 
 
 class Config:
     """
         Configuration to clean up function calls and encapsulate
         connected configurations.
-
-        TODO:
-            - [ ] Add posibility to add default configurations to be filled if nothing supplied
 
         Keyword-arguments:
             - defaults (object) Reserved key for default configuration.

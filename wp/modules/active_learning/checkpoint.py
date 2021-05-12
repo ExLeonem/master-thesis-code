@@ -1,5 +1,11 @@
 import os, time
 
+"""
+TODO:
+    - Add dunder functions
+    - Compress data when weights bigger than x
+"""
+
 DEFAULT_PATH = "/home/exleonem/Desktop/workspace/thesis/wp/models/checkpoints"
 
 class Checkpoint:
@@ -7,11 +13,7 @@ class Checkpoint:
         Keep track of model iterations by saving checkpoints.
         Generate checkpoints by saving model weights.
 
-        Generates file names of form: <filename>_<timestamp>
-
-        TODO:
-            - Add dunder functions
-            - Compress data when weights bigger than x
+        Generates file names of form: <filename>_<timestamp
 
         Parameters:
             - path (str) The path where the checkpoints getting saved.
