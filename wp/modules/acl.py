@@ -24,13 +24,13 @@ class ActiveLearning:
     """
         Perform active learning for given model and data. 
 
-        Parameters:
-            - model (tf.Layer) A neural network model written in tensorflow
-            - data (np.ndarray) The data to train the model on
-            - labels (np.ndarray) The labels of given data
-            - train_config (Config) The training configuration to be used
-            - acq_name () The acquisition functions to be used
-            - pseudo (bool) Use given labels as "user input" to evaluate active learning
+        Args:
+            model (tf.Layer): A neural network model written in tensorflow
+            data (numpy.ndarray): The data to train the model on
+            labels (numpy.ndarray): The labels of given data
+            train_config (Config): The training configuration to be used
+            acq_name (str): The acquisition functions to be used
+            pseudo (bool): Use given labels as "user input" to evaluate active learning
     """
 
     def __init__(self, model, data, labels=None, train_config=None, acq_name=None, pseudo=True):
@@ -65,7 +65,7 @@ class ActiveLearning:
             Start the active learning loop.
 
             Parameters:
-                - limit (int) Limit the number of active learning loop iterations
+                limit (int): Limit the number of active learning loop iterations
         """
 
         for i in tqdm(range(limit)):
@@ -119,6 +119,6 @@ class ActiveLearning:
             Query for the next datapoints to be labeled.
 
             Returns:
-                (np.ndarray) The next datapoints to be labeled.
+                np.ndarray: The next datapoints to be labeled.
         """
         pass

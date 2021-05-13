@@ -16,8 +16,8 @@ class Checkpoint:
         Generates file names of form: <filename>_<timestamp
 
         Parameters:
-            - path (str) The path where the checkpoints getting saved.
-            - filename (str) The filename prefix to use for checkpoints.
+            path (str): The path where the checkpoints getting saved.
+            filename (str): The filename prefix to use for checkpoints.
     """
 
     def __init__(self, path=DEFAULT_PATH, filename="model"):
@@ -31,7 +31,7 @@ class Checkpoint:
             Create a new checkpoint, saving the model parameters.
 
             Parameters:
-                - model (tf.Model) The model for which parameters to save.
+                model (tf.Model): The model for which parameters to save.
         """
 
         # Build checkpoint path
@@ -49,8 +49,8 @@ class Checkpoint:
             Load the given checkpoint weights into the model.
 
             Parameters:
-                - model (tf.Model) The tensorflow model to load the weights into
-                - iteration (int) The checkpoint to load 
+                model (tf.Model): The tensorflow model to load the weights into
+                iteration (int): The checkpoint to load 
         """
 
         if len(self.checkpoints) == 0:

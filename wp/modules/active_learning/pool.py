@@ -8,11 +8,11 @@ TODO:
 
 class DataPool:
     """
-        Managing pools of data.
+        Manage a pool of data.
 
         Parameters:
-            - inputs (list | np.ndarray) Input values
-            - targets (list | np.ndarray) The target values
+            inputs (list | numpy.ndarray): Input values
+            targets (list | numpy.ndarray): The target values
     """
 
     def __init__(self, data):
@@ -24,7 +24,10 @@ class DataPool:
             Return data at given index.
 
             Parameters:
-                - index (slice | int) The index from which to take the data
+                index (slice | int): The index from which to take the data
+
+            Returns:
+                numpy.ndarray: The data sliced or at given index.
         """
         return self.data[index]
 
@@ -36,7 +39,7 @@ class LabeledPool(DataPool):
         Inititally no data in the pool is labeled. 
 
         Parameters:
-            - data (np.ndarray) Data to be used for the pool of labeled data.
+            data (numpy.ndarray): Data to be used for the pool of labeled data.
     """
 
     def __init__(self, data):
@@ -50,8 +53,8 @@ class LabeledPool(DataPool):
             Put a batch of data into the pool.
 
             Parameters:
-                - indices (np.ndarray) 
-                - labels (np.ndarray) 
+                indices (numpy.ndarray): 
+                labels (numpy.ndarray): 
         """
 
         # For each datapoint a label?
@@ -75,8 +78,8 @@ class LabeledPool(DataPool):
             Setting an item for data of given index.
 
             Parameters:
-                - index (slice | int | np.ndarray) The data for which to set the labels
-                - label (np.ndarray) The labels to set
+                index (slice | int | numpy.ndarray): The data for which to set the labels
+                label (numpy.ndarray): The labels to set
         """
         self.indices[index] = 1
         self.labels[index] = label
@@ -88,7 +91,7 @@ class LabeledPool(DataPool):
             Call object[:] to return all data and labels.
 
             Parameters:
-                - index (slice | int) The index or slice from which to return data and labels.
+                index (slice | int): The index or slice from which to return data and labels.
         """
 
         indices = self.indices != -1
@@ -111,7 +114,7 @@ class LabeledPool(DataPool):
             the data pool.
 
             Parameters:
-                - index (int | np.ndarray) - Indices of the data
+                index (int | numpy.ndarray): Indices of the data
         """
 
         if self.running_idx > len(self.index):

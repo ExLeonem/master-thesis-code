@@ -15,6 +15,9 @@
 /.env
 **__pycache__
 
+# Exclude documentation build
+/wp/docs/_build
+
 # Exclude datasets
 # /datasets
 

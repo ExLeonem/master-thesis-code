@@ -10,8 +10,8 @@ class Config:
         Configuration to clean up function calls and encapsulate
         connected configurations.
 
-        Keyword-arguments:
-            - defaults (object) Reserved key for default configuration.
+        Args:
+            defaults (object): Reserved key for default configuration.
             
     """
 
@@ -24,10 +24,10 @@ class Config:
             Set default values for a configuration object.
 
             Parmeters:
-                - kwargs (dict) Keyword arguments passed to Config.
+                kwargs (dict): Keyword arguments passed to Config.
 
             Returns:
-                - (dict) updated keyword arguments.
+                dict: updated keyword arguments.
         """
 
         # defaults existing?
@@ -58,11 +58,11 @@ class TrainConfig(Config):
         Setting training configuration.
 
         Keyword-arguments:
-            - batch_size (int) Set the batch size of the training set
-            - epochs (int) The number of epochs to train
-            - optimizer (str | object) The optimizer to be used
-            - loss (str | object) The loss to be used
-            - metrics (list(str)) A list of metrics to output while training
+            batch_size (int): Set the batch size of the training set
+            epochs (int): The number of epochs to train
+            optimizer (str | object): The optimizer to be used
+            loss (str | object): The loss to be used
+            metrics (list(str)): A list of metrics to output while training
     """
 
     def __init__(self, **kwargs):
