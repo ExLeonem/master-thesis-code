@@ -18,7 +18,7 @@ class DataPool:
     def __init__(self, data):
         self.data = data
 
-    
+
     def __getitem__(self, index):
         """
             Return data at given index.
@@ -33,6 +33,46 @@ class DataPool:
 
 
 
+class UnlabeledPool(DataPool):
+    """
+        
+    """
+
+    def __init__(self, data):
+        super(UnlabeledPool, self).__init__(data)
+        self.indices = np.linspace(0, len(data)-1, len(data), dtype=int)
+
+
+    def __len__(self):
+        unlabeled = self.indices != -1
+        return len(self.indices[unlabeled])
+
+
+    def is_empty(self):
+        """
+            Returns whether there's still data to be labeled in pool of unlabeled data.
+
+            Returns:
+                (bool) True if all data is labeled else False.
+        """
+        return self.__len__() == 0
+
+
+    def update(self, indices):
+        self.indices[indices] = -1 
+
+
+    def get_indices(self):
+        unlabeled = self.indices != -1
+        return self.indices[unlabeled]
+
+
+    def get_data(self):
+        unlabeled = self.indices != -1
+        return self.data[unlabeled]
+
+
+
 class LabeledPool(DataPool):
     """
         Create a pool of labeled data.
@@ -43,10 +83,10 @@ class LabeledPool(DataPool):
     """
 
     def __init__(self, data):
-        self.indices = np.zeros(data.shape[0]) - 1
-        self.labels = np.zeros(data.shape[0])
         super(LabeledPool, self).__init__(data)
-    
+        self.labeled_indices = np.zeros(data.shape[0], dtype=int) - 1
+        self.labels = np.zeros(data.shape[0])
+        self.running_index = 0
 
     def __put_batch_batch(self, indices, labels):
         """
@@ -58,17 +98,17 @@ class LabeledPool(DataPool):
         """
 
         # For each datapoint a label?
-        if len(data_indices) != len(labels):
+        if len(labeled_indices) != len(labels):
             raise ArgumentError("Shape of indices and labels do not match")
 
         # Is slice out of range for number of max. labels?
-        running_idx_length = len(data_indices)
+        running_idx_length = len(labeled_indices)
         new_running_idx = self.running_idx + running_idx_length
         if new_running_idx > len(self.labels):
             raise ArugmentError("Can't update pool. Pool is full.")
 
         # Set data indices and labels, update running index
-        self.indices[self.running_idx:new_running_idx] = indices
+        self.labeled_indices[self.running_idx:new_running_idx] = indices
         self.labels[self.running_idx:new_running_idx] = labels
         self.running_idx = new_running_idx
 
@@ -81,7 +121,7 @@ class LabeledPool(DataPool):
                 index (slice | int | numpy.ndarray): The data for which to set the labels
                 label (numpy.ndarray): The labels to set
         """
-        self.indices[index] = 1
+        self.labeled_indices[index] = 1
         self.labels[index] = label
 
 
@@ -94,17 +134,22 @@ class LabeledPool(DataPool):
                 index (slice | int): The index or slice from which to return data and labels.
         """
 
-        indices = self.indices != -1
-        return super().data[indices][index], self.labels[indices][index] 
+        indices = self.labeled_indices != -1
+        return (self.data[indices])[index], (self.labeled_indices[indices])[index] 
+
+
+    def __len__(self):
+        indices = self.labeled_indices != -1
+        return len(self.labels[indices])
 
 
     def get_inputs(self):
-        indices = self.indices != -1
-        return super().data[indices]
+        indices = self.labeled_indices != -1
+        return self.data[indices]
 
     
     def get_labels(self):
-        indices = self.indices != -1
+        indices = self.labeled_indices != -1
         return self.labels[indices]
 
 
@@ -124,6 +169,6 @@ class LabeledPool(DataPool):
             self.__set_with_array(index, label)
 
         else:
-            self.indices[running_idx] = index
+            self.labeled_indices[running_idx] = index
             self.labels[running_idx] = label
             self.running_idx += 1

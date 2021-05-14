@@ -1,6 +1,7 @@
 from IPython.display import clear_output
 
-import os, time, datetime, importlib
+import tensorflow as tf
+import os, time, datetime, importlib, time
 
 import numpy as np
 import pandas as pd
@@ -11,8 +12,8 @@ import bayesian.utils as butils
 
 import active_learning
 importlib.reload(active_learning)
-from active_learning import AcquisitionFunction, Checkpoint, Config, DataPool, LabeledPool
-
+from active_learning import AcquisitionFunction, Checkpoint, Config, DataPool, LabeledPool, UnlabeledPool
+importlib.reload(active_learning)
 
 # importlib.reload(active_learning)
 # import torch
@@ -33,7 +34,7 @@ class ActiveLearning:
             pseudo (bool): Use given labels as "user input" to evaluate active learning
     """
 
-    def __init__(self, model, data, labels=None, train_config=None, acq_name=None, pseudo=True):
+    def __init__(self, model, data, labels=None, config=None, train_config=None, acq_config=None, acq_name=None, pseudo=True):
         self.model = model
         self.checkpoint = Checkpoint()
         self.checkpoint.new(model) # Create initial checkpoint []
@@ -45,22 +46,15 @@ class ActiveLearning:
 
         # Active learning specifics
         self.acquisition = AcquisitionFunction(acq_name)
-        self.unlabeled_pool = DataPool(data)
+        self.unlabeled_pool = UnlabeledPool(data)
         self.labeled_pool = LabeledPool(data)
         self.train_config = train_config
-            
-        # self.acq_config = acq_config
-        # if acq_config is None:
-        #     self.acq_config = Config(
-        #         function="random"
-        #     )
-
 
         # Pool of labeled data
         self.history = []
 
 
-    def start(self, limit=None):
+    def start(self, limit=None, step_size=100):
         """
             Start the active learning loop.
 
@@ -68,21 +62,56 @@ class ActiveLearning:
                 limit (int): Limit the number of active learning loop iterations
         """
 
-        for i in tqdm(range(limit)):
-            self.__pre_train()
+        if limit is None:
+            limit = len(self.unlabeled_pool)
 
-            idx = self.acquisition(self.model, self.unlabeled_pool)
-            data_point = self.unlabeled_pool[idx]
-            # Display data
-            label = input("What's the label?")
-            clear_output()
+        # TODO: Initiale model selection, => random n-element, seed setzten
+        # Bei wenigen gezogenen Daten: Klassenverteilung sollte gleich balanciert sein
 
-            # Update pools of labeled/unlabeled data
-            self.unlabeled_pool = np.delete(self.unlabeled_pool, idx, axis=0)
-            self.inputs.append(data_point)
-            self.targets.append(label)
+        pg_bar = tqdm(range(0, len(self.unlabeled_pool), step_size), leave=True)
+        # for i in tqdm(range(0, len(self.unlabeled_pool), step_size)):
+        for i in pg_bar:
 
-    
+            # Is there any data left to label?
+            if self.unlabeled_pool.is_empty():
+                break
+            
+            # Train model on labeled data
+            start = time.time()
+            train_history = self.__pre_train()
+            end = time.time()
+            train_time = end-start
+
+            # Selected datapoints and label
+            start = time.time()
+            indices, _predictions = self.acquisition(self.model, self.unlabeled_pool, num=step_size)
+            labels = self.__next_dp(indices)
+            end = time.time()
+            acq_time = end - start
+
+            # Update labeled pool
+            start = time.time()
+            self.labeled_pool[indices] = labels
+            end = time.time()
+            update_time = end - start
+
+            # Debug
+            pg_bar.set_description("Training time: {}//Acquisition: {}//Update: {}".format(train_time, acq_time, update_time))
+            self.__new_history_checkpoint(
+                iteration=i,
+                training=(None if train_history is None else train_history.history)
+            )
+
+        return self.history
+
+
+    def __new_history_checkpoint(self, **kwargs):
+        self.history.append(kwargs)
+
+
+    def __clean_history(self):
+        self.history = []
+
 
     def __pre_train(self):
         """
@@ -90,7 +119,11 @@ class ActiveLearning:
         """
 
         # Labeled data pool is empty, training not possible 
-        if len(self.inputs) == 0:
+        if len(self.labeled_pool) == 0:
+            return
+        
+        else:
+            self.checkpoint.load(self.model)
             return
 
         # Reset model weights
@@ -99,7 +132,7 @@ class ActiveLearning:
         # Compile model
         config = self.train_config
         optimizer = config["optimizer"]
-        loss = config["optimizer"]
+        loss = config["loss"]
         metrics = config["metrics"]
         self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
@@ -107,18 +140,29 @@ class ActiveLearning:
         batch_size = config["batch_size"]
         epochs = config["epochs"]
 
-        # inputs = self.labeled_pool.get_inputs()
-        # targets = self.labeled_pool.get_labels()
         inputs, targets = self.labeled_pool[:]
-        self.model.fit(x=self.inputs, y=self.targets, batch_size=batch_size, epochs=epochs)
+        return self.model.fit(x=inputs, y=targets, batch_size=batch_size, epochs=epochs, verbose=0)
 
 
-
-    def __next_dp(self):
+    def __next_dp(self, indices):
         """
             Query for the next datapoints to be labeled.
 
             Returns:
                 np.ndarray: The next datapoints to be labeled.
         """
-        pass
+        labels = None
+        if not self.pseudo:
+            # Let user label data
+            labels = np.zeros(len(indices))
+            for idx in indices:
+                data_point = self.unlabeled_pool[idx]
+                label = input("What's the label?")
+                labels[idx] = label
+                clear_output()
+
+        else:
+            # Auto label using known labels
+            labels = self.labels[indices]
+
+        return labels

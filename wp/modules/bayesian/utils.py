@@ -1,3 +1,4 @@
+import tensorflow as tf
 import numpy as np
 from tqdm import tqdm
 
@@ -57,10 +58,11 @@ def predict_n(model, point, n_times=5, enable_tqdm=True):
 
         output[i] = result
 
+    tf.keras.backend.clear_session()
     return output
 
 
-def batch_predict_n(model, data, n_times=5):
+def batch_predict_n(model, data, n_times=5, batch_size=None, enable_tqdm=True):
     """
         Perform n-predictions per data point in colletion of data points.
 
@@ -77,15 +79,18 @@ def batch_predict_n(model, data, n_times=5):
     disable_batch_norm(model)
     data_points = data.shape[0]
     output = None
-    for i in tqdm(range(n_times)):
+    batch_size = data_points if batch_size is None else batch_size
+    iterator = tqdm(range(n_times)) if enable_tqdm else range(n_times)
+    for i in iterator:
 
         # Set initial shape
-        result = model(data, training=True)
+        result = model(data, training=True, batch_size=batch_size)
         if output is None:
             output = np.zeros(tuple([n_times] + list(result.shape)))
 
         output[i] = result
 
+    tf.keras.backend.clear_session()
     return output.reshape(tuple([data_points, n_times] + list(output.shape[2:])))
 
 

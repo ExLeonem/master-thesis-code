@@ -20,10 +20,16 @@ class Checkpoint:
             filename (str): The filename prefix to use for checkpoints.
     """
 
-    def __init__(self, path=DEFAULT_PATH, filename="model"):
-        self.PATH = path
+    def __init__(self, filename="model",path=DEFAULT_PATH, extension="h5", sub_dir=True):
+        self.PATH = path if not sub_dir else os.path.join(path, filename)
         self.FILENAME = filename
+        self.EXTENSION = extension
         self.checkpoints = []
+
+
+    def __create_checkpoint_dir(self):
+        if not os.path.isdir(os.path.join(self.PATH)):
+            os.mkdir(self.PATH)
 
 
     def new(self, model):
@@ -34,9 +40,11 @@ class Checkpoint:
                 model (tf.Model): The model for which parameters to save.
         """
 
+        self.__create_checkpoint_dir()
+
         # Build checkpoint path
         timestamp = time.strftime("%d_%m_%y_%H_%M_%S")
-        full_file_name = self.FILENAME + "_" + timestamp
+        full_file_name = self.FILENAME + "_" + timestamp + "." + self.EXTENSION
         self.checkpoints.append(full_file_name)
 
         # Create the new checkpoint
@@ -44,6 +52,19 @@ class Checkpoint:
         model.save_weights(checkpoint_path)
 
     
+    def __try_checkpoints_recovery(self):
+        # Try recover checkpoints from directory
+        checkpoint_dir = os.listdir(self.PATH)
+        for file in checkpoint_dir:
+            
+            if file.endswith(self.EXTENSION):
+                self.checkpoints.append(file)
+        
+        # Still no checkpoints after recovery attempt
+        if len(self.checkpoints) == 0:
+            raise ArgumentError("Checkpoint list is empty. Recovery attempt failed. Check if there are any files within the checkpoint directory {} with extension .{} .".format(self.PATH, self.EXTENSION))
+
+
     def load(self, model, iteration=None):
         """
             Load the given checkpoint weights into the model.
@@ -54,7 +75,7 @@ class Checkpoint:
         """
 
         if len(self.checkpoints) == 0:
-            raise ArgumentError("Checkpoint list is empty. Can't load checkpoint {}.".format(iteration))
+            self.__try_checkpoints_recovery()
 
         checkpoint_name = None
         if iteration is None:

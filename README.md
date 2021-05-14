@@ -26,8 +26,8 @@ The following dependencies need to be installed to
 
 - [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
 - (optional) Anaconda/Python 3.7
-
-
+- ()
+- [sphinx](https://www.sphinx-doc.org/en/master/usage/quickstart.html)
 
 
 ## Setup
@@ -78,33 +78,7 @@ Install pip for anaconda
 
 Install packages of `requirements.txt` 
 
-## Read datasets from kaggle
 
-Create a kaggle.json file inside of the config directory.
-
-```json
-{
-    "username":"user_name",
-    "key":"key_from_kaggle"
-}
-```
-
-
-
-
-## Datasets
-
-### Regression
-
-1. [Insurance Forecast](https://www.kaggle.com/mirichoi0218/insurance/discussion)
-
-
-
-## Resources
-
-### Encoding
-
-[Categorical Data Encoding](https://towardsdatascience.com/all-about-categorical-variable-encoding-305f3361fd02)
 
 
 ## Contribution

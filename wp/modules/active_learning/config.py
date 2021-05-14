@@ -68,9 +68,9 @@ class TrainConfig(Config):
     def __init__(self, **kwargs):
         defaults = {
             "batch_size": 40,
-            "epochs": 100,
-            "optimizer": "adadelta",
-            "loss": "binary_entropy",
+            "epochs": 5,
+            "optimizer": "adam",
+            "loss": "binary_crossentropy",
             "metrics": ["accuracy"]
         }
 
@@ -78,7 +78,3 @@ class TrainConfig(Config):
 
     # def __getitem__(self, key):
     #     return super().__getitem__(key)
-
-    
-    def __repr__(self):
-        print("hey")
