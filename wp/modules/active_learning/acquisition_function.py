@@ -72,7 +72,7 @@ class AcquisitionFunction:
 
     def _max_entropy(self, model, unlabeled_pool, pool, num=5, runs=5, num_classes=2, **kwargs):
         """
-            Select datapoints by using max entropy. 
+            Select datapoints by using max entropy.
 
             Parameters:
                 model (tf.Model) The tensorflow model to use for selection of datapoints

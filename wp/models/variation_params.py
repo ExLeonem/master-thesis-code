@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 from torch.distributions import Normal, Gamma
 
+import otari
+
 
 class VariationalParams:
 
