@@ -1,4 +1,4 @@
-from .library import Library
+from .library import Library, LibType
 from ..bayesian.model import Mode
 
 class Torch(Library):
@@ -12,11 +12,11 @@ class Torch(Library):
 
     def __init__(self, model):
         self.MODULE_NAME = "torch"
-        super(Torch, self).__init__(self.MODULE_NAME)
+        super(Torch, self).__init__(self.MODULE_NAME, LibType.TORCH)
         self.module_types = self.__get_module_types()
 
 
-    def of_model(self, model):        
+    def of(self, model):        
         """
             Check if given module is a pytorch neural network.
         
@@ -31,19 +31,10 @@ class Torch(Library):
         if not self.is_available():
             return False
 
-        try:
-            
-            # Model of type nn.Module?
-            if isinstance(model, self.base_module.nn.Module):
+        # Is model of one of the given module types?
+        for layer in self.__module_types:
+            if isinstance(model, layer):
                 return True
-
-            # Model of type nn.Sequential?
-            elif isinstance(model, self.base_module.nn.Sequential):
-                return True
-
-        # Sub-attribute of library not existent
-        except AttributeError:
-            return False
         
         return False
 
@@ -58,6 +49,9 @@ class Torch(Library):
         else:
             model.eval()
         
+
+    def prdict(self, model, inputs, **kwargs):
+        return model(inputs)
 
 
     def export(self, model):
@@ -86,5 +80,5 @@ class Torch(Library):
 
         return [
             self.base_module.nn.Module,
-            self.base_module.Sequential
+            self.base_module.nn.Sequential
         ]

@@ -3,7 +3,10 @@ import TensorFlow
 
 
 class LibraryDispatcher:
-
+    """
+        Dispatches call to library specific functions.
+    """
+    
     def __init__(self):
         self.libraries = [
             Torch(),
@@ -11,13 +14,7 @@ class LibraryDispatcher:
         ]
 
 
-    def __iter_through(self, action):
-        
-        for lib in libraries:
-            action(lib)
-
-    
-    def model_of_library(self, model):
+    def get_lib_of(self, model):
         """
             Get the library of which the model is made.
 
@@ -27,14 +24,12 @@ class LibraryDispatcher:
             Returns:
                 (Library | None) library of the model or None if no match was found.
         """
-        
-        for lib in self.libraries:
-            
-            if lib.of_model(model):
-                return lib
+    
+        # Given model based on one of specified libraries?
+        for library in self.libraries:    
+            if library.of(model):
+                return library
 
+        # Model does not match any library specification
         return None
 
-
-if __name__ == "__main__":
-    dispatcher = LibraryDispatcher()

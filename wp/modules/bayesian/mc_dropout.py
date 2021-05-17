@@ -1,4 +1,4 @@
-from .model import BayesModel, ModelType
+from .model import BayesModel, ModelType, Mode
 
 
 class McDropout(BayesModel):
@@ -7,8 +7,10 @@ class McDropout(BayesModel):
     """
 
     def __init__(self, model, config):
-        super(McDropout, self).__init__(model, config)
+        model_type = ModelType.MC_DROPUT
+        super(McDropout, self).__init__(model, config, model_type=model_type)
+        
 
 
-    def approx(data, **kwargs):
-        pass
+    
+    

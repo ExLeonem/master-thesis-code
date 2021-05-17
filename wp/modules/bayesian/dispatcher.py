@@ -1,6 +1,8 @@
 from .model import ModelType
 
-class ModelDispatcher:
+# class ModelDispatcher:
 
-    def __init__(self, model, model_type):
-        pass
+#     def __init__(self):
+#         self.model_types = [
+
+#         ]
