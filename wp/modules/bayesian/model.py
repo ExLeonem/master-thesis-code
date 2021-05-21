@@ -32,6 +32,11 @@ class BayesModel(ABC):
         self.__model_type = model_type
         self.__library = self.__init_library_of(model)
 
+        # Needed values
+        self.expectation = None
+        self.std = None
+        self.posterior = None
+
 
     def predict(self, inputs, **kwargs):
         """
@@ -46,6 +51,29 @@ class BayesModel(ABC):
             raise ValueError("Error in BayesModel.predict/2. Missing library.")
         
         return self.__library.predict(self.__model, inputs, **kwargs)
+
+
+    def extend_binary(self, predictions):
+        """
+            Extend predictions for binary classification case.
+
+            Parameters:
+                predictions (numpy.ndarray): The predictions made by the model
+
+            Returns:
+                (numpy.ndarray) The extended numpy array
+        """
+        pass
+
+    
+    @abstractmethod
+    def mean(self, predictions):
+        pass
+
+
+    @abstractmethod
+    def std(self, predictions):
+        pass
 
     
     def __init_library_of(self, model):

@@ -46,8 +46,8 @@ class ActiveLearning:
 
         # Active learning specifics
         self.acquisition = AcquisitionFunction(acq_name)
-        self.unlabeled_pool = UnlabeledPool(data)
         self.labeled_pool = LabeledPool(data)
+        self.unlabeled_pool = UnlabeledPool(data)
         self.train_config = train_config
 
         # Pool of labeled data

@@ -1,4 +1,5 @@
 import os, importlib, sys
+import logging
 import numpy as np
 
 FILE_PATH = os.path.abspath(__file__)
@@ -142,7 +143,6 @@ class AcquisitionFunction:
         num = self._adapt_selection_num(len(data), num)
 
         # Predict n-times
-        print(data.shape)
         predictions = butils.batch_predict_n(model, data, n_times=runs)
         predictions = self.__prepare_predictions(predictions, num_classes) # (batch_size, n-predictions, num_classes)
 

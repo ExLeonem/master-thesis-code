@@ -32,15 +32,23 @@ class DataPool:
         return self.data[index]
 
 
+    def __len__(self):
+        return len(self.data)
+
 
 class UnlabeledPool(DataPool):
     """
         
     """
 
-    def __init__(self, data):
+    def __init__(self, data, init_indices=None):
         super(UnlabeledPool, self).__init__(data)
-        self.indices = np.linspace(0, len(data)-1, len(data), dtype=int)
+
+        # Are there already set initial indices?
+        if not init_indices is None:
+            self.indices = init_indices
+        else
+            self.indices = np.linspace(0, len(data)-1, len(data), dtype=int)
 
 
     def __len__(self):
@@ -80,14 +88,48 @@ class LabeledPool(DataPool):
 
         Parameters:
             data (numpy.ndarray): Data to be used for the pool of labeled data.
+            num_init_targets (int): Number of initial label values to use per class
+            seed (int): The seed to use for random selection of initial pool
+            targets (numpy.ndarray): Targets to be used for selection for initial pool
     """
 
-    def __init__(self, data):
+    def __init__(self, data, num_init_targets=10, seed=None, targets=None):
         super(LabeledPool, self).__init__(data)
         self.labeled_indices = np.zeros(data.shape[0], dtype=int) - 1
         self.labels = np.zeros(data.shape[0])
-        self.running_index = 0
+        self.running_idx = 0
+        
+        # Initialize labels set
+        self.__init_pool_of_indices(num_init_targets, seed, targets)
 
+
+    def __init_pool_of_indices(self, num_init_targets, seed, targets):
+        """
+            Initialize the pool with randomly selected values.
+        """
+
+        # Use initial target values?
+        if num_init_targets <= 0:
+            return
+
+        # Reproducability?
+        if not (seed is None):
+            np.random.seed(seed)
+
+        # Select 'num_init_targets' per unique label 
+        unique_targets = np.unique(targets)       
+        for idx in range(len(unique_targets)):
+
+            # Select indices of labels for unique label[idx]
+            with_unique_value = targets == unique_targets[idx]
+            indices_of_label = np.argwhere(with_unique_value)
+
+            # Set randomly selected labels
+            selected_indices = np.random.choice(indices_of_label, num_init_targets, replace=True)
+            self.labels_indices[selected_indices] = 1
+            self.labels[selected_indices] = unique_targets[idx]      
+
+    
     def __put_batch_batch(self, indices, labels):
         """
             Put a batch of data into the pool.

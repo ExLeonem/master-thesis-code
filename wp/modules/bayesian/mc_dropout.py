@@ -11,6 +11,9 @@ class McDropout(BayesModel):
         super(McDropout, self).__init__(model, config, model_type=model_type)
         
 
+    def std(self, predictions):
+        pass
 
     
-    
+    def mean(self, predictions):
+        pass

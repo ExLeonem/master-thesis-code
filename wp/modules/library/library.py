@@ -9,6 +9,8 @@ class LibType(Enum)
 
 class Library(ABC):
     """
+        LibraryFactory 
+
         Abstract class to work with differen python libraries.
 
         :param base_module_name: The base module of the library.

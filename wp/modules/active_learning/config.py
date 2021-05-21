@@ -16,10 +16,10 @@ class Config:
     """
 
     def __init__(self, **kwargs):
-        self.kwargs = self.__set_defaults(kwargs)
+        self.kwargs = self.__init_defaults(kwargs)
 
 
-    def __set_defaults(self, kwargs):
+    def __init_defaults(self, kwargs):
         """
             Set default values for a configuration object.
 
