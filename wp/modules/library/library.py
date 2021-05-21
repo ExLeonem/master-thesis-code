@@ -1,13 +1,12 @@
 import importlib, sys
-from abc import ABC, abstractmethod
 from enum import Enum
 
-class LibType(Enum)
-    TORCH
-    TENSOR_FLOW
+class LibType(Enum):
+    TORCH=1,
+    TENSOR_FLOW=2
 
 
-class Library(ABC):
+class Library:
     """
         LibraryFactory 
 
@@ -16,7 +15,6 @@ class Library(ABC):
         :param base_module_name: The base module of the library.
         :type base_module_name: str
     """
-
     def __init__(self, base_module_name, library_type):
         super(Library, self).__init__()
 
@@ -69,7 +67,6 @@ class Library(ABC):
         return self.__library_type == lib_type
 
 
-    @abstractmethod
     def of(self, model):
         """
             Check if model is of current library.
@@ -80,7 +77,6 @@ class Library(ABC):
         pass
 
 
-    @abstractmethod
     def predict(self, model, inputs, **kwargs):
         """
             Perform a prediction for a given model.
@@ -88,7 +84,15 @@ class Library(ABC):
         pass
 
 
-    @abstractmethod
+
+    def clear_session(self):
+        pass
+
+
+    def disable_batch_norm(self, model):
+        pass
+
+
     def export(self, model):
         """
             Parses the model into an intermediate format and returns it
@@ -99,12 +103,10 @@ class Library(ABC):
         pass
 
 
-    @abstractmethod
     def parse(self, model):
         pass
 
 
-    @abstractmethod
     def write(self, data, path, extension=None):
         """
 
@@ -116,7 +118,6 @@ class Library(ABC):
     # Setter/-Getter
     # -------------------
 
-    @abstractmethod
     def __get_module_types(self):
         """
             Get all module types of this library.

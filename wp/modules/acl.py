@@ -1,18 +1,19 @@
 from IPython.display import clear_output
-
-import tensorflow as tf
 import os, time, datetime, importlib, time
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from sklearn.model_selection import train_test_split
 
+import tensorflow as tf
 import bayesian.utils as butils
 
 import active_learning
 importlib.reload(active_learning)
-from active_learning import AcquisitionFunction, Checkpoint, Config, DataPool, LabeledPool, UnlabeledPool
+
+from active_learning import AcquisitionFunction, Config, DataPool, LabeledPool, UnlabeledPool
 importlib.reload(active_learning)
 
 # importlib.reload(active_learning)
@@ -36,25 +37,44 @@ class ActiveLearning:
 
     def __init__(self, model, data, labels=None, config=None, train_config=None, acq_config=None, acq_name=None, pseudo=True):
         self.model = model
-        self.checkpoint = Checkpoint()
-        self.checkpoint.new(model) # Create initial checkpoint []
+        model.new_checkpoint()
+
+        # self.checkpoint = Checkpoint()
+        # self.checkpoint.new(model) # Create initial checkpoint []
 
         # Perform pseudo active learning? (Meaning: use known labels and omit user input)
         self.pseudo = pseudo
-        self.data = data
-        self.labels = labels
 
         # Active learning specifics
-        self.acquisition = AcquisitionFunction(acq_name)
-        self.labeled_pool = LabeledPool(data, targets=labels)
-        self.unlabeled_pool = UnlabeledPool(data, init_indices=self.labeled_pool.get_indices())
+        self.inputs, self.targets = self.__train_test_val_split(data, labels)
+        train_inputs = self.inputs["train"]
+        train_targets = self.targets["train"]
+        self.acquisition = AcquisitionFunction(acq_name, batch_size=700)
+        self.labeled_pool = LabeledPool(train_inputs, targets=train_targets)
+        self.unlabeled_pool = UnlabeledPool(train_inputs, init_indices=self.labeled_pool.get_indices())
         self.train_config = train_config
-
-        print(len(self.labeled_pool))
-        print(len(self.unlabeled_pool))
 
         # Pool of labeled data
         self.history = []
+
+
+    def __train_test_val_split(self, data, labels):
+        x_train, x_test, y_train, y_test = train_test_split(data, labels)
+        x_test, x_val, y_test, y_val = train_test_split(x_test, y_test)
+
+        inputs = {
+            "train": x_train,
+            "test": x_test,
+            "valid": x_val
+        }
+
+        targets = {
+            "train":y_train,
+            "test": y_test,
+            "valid":y_val
+        }
+
+        return inputs, targets
 
 
     def start(self, limit=None, step_size=100):
@@ -77,8 +97,6 @@ class ActiveLearning:
 
             # Is there any data left to label?
             if self.unlabeled_pool.is_empty():
-                print("Is empty")
-                print(len(self.unlabeled_pool))
                 break
             
             # Train model on labeled data
@@ -112,20 +130,14 @@ class ActiveLearning:
                 training=(None if train_history is None else train_history.history)
             )
 
-        print("Done: ")
-        print(len(self.labeled_pool))
-        print(len(self.unlabeled_pool))
-
         return self.history
 
 
 
 
     # -------------
-    # Useable hooks
+    # Active learning loop hooks
     # --------------------
-
-
     def pre_training_hook(self, model, **kwargs):
         pass
 
@@ -161,16 +173,16 @@ class ActiveLearning:
 
         # Labeled data pool is empty, training not possible 
         if len(self.labeled_pool) == 0:
-            print("Empty pool")
             return
 
         # # Skip model evaluation debugging purposes    
-        else:
-            return
+        # else:
+        #     return
 
 
         # Reset model weights
-        self.checkpoint.load(self.model)
+        self.model.load_checkpoint()
+        self.model.compile()
 
         # Compile model
         config = self.train_config
@@ -206,6 +218,7 @@ class ActiveLearning:
 
         else:
             # Auto label using known labels
-            labels = self.labels[indices]
+            train_labels = self.targets["train"]
+            labels = train_labels[indices]
 
         return labels

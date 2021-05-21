@@ -1,5 +1,11 @@
+import os, sys, importlib
+
+# DIR_PATH = os.path.abspath(os.path.realpath(__file__))
+# PARENT_PATH = os.path.join(DIR_PATH, "..")
+# sys.path.append(PARENT_PATH)
+
 from .library import Library, LibType
-from ..bayesian.model import Mode
+# from bayesian import Mode
 
 class Torch(Library):
     """
@@ -10,7 +16,7 @@ class Torch(Library):
         Model serving file formats: .pt
     """
 
-    def __init__(self, model):
+    def __init__(self):
         self.MODULE_NAME = "torch"
         super(Torch, self).__init__(self.MODULE_NAME, LibType.TORCH)
         self.module_types = self.__get_module_types()
@@ -43,15 +49,22 @@ class Torch(Library):
         """
 
         """
-        if mode == Mode.TRAIN:
-            model.train()
+        # if mode == Mode.TRAIN:
+        #     model.train()
 
-        else:
-            model.eval()
+        # else:
+        #     model.eval()
         
 
-    def prdict(self, model, inputs, **kwargs):
+    def predict(self, model, inputs, **kwargs):
         return model(inputs)
+
+
+    def disable_batch_norm(self, model):
+        pass
+
+    def clear_session(self):
+        pass
 
 
     def export(self, model):

@@ -1,4 +1,4 @@
-from .model import BayesModel, ModelType, Mode
+from . import BayesModel, ModelType, Mode
 
 class MomentPropagation(BayesModel):
 

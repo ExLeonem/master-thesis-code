@@ -1,5 +1,5 @@
-import Torch
-import TensorFlow
+from .torch import Torch
+from .tensorflow import TensorFlow
 
 
 class LibraryDispatcher:

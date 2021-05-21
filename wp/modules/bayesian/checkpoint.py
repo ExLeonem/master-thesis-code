@@ -20,10 +20,11 @@ class Checkpoint:
             filename (str): The filename prefix to use for checkpoints.
     """
 
-    def __init__(self, filename="model",path=DEFAULT_PATH, extension="h5", sub_dir=True):
+    def __init__(self, library, filename="model",path=DEFAULT_PATH, extension="h5", sub_dir=True):
         self.PATH = path if not sub_dir else os.path.join(path, filename)
         self.FILENAME = filename
         self.EXTENSION = extension
+        self.library = library
         self.checkpoints = []
 
 
@@ -48,8 +49,8 @@ class Checkpoint:
         self.checkpoints.append(full_file_name)
 
         # Create the new checkpoint
-        checkpoint_path = os.path.join(self.PATH, full_file_name) 
-        model.save_weights(checkpoint_path)
+        checkpoint_path = os.path.join(self.PATH, full_file_name)
+        self.library.export_model(model, checkpoint_path)
 
     
     def __try_checkpoints_recovery(self):
@@ -93,7 +94,8 @@ class Checkpoint:
             raise ArgumentError("Can't load iteration {}. There's only {} checkpoints.".format(itreation, len(self.checkpoints)))
 
         checkpoint_path = os.path.join(self.PATH, checkpoint_name)
-        model.load_weights(checkpoint_path)
+        self.library.load_model(model, checkpoint_path)
+        # model.load_weights(checkpoint_path)
 
 
     def clean(self):

@@ -40,8 +40,36 @@ class TensorFlow(Library):
         return model(inputs, training=is_training)
 
 
-    def export(self, model):
-        pass
+    def clear_session(self):
+        self.base_module.keras.backend.clear_session()
+
+
+    def disable_batch_norm(self, model):  
+        """
+            Disable batch normalization for activation of dropout during prediction.
+
+            Parameters:
+                - model (tf.Model) Tensorflow neural network model.
+        """
+        
+        disabled = False
+        for l in model.layers:
+            if l.__class__.__name__ == "BatchNormalization":
+                disabled = True
+                l.trainable = False
+
+        if disabled:
+            print("Disabled BatchNorm-Layers.")
+
+
+
+    def export_model(self, model, path):
+        model.save_weights(path)
+
+
+    def load_model(self, model, path):
+        model.load_weights(path)
+
 
 
     def write(self, data, path, format=".pb"):
