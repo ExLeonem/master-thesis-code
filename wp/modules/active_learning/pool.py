@@ -43,12 +43,8 @@ class UnlabeledPool(DataPool):
 
     def __init__(self, data, init_indices=None):
         super(UnlabeledPool, self).__init__(data)
-
         # Are there already set initial indices?
-        if not init_indices is None:
-            self.indices = init_indices
-        else
-            self.indices = np.linspace(0, len(data)-1, len(data), dtype=int)
+        self.indices = np.linspace(0, len(data)-1, len(data), dtype=int)
 
 
     def __len__(self):
@@ -76,8 +72,7 @@ class UnlabeledPool(DataPool):
 
 
     def get_data(self):
-        unlabeled = self.indices != -1
-        return self.data[unlabeled]
+        return self.data
 
 
 
@@ -117,7 +112,7 @@ class LabeledPool(DataPool):
             np.random.seed(seed)
 
         # Select 'num_init_targets' per unique label 
-        unique_targets = np.unique(targets)       
+        unique_targets = np.unique(targets)
         for idx in range(len(unique_targets)):
 
             # Select indices of labels for unique label[idx]
@@ -125,9 +120,9 @@ class LabeledPool(DataPool):
             indices_of_label = np.argwhere(with_unique_value)
 
             # Set randomly selected labels
-            selected_indices = np.random.choice(indices_of_label, num_init_targets, replace=True)
-            self.labels_indices[selected_indices] = 1
-            self.labels[selected_indices] = unique_targets[idx]      
+            selected_indices = np.random.choice(indices_of_label.flatten(), num_init_targets, replace=True)
+            self.labeled_indices[selected_indices] = 1
+            self.labels[selected_indices] = unique_targets[idx]
 
     
     def __put_batch_batch(self, indices, labels):
@@ -193,6 +188,13 @@ class LabeledPool(DataPool):
     def get_labels(self):
         indices = self.labeled_indices != -1
         return self.labels[indices]
+
+
+    def get_indices(self):
+        """
+            Get indices of labels that are already set
+        """
+        return np.argwhere(self.labeled_indices != -1)
 
 
     def put(self, index, label):

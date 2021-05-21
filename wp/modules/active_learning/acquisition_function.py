@@ -13,17 +13,14 @@ import bayesian.utils as butils
 
 class AcquisitionFunction:
     """
-
+        Query a model for next datapoints that should be labeled.
+        
         Parameters:
             fn_name (str): The acquisition function to apply
-            batch_select (bool): Apply batch query?
-            batch_size (int): Number of points to query for.
     """
 
-    def __init__(self, fn_name, batch_select=False, batch_size=10):
+    def __init__(self, fn_name):
         self.fn = self._set_fn(fn_name)
-        self.batch_select = batch_select
-        self.batch_size = batch_size
 
 
     def __call__(self, model, data, **kwargs):
@@ -38,7 +35,7 @@ class AcquisitionFunction:
         if num_indices == 0:
             raise ArgumentError("Can't select {} datapoints, all data is labeled.".format(num_to_select))
 
-        if num_indices < self.batch_size:
+        if num_indices < num_to_select:
             return num_indices
         
         return num_to_select

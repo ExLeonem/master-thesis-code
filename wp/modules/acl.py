@@ -46,9 +46,12 @@ class ActiveLearning:
 
         # Active learning specifics
         self.acquisition = AcquisitionFunction(acq_name)
-        self.labeled_pool = LabeledPool(data)
-        self.unlabeled_pool = UnlabeledPool(data)
+        self.labeled_pool = LabeledPool(data, targets=labels)
+        self.unlabeled_pool = UnlabeledPool(data, init_indices=self.labeled_pool.get_indices())
         self.train_config = train_config
+
+        print(len(self.labeled_pool))
+        print(len(self.unlabeled_pool))
 
         # Pool of labeled data
         self.history = []
@@ -74,18 +77,22 @@ class ActiveLearning:
 
             # Is there any data left to label?
             if self.unlabeled_pool.is_empty():
+                print("Is empty")
+                print(len(self.unlabeled_pool))
                 break
             
             # Train model on labeled data
             start = time.time()
-            train_history = self.__pre_train()
+            train_history = self.__train_model()
             end = time.time()
             train_time = end-start
 
             # Selected datapoints and label
             start = time.time()
             indices, _predictions = self.acquisition(self.model, self.unlabeled_pool, num=step_size)
-            labels = self.__next_dp(indices)
+            labels = self.__query(indices)
+            self.unlabeled_pool.update(indices)
+
             end = time.time()
             acq_time = end - start
 
@@ -96,14 +103,48 @@ class ActiveLearning:
             update_time = end - start
 
             # Debug
-            pg_bar.set_description("Training time: {}//Acquisition: {}//Update: {}".format(train_time, acq_time, update_time))
+
+            # pg_bar.set_description("Training time: {}//Acquisition: {}//Update: {} // Labeled: {}".format(train_time, acq_time, update_time, len(self.labeled_pool)))
             self.__new_history_checkpoint(
                 iteration=i,
+                train_time=train_time,
+                query_time=acq_time,
                 training=(None if train_history is None else train_history.history)
             )
 
+        print("Done: ")
+        print(len(self.labeled_pool))
+        print(len(self.unlabeled_pool))
+
         return self.history
 
+
+
+
+    # -------------
+    # Useable hooks
+    # --------------------
+
+
+    def pre_training_hook(self, model, **kwargs):
+        pass
+
+
+    def post_training_hook(self, model, **kwargs):
+        pass
+
+    
+    def pre_query(self, model, **kwargs):
+        pass
+
+
+    def post_query(self, model, **kwargs):
+        pass
+
+
+    ## ----------------
+    ## Private methods
+    ## --------------------------
 
     def __new_history_checkpoint(self, **kwargs):
         self.history.append(kwargs)
@@ -113,18 +154,20 @@ class ActiveLearning:
         self.history = []
 
 
-    def __pre_train(self):
+    def __train_model(self):
         """
             Pre-train the network on already labeled data.
         """
 
         # Labeled data pool is empty, training not possible 
         if len(self.labeled_pool) == 0:
+            print("Empty pool")
             return
-        
+
+        # # Skip model evaluation debugging purposes    
         else:
-            self.checkpoint.load(self.model)
             return
+
 
         # Reset model weights
         self.checkpoint.load(self.model)
@@ -144,7 +187,7 @@ class ActiveLearning:
         return self.model.fit(x=inputs, y=targets, batch_size=batch_size, epochs=epochs, verbose=0)
 
 
-    def __next_dp(self, indices):
+    def __query(self, indices):
         """
             Query for the next datapoints to be labeled.
 
