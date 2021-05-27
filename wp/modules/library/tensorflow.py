@@ -34,14 +34,23 @@ class TensorFlow(Library):
         # or model and layers do not match
         return False
         
+    
+    # -------------
+    # Training and model prediction
+    # -----------------------------------
 
     def predict(self, model, inputs, **kwargs):
         is_training = dict.get(kwargs, "training")
         return model(inputs, training=is_training)
 
 
+    def fit(self, model, **kwargs):
+        pass
+
+
     def clear_session(self):
         self.base_module.keras.backend.clear_session()
+
 
 
     def disable_batch_norm(self, model):  

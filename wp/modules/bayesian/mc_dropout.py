@@ -1,4 +1,5 @@
 import numpy as np
+import logging as log
 from . import  BayesModel, ModelType, Mode
 
 
@@ -6,10 +7,11 @@ from . import  BayesModel, ModelType, Mode
 class McDropout(BayesModel):
     """
         Encapsualte mc droput model.
+
     """
 
     def __init__(self, model, config=None):
-        super(McDropout, self).__init__(model, config, model_type=ModelType.MC_DROPOUT)
+        super().__init__(model, config, model_type=ModelType.MC_DROPOUT)
         
 
     def predict(self, inputs, runs=10, **kwargs):
@@ -31,8 +33,9 @@ class McDropout(BayesModel):
 
 
     def compile(self, **kwargs):
-        
-        pass
+        log.info("Compile Model")
+        checkpoint_path = self._checkpoints.path()
+        self._library.load_model(self._model, checkpoint_path)
 
 
     def expectation(self, predictions):
@@ -53,6 +56,8 @@ class McDropout(BayesModel):
     
     def load_checkpoint(self, iteration=None):
         self._checkpoints.load(self._model, iteration)
+
+
 
 
     # # ---------------

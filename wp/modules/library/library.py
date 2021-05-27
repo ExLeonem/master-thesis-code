@@ -23,7 +23,7 @@ class Library:
         self.minor = sys.version_info[1]
         
         # Check if module is available
-        self.__library_type = library_type
+        self._library_type = library_type
         self.loader_exists = self.__loader_exists(base_module_name)
 
         # Set Base module
@@ -64,7 +64,7 @@ class Library:
 
 
     def of_type(self, lib_type):
-        return self.__library_type == lib_type
+        return self._library_type == lib_type
 
 
     def of(self, model):
@@ -77,12 +77,17 @@ class Library:
         pass
 
 
+    # ------------
+    # Model prediction and training
+    # ---------------------------------
+
     def predict(self, model, inputs, **kwargs):
-        """
-            Perform a prediction for a given model.
-        """
+        """Perform a prediction for a given model."""
         pass
 
+
+    def fit(self, model, **kwargs):
+        pass
 
 
     def clear_session(self):
@@ -114,6 +119,23 @@ class Library:
         pass
 
 
+    # ---------------------
+    # Prevent ever growing library module.
+    # Delegate implementation to classes using library classes.
+    # ------------------------------------------------------
+
+    def register(self, callback):
+        """
+            Execute the callback function, injeting the library module and the library type.
+
+            Parameters:
+                callback (function): The callback to execute
+
+            Returns:
+                (any) The callback return value
+        """
+        return callback(self.base_module, self._library_type)
+
     # -----------------
     # Setter/-Getter
     # -------------------
@@ -123,3 +145,7 @@ class Library:
             Get all module types of this library.
         """
         pass
+
+    
+    def get_lib_type(self):
+        return self._library_type

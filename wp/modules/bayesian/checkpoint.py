@@ -69,21 +69,40 @@ class Checkpoint:
     def load(self, model, iteration=None):
         """
             Load the given checkpoint weights into the model.
+            **Deprecated**: Use get path to get the path inside a specific bayes mdoel.
+
 
             Parameters:
                 model (tf.Model): The tensorflow model to load the weights into
                 iteration (int): The checkpoint to load 
         """
+        checkpoint_path = self.path(iteration=iteration)
+        self.library.load_model(model, checkpoint_path)
+        # model.load_weights(checkpoint_path)
+
+
+    def path(self, iteration=None):
+        """
+            Get the path for nth checkpoint.
+
+            Parameters:
+                iteration (int): The path of given n-th checkpoint to retrieve. (default: last checkpoint)
+
+            Returns:
+                (str) The path to the checkpoint at given iteration
+        """
 
         if len(self.checkpoints) == 0:
+            # TODO: Checkpoint recovery can fail when path exists but model not of same arch.
             self.__try_checkpoints_recovery()
 
         checkpoint_name = None
         if iteration is None:
+            # Select the last checkpoint
             checkpoint_name = self.checkpoints[-1]
 
         elif iteration < 0:
-            # Catch negative number of iterations
+            # Include -1?
             raise ArgumentError("Can't load negative iteration {}. Only positive values for iteration alloweds".format(iteration)) 
 
         elif len(iteration) > iteration:
@@ -93,10 +112,8 @@ class Checkpoint:
             # Iteration out of range
             raise ArgumentError("Can't load iteration {}. There's only {} checkpoints.".format(itreation, len(self.checkpoints)))
 
-        checkpoint_path = os.path.join(self.PATH, checkpoint_name)
-        self.library.load_model(model, checkpoint_path)
-        # model.load_weights(checkpoint_path)
-
+        return os.path.join(self.PATH, checkpoint_name)
+        
 
     def clean(self):
         """
