@@ -32,12 +32,6 @@ class McDropout(BayesModel):
         return output.reshape(tuple([len(inputs), runs] + list(result.shape[2:])))
 
 
-    def compile(self, **kwargs):
-        log.info("Compile Model")
-        checkpoint_path = self._checkpoints.path()
-        self._library.load_model(self._model, checkpoint_path)
-
-
     def expectation(self, predictions):
         return predictions
 

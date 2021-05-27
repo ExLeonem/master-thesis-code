@@ -1,4 +1,5 @@
 import os, sys, importlib
+import logging as log
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 PARENT_MODULE_PATH = os.path.join(dir_path, "..")
@@ -83,8 +84,8 @@ class BayesModel:
 
         """
         # return self._library.fit(self._model, **kwargs)
-        inputs = dict.get(kwargs, "inputs")
-        targets = dict.get(kwargs, "targets")
+        inputs = dict.get(kwargs, "x")
+        targets = dict.get(kwargs, "y")
         batch_size = dict.get(kwargs, "batch_size")
         epochs = dict.get(kwargs, "epochs")
 
@@ -110,8 +111,26 @@ class BayesModel:
                 verbose=verbose
             )
 
+        # No implementation for library type
+        raise ValueError("Error in Model.fit(**kwargs).\
+         No implementation for library type {}".format(lib_type))
+
+
+    def compile(self, *args, **kwargs):
+        """
+            Compile the model if needed
+        """
+        lib_type = self._library.get_lib_type()
+        if lib_type == LibType.TORCH:
+            # No compilation for pytorch model needed
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            self._model.compile(**kwargs)
+
         else:
-            raise ArgumentError("Error in Model.fit(**kwargs). No implementation for library type {}".format(lib_type))
+            # No implementation for library type available
+            raise ValueError("Error in Model.compile(self, *args, **kwargs). Missing library implementation for {}.".format(lib_type))
 
 
     def extend_binary(self, predictions):
@@ -164,7 +183,7 @@ class BayesModel:
 
     def set_mode(self, mode):
         if self._library is None:
-            raise ArgumentError("Error in BayesModel.set_mode(mode). Could not set the mode, missing library.")
+            raise ValueError("Error in BayesModel.set_mode(mode). Could not set the mode, missing library.")
         
         self._library.set_mode(self.model, mode)
         self._mode = mode

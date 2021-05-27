@@ -1,4 +1,12 @@
-import os, time
+import os, time, sys
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+PARENT_MODULE_PATH = os.path.join(dir_path, "..")
+sys.path.append(PARENT_MODULE_PATH)
+
+from library import LibType
+
+
 
 """
 TODO:
@@ -20,12 +28,32 @@ class Checkpoint:
             filename (str): The filename prefix to use for checkpoints.
     """
 
-    def __init__(self, library, filename="model",path=DEFAULT_PATH, extension="h5", sub_dir=True):
+    def __init__(self, library, filename="model", path=DEFAULT_PATH, extension=None, sub_dir=True):
         self.PATH = path if not sub_dir else os.path.join(path, filename)
         self.FILENAME = filename
-        self.EXTENSION = extension
+        self.EXTENSION = self.__init_checkpoint_ext(library, extension)
         self.library = library
         self.checkpoints = []
+
+
+    def __init_checkpoint_ext(self, library, extension):
+        """
+            Initialize the checkpoint extension.
+        """
+        # Return extension if string
+        ext_passed = not (extension is None)
+        if ext_passed:
+            return extension
+
+        # Use fallback extension depending the library
+        lib_type = library.get_lib_type()
+        if lib_type == LibType.TORCH:
+            return "pt"
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            return "pb"
+
+        raise ValueError("Error in checkpoint.__init_checkpoint_ext(self, library, extension). Missing implementation for library {}".format(lib_type))
 
 
     def __create_checkpoint_dir(self):
@@ -63,7 +91,7 @@ class Checkpoint:
         
         # Still no checkpoints after recovery attempt
         if len(self.checkpoints) == 0:
-            raise ArgumentError("Checkpoint list is empty. Recovery attempt failed. Check if there are any files within the checkpoint directory {} with extension .{} .".format(self.PATH, self.EXTENSION))
+            raise ValueError("Checkpoint list is empty. Recovery attempt failed. Check if there are any files within the checkpoint directory {} with extension .{} .".format(self.PATH, self.EXTENSION))
 
 
     def load(self, model, iteration=None):
@@ -76,9 +104,18 @@ class Checkpoint:
                 model (tf.Model): The tensorflow model to load the weights into
                 iteration (int): The checkpoint to load 
         """
-        checkpoint_path = self.path(iteration=iteration)
-        self.library.load_model(model, checkpoint_path)
-        # model.load_weights(checkpoint_path)
+
+        # Use library to determine how to load the model checkpoint
+        lib_type = self.library.get_lib_type()
+        if lib_type == LibType.TORCH:
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            checkpoint_path = self.path(iteration=iteration)
+            model.load_weights(checkpoint_path)
+
+        else:
+            raise ValueError("Error in checkpoint.load(model, iteration). Can't load checkpoint of model. Implementation for library of type {} missing.".format(lib_type))
 
 
     def path(self, iteration=None):
@@ -103,14 +140,14 @@ class Checkpoint:
 
         elif iteration < 0:
             # Include -1?
-            raise ArgumentError("Can't load negative iteration {}. Only positive values for iteration alloweds".format(iteration)) 
+            raise ValueError("Can't load negative iteration {}. Only positive values for iteration alloweds".format(iteration)) 
 
         elif len(iteration) > iteration:
             checkpoint_name = self.checkpoints[iteration]
 
         else:
             # Iteration out of range
-            raise ArgumentError("Can't load iteration {}. There's only {} checkpoints.".format(itreation, len(self.checkpoints)))
+            raise ValueError("Can't load iteration {}. There's only {} checkpoints.".format(itreation, len(self.checkpoints)))
 
         return os.path.join(self.PATH, checkpoint_name)
         
