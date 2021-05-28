@@ -79,7 +79,6 @@ class BayesModel:
         elif lib_type == LibType.TENSOR_FLOW:
             return self._model(inputs, training=self.in_mode(Mode.TRAIN))
         
-        
         raise ValueError("Error in Model.predict(self, inputs, **kwargs). Missing library implementation for {}".format(lib_type))
 
 
@@ -192,6 +191,38 @@ class BayesModel:
         return self.__classification
 
 
+    # ---------------
+    # Acquisition functions
+    # --------------------------
+
+    def query(self):
+
+        if name == "max_entropy":
+            return __max_entropy
+        
+        if name == "bald":
+            return __bald
+        
+        if name == "max_var_ratio":
+            return __max_var_ratio
+
+        if name == "std_mean":
+            return __std_mean
+
+
+    def __max_entropy(self, data, **kwargs):
+        pass
+
+    def __bald(self, data, **kwargs):
+        pass
+
+    def __max_var_ratio(self, data, **kwargs):
+        pass
+
+    def __std_mean(self, data, **kwargs):
+        pass
+        
+
     # -----------------
     # Setter/-Getter
     # --------------------------
@@ -225,3 +256,4 @@ class BayesModel:
 
     def __str__(self, other):
         return ""    
+

@@ -30,7 +30,7 @@ class MomentPropagation(BayesModel):
         return super().predict(inputs)
 
     
-    def posterior(self, predictions):
+    def variance(self, predictions):
         expectation, variance = predictions
 
         variance = self.prepare_predictions(variance)
@@ -94,3 +94,44 @@ class MomentPropagation(BayesModel):
         
         else:
             raise ValueError("Error in MomentPropagation.__cast_tensor_to_numpy(self, values). Can't cast Tensor of given type, missing implementation detail.")
+
+
+    # ----------------
+    # Custom acquisition functions
+    # ---------------------------
+
+    def __max_entropy(self, data, **kwargs):
+        """
+
+        """
+        # Expectation and variance of form (batch_size, num_classes)
+        # Expectation equals the prediction
+        predictions = self.predict(data)
+        class_probs = self.expectation(predictions)
+        class_prob_logs = np.log(expectation)
+
+        return -np.sum(class_probs-class_probs_log)
+
+    
+    def __bald(self, data, **kwargs):
+        """
+
+        """
+        predictions = self.predict(data)
+        expectation = self.expectation(predictions)
+        variance = self.variance(predictions)
+
+
+    def __max_var_ratio(self, data, **kwargs):
+        """
+
+        """
+        predictions = self.predict(data)
+        expectation = self.expectation(predictions)
+
+        max_indices = np.argmax(expectation, axis=1)        
+        return 1-expectation[max_indices]
+
+    
+    def __std_mean(self, data, **kwargs):
+        pass
