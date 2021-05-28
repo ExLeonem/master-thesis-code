@@ -33,7 +33,7 @@ class ActiveLearning:
             data (numpy.ndarray): The data to train the model on
             labels (numpy.ndarray): The labels of given data
             train_config (Config): The training configuration to be used
-            acq_name (str): The acquisition functions to be used
+            acq_name (str|list): The acquisition functions to be used
             pseudo (bool): Use given labels as "user input" to evaluate active learning
     """
 

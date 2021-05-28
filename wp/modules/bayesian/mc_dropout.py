@@ -34,7 +34,7 @@ class McDropout(BayesModel):
             output[run] = result
 
         super().clear_session()
-        output.reshape(tuple([len(inputs), runs] + list(result.shape[2:])))
+        output = output.reshape(tuple([len(inputs), runs] + list(result.shape[2:])))
         return self.prepare_predictions(output)
 
 
@@ -67,8 +67,8 @@ class McDropout(BayesModel):
             bin_alt_class = (1 + np.zeros(predictions.shape)) - predictions
 
             # Expand dimensions for predictions to concatenate. Is this needed?
-            # bin_alt_class = np.expand_dims(bin_alt_class, axis=-1)
-            # predictions = np.expand_dims(predictions, axis=-1)
+            bin_alt_class = np.expand_dims(bin_alt_class, axis=-1)
+            predictions = np.expand_dims(predictions, axis=-1)
 
             # Concatenate predictions
             class_axis = len(predictions.shape) + 1
@@ -81,7 +81,22 @@ class McDropout(BayesModel):
     # Acquisition functions
     # ---------------------------
 
-    def _max_entropy(self, data, runs=5, **kwargs):
+    def get_query_fn(self, name):
+
+        if name == "max_entropy":
+            return self.__max_entropy
+        
+        if name == "bald":
+            return self.__bald
+        
+        if name == "max_var_ratio":
+            return self.__max_var_ratio
+
+        if name == "std_mean":
+            return self.__std_mean
+
+
+    def __max_entropy(self, data, runs=5, **kwargs):
         """
             Select datapoints by using max entropy.
 
@@ -91,6 +106,7 @@ class McDropout(BayesModel):
         """
         # Create predictions
         predictions = self.predict(data, runs=runs)
+        # print(predictions.shape)
         posterior = self.posterior(predictions)
         log_post = np.log(posterior)
 
@@ -98,19 +114,19 @@ class McDropout(BayesModel):
         return  -np.sum(posterior*log_post, axis=1)
 
 
-    def _bald(self, data, runs=5, **kwargs):
+    def __bald(self, data, runs=5, **kwargs):
         
         # predictions shape (batch, num_predictions, num_classes)
         predictions = self.predict(data, runs=runs)
         posterior = self.posterior(predictions)
 
-        first_term = -np.sum(posterior, axis=1) * np.log(posterior)
+        first_term = -np.sum(posterior*np.log(posterior), axis=1)
         second_term = np.sum(np.sum(predictions*np.log(predictions), axis=1), axis=1)/runs
 
         return first_term + second_term
 
 
-    def _max_variation_ratios(self, data, runs=10, **kwargs):
+    def __max_var_ratio(self, data, runs=10, **kwargs):
         """
             Select datapoints by maximising variation ratios.
 
@@ -127,7 +143,7 @@ class McDropout(BayesModel):
         return 1 + posterior.max(axis=1)
 
 
-    def _std_mean(self, data, runs=10, **kwargs):
+    def __std_mean(self, data, runs=10, **kwargs):
         """
            Maximise mean standard deviation.
            Check std mean calculation. Depending the model type calculation of p(y=c|x, w) can differ.
@@ -143,8 +159,6 @@ class McDropout(BayesModel):
         squared_posterior = np.power(posterior, 2)
         post_to_square = self.expectation(squared_posterior) # TODO: Solve error here. How to restructure?
 
-        expectation = self.expectation(predictions)
-        exp_to_square = np.power(expectation, 2)
-        
+        exp_to_square = np.power(posterior, 2)
         std_per_class = np.square(post_to_square-exp_to_square)
         return np.sum(std_per_class, axis=1)

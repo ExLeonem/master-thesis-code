@@ -48,7 +48,7 @@ class MomentPropagation(BayesModel):
     # Utilities
     # ---------------
 
-    def prepare_predictions(self, predictions, num_classes=2):
+    def prepare_predictions(self, predictions):
         """
 
         """
@@ -100,6 +100,21 @@ class MomentPropagation(BayesModel):
     # Custom acquisition functions
     # ---------------------------
 
+    def get_query_fn(self, name):
+
+        if name == "max_entropy":
+            return self.__max_entropy
+        
+        if name == "bald":
+            return self.__bald
+        
+        if name == "max_var_ratio":
+            return self.__max_var_ratio
+
+        if name == "std_mean":
+            return self.__std_mean
+
+
     def __max_entropy(self, data, **kwargs):
         """
 
@@ -108,9 +123,9 @@ class MomentPropagation(BayesModel):
         # Expectation equals the prediction
         predictions = self.predict(data)
         class_probs = self.expectation(predictions)
-        class_prob_logs = np.log(expectation)
 
-        return -np.sum(class_probs-class_probs_log)
+        class_prob_logs = np.log(class_probs)
+        return -np.sum(class_probs-class_prob_logs, axis=1)
 
     
     def __bald(self, data, **kwargs):
@@ -129,8 +144,10 @@ class MomentPropagation(BayesModel):
         predictions = self.predict(data)
         expectation = self.expectation(predictions)
 
-        max_indices = np.argmax(expectation, axis=1)        
-        return 1-expectation[max_indices]
+        col_max_indices = np.argmax(expectation, axis=1)        
+        row_indices = np.arange(len(data))
+        max_var_ratio = 1-expectation[row_indices, col_max_indices]
+        return max_var_ratio
 
     
     def __std_mean(self, data, **kwargs):

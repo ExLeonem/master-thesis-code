@@ -45,19 +45,23 @@ class AcquisitionFunction:
         self.logger.propagate = debug
         
         self.name = fn_name
-        self.fn = self._set_fn(fn_name)
+        self.fn = None
         self.batch_size = batch_size
 
 
     def __call__(self, model, pool, **kwargs):
         self.logger.info("Execute acquisition function.")
 
+        # Set initial acquistion function
+        if self.fn is None:
+            self.fn = self._set_fn(model)
+
         data = pool.get_data()
 
         # Select values randomly? 
         # No need for batch processing
         if self.name == "random":
-            return self.fn(model, pool, **kwargs)
+            return self.fn(pool, **kwargs)
         
         # Iterate throug batches of data
         results = None
@@ -77,7 +81,7 @@ class AcquisitionFunction:
             
             # Calcualte results of batch
             # print("Start: {}, end: {}".format(start, end))
-            sub_result = self.fn(model, data[start:end], **kwargs)
+            sub_result = self.fn(data[start:end], **kwargs)
             start = end
 
             # Initialize shape of results array
@@ -85,6 +89,8 @@ class AcquisitionFunction:
                 shape = [len(data)] + list(sub_result.shape[1:])
                 results = np.zeros(shape)
 
+            # print(sub_result.shape)
+            # print(results.shape)
             results[start:end] = sub_result[start:end]
 
         # Return selected indices and prediction values
@@ -109,7 +115,7 @@ class AcquisitionFunction:
         return num_to_select
 
 
-    def _set_fn(self, name):
+    def _set_fn(self, model):
         """
             Set the function to use for acquisition.
             
@@ -120,101 +126,18 @@ class AcquisitionFunction:
                 (function): The function to use for acquisition.
         """
 
-
-        if name == "max_entropy":
-            return self._max_entropy
-        
-        elif name == "bald":
-            return self._bald
-
-        elif name == "max_var_ratio":
-            return self._max_variation_ratios
-        
-        elif name == "std_mean":
-            return self._std_mean
-
-        else:
+        query_fn = model.get_query_fn(self.name)
+        if query_fn is None:
             self.logger.debug("Set acquisition function: random baseline.")
-            self.fn_name = "random"
+            self.name = "random"
             return self._random
 
+        else:
+            return query_fn
+            
 
 
-    def _max_entropy(self, model, data, num=5, runs=5, num_classes=2, **kwargs):
-        """
-            Select datapoints by using max entropy.
-
-            Parameters:
-                model (tf.Model) The tensorflow model to use for selection of datapoints
-                unlabeled_pool (UnlabeledPool) The pool of unlabeled data to select
-        """
-
-        # Check if wanted num of datapoints is available
-        num = self._adapt_selection_num(len(data), num)
-
-        # Create predictions
-        predictions = model.predict(data, runs=runs)
-        posterior = model.posterior(predictions)
-        log_post = np.log(posterior)
-
-        # Calculate max-entropy
-        return  -np.sum(posterior*log_post, axis=1)
-
-
-    def _bald(self, model, data, num=5, **kwargs):
-
-        return 0, 0
-
-
-    def _max_variation_ratios(self, model, data, num=5, runs=10, num_classes=2, **kwargs):
-        """
-            Select datapoints by maximising variation ratios.
-
-            # (batch, predictions, classes) reduce to (batch, predictions (max-class))
-            # 1 - (count of most common class / num predictions)
-        """
-
-        # (batch, sample, num classses)
-        # (batch, num_classes)
-
-        num = self._adapt_selection_num(len(data), num)
-
-        predictions = model.predict(data, runs=runs)
-        posterior = model.posterior(predictions)
-
-        # Calcualte max variation rations
-        return 1 + posterior.max(axis=1)
-
-
-    def _std_mean(self, model, data, num=5, runs=10, num_classes=2, **kwargs):
-        """
-           Maximise mean standard deviation.
-           Check std mean calculation. Depending the model type calculation of p(y=c|x, w) can differ.
-           (Kampffmeyer et al. 2016; Kendall et al. 2015)
-
-           Todo:
-            Implement distinction for different model types.
-        """
-        # TODO: generalize for n-classes For binary classes
-        
-
-        # Check if wanted num of datapoints is available
-        num = self._adapt_selection_num(len(data), num)
-
-        predictions = model.predict(data, runs=runs)
-
-        posterior = model.posterior(predictions) 
-        squared_posterior = np.power(posterior, 2)
-        post_to_square = model.expectation(squared_posterior) # TODO: Solve error here. How to restructure?
-
-        expectation = model.expectation(predictions)
-        exp_to_square = np.power(expectation, 2)
-        
-        std_per_class = np.square(post_to_square-exp_to_square)
-        return np.sum(std_per_class, axis=1)
-        
-    
-    def _random(self, model, pool, num=5, **kwargs):
+    def _random(self, pool, num=5, **kwargs):
         """
             Randomly select a number of datapoints from the dataset.
             Baseline for comparison purposes.

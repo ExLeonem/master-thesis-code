@@ -195,19 +195,11 @@ class BayesModel:
     # Acquisition functions
     # --------------------------
 
-    def query(self):
-
-        if name == "max_entropy":
-            return __max_entropy
-        
-        if name == "bald":
-            return __bald
-        
-        if name == "max_var_ratio":
-            return __max_var_ratio
-
-        if name == "std_mean":
-            return __std_mean
+    def get_query_fn(self, name):
+        """
+            Get model specific acquisition function.
+        """
+        pass
 
 
     def __max_entropy(self, data, **kwargs):
