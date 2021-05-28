@@ -34,19 +34,6 @@ class TensorFlow(Library):
         # or model and layers do not match
         return False
         
-    
-    # -------------
-    # Training and model prediction
-    # -----------------------------------
-
-    def predict(self, model, inputs, **kwargs):
-        is_training = dict.get(kwargs, "training")
-        return model(inputs, training=is_training)
-
-
-    def fit(self, model, **kwargs):
-        pass
-
 
     def clear_session(self):
         self.base_module.keras.backend.clear_session()
@@ -70,9 +57,6 @@ class TensorFlow(Library):
             print("Disabled BatchNorm-Layers.")
 
 
-    def write(self, data, path, format=".pb"):
-        pass
-
     
     def __get_module_types(self):
         if self.base_module is None:
@@ -83,3 +67,11 @@ class TensorFlow(Library):
             self.base_module.keras.Model,
             self.base_module.keras.Sequential
         ]
+
+    
+    # ------------
+    # Getter-/Setter
+    # ----------------------
+
+    def get_base_module(self):
+        return self.base_module

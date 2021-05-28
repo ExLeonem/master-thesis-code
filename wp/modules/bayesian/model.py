@@ -81,7 +81,6 @@ class BayesModel:
         
         
         raise ValueError("Error in Model.predict(self, inputs, **kwargs). Missing library implementation for {}".format(lib_type))
-        # return self._library.predict(self._model, inputs, **kwargs)
 
 
     def fit(self, *args, **kwargs):
@@ -96,7 +95,6 @@ class BayesModel:
             Returns:
 
         """
-        # return self._library.fit(self._model, **kwargs)
 
         lib_type = self._library.get_lib_type()
         if lib_type == LibType.TORCH:
@@ -135,7 +133,7 @@ class BayesModel:
             raise ValueError("Error in Model.compile(self, *args, **kwargs). Missing library implementation for {}.".format(lib_type))
 
 
-    def extend_binary(self, predictions):
+    def prepare_predictions(self, predictions):
         """
             Extend predictions for binary classification case.
 
@@ -145,7 +143,7 @@ class BayesModel:
             Returns:
                 (numpy.ndarray) The extended numpy array
         """
-        pass
+        return predictions
 
     
     def __init_library_of(self, model):
@@ -170,13 +168,28 @@ class BayesModel:
         self._library.clear_session()
 
 
+    # --------------
+    # Checkpoint creation/loading
+    # ------------------------------
+
+    def new_checkpoint(self):
+        self._checkpoints.new(self._model)
+
+    
+    def load_checkpoint(self, iteration=None):
+        self._checkpoints.load(self._model, iteration)
+
+
+    # --------------
+    # Access important flags for predictions
+    # -----------------------------
+
     def in_mode(self, mode):
         return self._mode == mode
 
 
     def is_classification(self):
         return self.__classification
-
 
 
     # -----------------

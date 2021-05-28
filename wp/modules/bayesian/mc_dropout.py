@@ -8,6 +8,9 @@ class McDropout(BayesModel):
     """
         Encapsualte mc droput model.
 
+        TODO:
+            - is batch norm disabled?
+
     """
 
     def __init__(self, model, config=None, **kwargs):
@@ -33,11 +36,6 @@ class McDropout(BayesModel):
         super().clear_session()
         output.reshape(tuple([len(inputs), runs] + list(result.shape[2:])))
         return self.prepare_predictions(output)
-    
-
-
-    def expectation(self, predictions):
-        return predictions
 
 
     def posterior(self, predictions):
@@ -45,16 +43,11 @@ class McDropout(BayesModel):
             Approximation of 
         """
         # predictions -> (batch_size, num_predictions)
-        
         return np.average(predictions, axis=1)
 
-    
-    def new_checkpoint(self):
-        self._checkpoints.new(self._model)
 
-    
-    def load_checkpoint(self, iteration=None):
-        self._checkpoints.load(self._model, iteration)
+    def expectation(self, predictions):
+        return predictions
 
 
     def prepare_predictions(self, predictions, num_classes=2):
@@ -72,7 +65,7 @@ class McDropout(BayesModel):
         # Binary case: calculate complementary prediction and concatenate
         if self.get_num_classes() == 2:
             bin_alt_class = (1 + np.zeros(predictions.shape)) - predictions
-            
+
             # Expand dimensions for predictions to concatenate. Is this needed?
             # bin_alt_class = np.expand_dims(bin_alt_class, axis=-1)
             # predictions = np.expand_dims(predictions, axis=-1)

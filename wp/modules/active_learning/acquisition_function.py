@@ -1,4 +1,4 @@
-import os, importlib, sys
+import os, sys, importlib
 import numpy as np
 from enum import Enum
 
@@ -40,13 +40,13 @@ class AcquisitionFunction:
     """
 
     def __init__(self, fn_name, batch_size=10, debug=False):
-        self.name = fn_name
-        self.fn = self._set_fn(fn_name)
-        self.batch_size = batch_size
-
         # Logger
         self.logger = logging.getLogger(__file__)
         self.logger.propagate = debug
+        
+        self.name = fn_name
+        self.fn = self._set_fn(fn_name)
+        self.batch_size = batch_size
 
 
     def __call__(self, model, pool, **kwargs):
@@ -120,8 +120,6 @@ class AcquisitionFunction:
                 (function): The function to use for acquisition.
         """
 
-        if name == "pred_entropy":
-            return self.__pred_entropy
 
         if name == "max_entropy":
             return self._max_entropy
@@ -136,25 +134,10 @@ class AcquisitionFunction:
             return self._std_mean
 
         else:
+            self.logger.debug("Set acquisition function: random baseline.")
+            self.fn_name = "random"
             return self._random
 
-
-    def __pred_entropy(self, model, data, num=5, runs=5, num_classes=2, **kwargs):
-
-        # Check if wanted num of datapoints is available
-        num = self._adapt_selection_num(len(data), num)
-     
-
-        # Predictions per class (batch_size, runs, num_classes)
-        predictions = butils.batch_predict_n(model, data, n_times=runs, enable_tqdm=False)
-        predictions = self.__prepare_predictions(predictions, num_classes)
-
-        # Calculate pred entropy
-        avg_predictions = np.average(predictions, axis=1)
-        log_of_classes = np.log(avg_predictions)
-    
-        # print("Out-shape: ", predictions.shape)
-        return np.sum(avg_predictions*log_of_classes, axis=1)
 
 
     def _max_entropy(self, model, data, num=5, runs=5, num_classes=2, **kwargs):
@@ -170,15 +153,12 @@ class AcquisitionFunction:
         num = self._adapt_selection_num(len(data), num)
 
         # Create predictions
-        predictions = butils.batch_predict_n(model, data, n_times=runs)
-        # predictions = self.__prepare_predictions(predictions, num_classes)
-        
-        # Calculate max-entropy
-        pred_avg = np.average(predictions, axis=1)
-        log_pred = np.log(pred_avg)
-        max_entropy = -np.sum(pred_avg*log_pred, axis=1)
+        predictions = model.predict(data, runs=runs)
+        posterior = model.posterior(predictions)
+        log_post = np.log(posterior)
 
-        return max_entropy
+        # Calculate max-entropy
+        return  -np.sum(posterior*log_post, axis=1)
 
 
     def _bald(self, model, data, num=5, **kwargs):
@@ -199,13 +179,11 @@ class AcquisitionFunction:
 
         num = self._adapt_selection_num(len(data), num)
 
-        # Create predictions for data
-        predictions = butils.batch_predict_n(model, data, n_times=runs, enable_tqdm=False)
-        predictions = self.__prepare_predictions(predictions, num_classes)
+        predictions = model.predict(data, runs=runs)
+        posterior = model.posterior(predictions)
 
         # Calcualte max variation rations
-        pred_avg = np.average(predictions, axis=1)
-        return 1 + pred_avg.max(axis=1)
+        return 1 + posterior.max(axis=1)
 
 
     def _std_mean(self, model, data, num=5, runs=10, num_classes=2, **kwargs):
@@ -223,16 +201,16 @@ class AcquisitionFunction:
         # Check if wanted num of datapoints is available
         num = self._adapt_selection_num(len(data), num)
 
-
         predictions = model.predict(data, runs=runs)
 
         posterior = model.posterior(predictions) 
-        squared_posterior = model.posterior(np.power(predictions, 2))
+        squared_posterior = np.power(posterior, 2)
+        post_to_square = model.expectation(squared_posterior) # TODO: Solve error here. How to restructure?
 
-        exp_to_square = model.expectation(squared_posterior)
-        post_to_square = model.expectation(np.power(posterior, 2))
+        expectation = model.expectation(predictions)
+        exp_to_square = np.power(expectation, 2)
         
-        std_per_class = np.square(exp_to_square-post_to_square)
+        std_per_class = np.square(post_to_square-exp_to_square)
         return np.sum(std_per_class, axis=1)
         
     
@@ -271,23 +249,3 @@ class AcquisitionFunction:
 
         return np.argpartition(predictions, -n)[-n:]
 
-
-    def __prepare_predictions(self, predictions, num_classes):
-        """
-            Consider to move into model class.
-
-        """
-
-        # Binary case: calculate complementary prediction and concatenate
-        if num_classes == 2 and predictions.shape[-1] == 1:
-            bin_alt_class = (1 + np.zeros(predictions.shape)) - predictions
-
-            # Expand dimensions for predictions to concatenate. Is this needed?
-            # bin_alt_class = np.expand_dims(bin_alt_class, axis=-1)
-            # predictions = np.expand_dims(predictions, axis=-1)
-
-            # Concatenate predictions
-            class_axis = len(predictions.shape) + 1
-            predictions = np.concatenate([predictions, bin_alt_class], axis=len(predictions.shape)-1)
-        
-        return predictions
