@@ -16,6 +16,8 @@ importlib.reload(active_learning)
 from active_learning import AcquisitionFunction, Config, DataPool, LabeledPool, UnlabeledPool
 importlib.reload(active_learning)
 
+
+
 # importlib.reload(active_learning)
 # import torch
 # import torch.nn as nn
@@ -59,6 +61,9 @@ class ActiveLearning:
 
 
     def __train_test_val_split(self, data, labels):
+        """
+            Split the the into different sets.
+        """
         x_train, x_test, y_train, y_test = train_test_split(data, labels)
         x_test, x_val, y_test, y_val = train_test_split(x_test, y_test)
 

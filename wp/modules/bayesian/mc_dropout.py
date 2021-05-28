@@ -10,14 +10,16 @@ class McDropout(BayesModel):
 
     """
 
-    def __init__(self, model, config=None):
-        super().__init__(model, config, model_type=ModelType.MC_DROPOUT)
+    def __init__(self, model, config=None, **kwargs):
+        super().__init__(model, config, model_type=ModelType.MC_DROPOUT, **kwargs)
         
 
     def predict(self, inputs, runs=10, **kwargs):
         # disable batch norm
         super().disable_batch_norm()
+        """
 
+        """
         output = None
         for run in range(runs):
             result = super().predict(inputs, **kwargs)
@@ -29,7 +31,9 @@ class McDropout(BayesModel):
             output[run] = result
 
         super().clear_session()
-        return output.reshape(tuple([len(inputs), runs] + list(result.shape[2:])))
+        output.reshape(tuple([len(inputs), runs] + list(result.shape[2:])))
+        return self.prepare_predictions(output)
+    
 
 
     def expectation(self, predictions):
@@ -41,6 +45,7 @@ class McDropout(BayesModel):
             Approximation of 
         """
         # predictions -> (batch_size, num_predictions)
+        
         return np.average(predictions, axis=1)
 
     
@@ -51,6 +56,32 @@ class McDropout(BayesModel):
     def load_checkpoint(self, iteration=None):
         self._checkpoints.load(self._model, iteration)
 
+
+    def prepare_predictions(self, predictions, num_classes=2):
+        """
+            In MC Dropout case always predictions of shape
+            (batch_size, runs, classes) for classification 
+            or (batch_size, runs) for binary/regression case
+        """
+
+        # Don't modify predictions shape in regression case
+        if not self.is_classification():
+            return predictions
+
+
+        # Binary case: calculate complementary prediction and concatenate
+        if self.get_num_classes() == 2:
+            bin_alt_class = (1 + np.zeros(predictions.shape)) - predictions
+            
+            # Expand dimensions for predictions to concatenate. Is this needed?
+            # bin_alt_class = np.expand_dims(bin_alt_class, axis=-1)
+            # predictions = np.expand_dims(predictions, axis=-1)
+
+            # Concatenate predictions
+            class_axis = len(predictions.shape) + 1
+            predictions = np.concatenate([predictions, bin_alt_class], axis=len(predictions.shape)-1)
+        
+        return predictions
 
 
 

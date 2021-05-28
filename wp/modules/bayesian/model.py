@@ -38,7 +38,13 @@ class BayesModel:
             _checkpoints (): Created checkpoints.
     """
 
-    def __init__(self, model, config, mode=Mode.TRAIN, model_type=None):
+    def __init__(
+        self, model, config, 
+        mode=Mode.TRAIN, 
+        model_type=None, 
+        classification=True, 
+        num_classes=2):
+
         self._model = model
         self._config = config
         self._mode = mode
@@ -46,11 +52,8 @@ class BayesModel:
         self._library = self.__init_library_of(model)
         self._checkpoints = Checkpoint(self._library)
 
-
-        # Needed values
-        self.expectation = None
-        self.std = None
-        self.posterior = None
+        self.__classification = classification
+        self.__num_classes = num_classes
     
     
     def __call__(self, *args, **kwargs):
@@ -68,26 +71,32 @@ class BayesModel:
         # No library was set for the given model
         if self._library is None:
             raise ValueError("Error in BayesModel.predict/2. Missing library.")
+
+        lib_type = self._library.get_lib_type()
+        if lib_type == LibType.TORCH:
+            return None
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            return self._model(inputs, training=self.in_mode(Mode.TRAIN))
         
-        return self._library.predict(self._model, inputs, **kwargs)
+        
+        raise ValueError("Error in Model.predict(self, inputs, **kwargs). Missing library implementation for {}".format(lib_type))
+        # return self._library.predict(self._model, inputs, **kwargs)
 
 
-    def fit(self, **kwargs):
+    def fit(self, *args, **kwargs):
         """
-            Fit the model to the given data.
+            Fit the model to the given data. The **kwargs are library depending.
 
-            Parameters:
-                inputs (numpy.ndarray): The inputs to train the model on. (default=None)
-                targets (numpy.ndarray): The targets to fit the model to. (default=None)
+            Args:
+                x (numpy.ndarray): The inputs to train the model on. (default=None)
+                y (numpy.ndarray): The targets to fit the model to. (default=None)
+                batch_size (int): The size of each individual batch
 
             Returns:
 
         """
         # return self._library.fit(self._model, **kwargs)
-        inputs = dict.get(kwargs, "x")
-        targets = dict.get(kwargs, "y")
-        batch_size = dict.get(kwargs, "batch_size")
-        epochs = dict.get(kwargs, "epochs")
 
         lib_type = self._library.get_lib_type()
         if lib_type == LibType.TORCH:
@@ -102,14 +111,7 @@ class BayesModel:
             return []
 
         elif lib_type == LibType.TENSOR_FLOW:
-            verbose = dict.get(kwargs, "verbose")
-            return self._model.fit(
-                x=inputs, 
-                y=targets, 
-                batch_size=batch_size, 
-                epochs=epochs, 
-                verbose=verbose
-            )
+            return self._model.fit(**kwargs)
 
         # No implementation for library type
         raise ValueError("Error in Model.fit(**kwargs).\
@@ -145,7 +147,6 @@ class BayesModel:
         """
         pass
 
-
     
     def __init_library_of(self, model):
         """
@@ -169,6 +170,15 @@ class BayesModel:
         self._library.clear_session()
 
 
+    def in_mode(self, mode):
+        return self._mode == mode
+
+
+    def is_classification(self):
+        return self.__classification
+
+
+
     # -----------------
     # Setter/-Getter
     # --------------------------
@@ -188,6 +198,9 @@ class BayesModel:
         self._library.set_mode(self.model, mode)
         self._mode = mode
 
+
+    def get_num_classes(self):
+        return self.__num_classes
 
     # ---------------
     # Dunder

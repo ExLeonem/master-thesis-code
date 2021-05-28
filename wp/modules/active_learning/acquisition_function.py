@@ -1,15 +1,26 @@
 import os, importlib, sys
-import logging
 import numpy as np
 from enum import Enum
 
-FILE_PATH = os.path.abspath(__file__)
-MODULE_PATH = os.path.join(FILE_PATH, "..")
+dir_path = os.path.dirname(os.path.realpath(__file__))
+MODULE_PATH = os.path.join(dir_path, "..")
 sys.path.append(MODULE_PATH)
 
 import bayesian
 importlib.reload(bayesian)
 import bayesian.utils as butils
+
+
+import logging
+
+LOG_FILE = os.path.join(MODULE_PATH, "logs", "acf.log")
+logging.basicConfig(
+    filename=LOG_FILE,
+    filemode="w",
+    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+    datefmt='%H:%M:%S',
+    level=logging.WARN
+)
 
 
 # class Functions(Enum):
@@ -28,19 +39,25 @@ class AcquisitionFunction:
             fn_name (str): The acquisition function to apply
     """
 
-    def __init__(self, fn_name, batch_size=10):
+    def __init__(self, fn_name, batch_size=10, debug=False):
         self.name = fn_name
         self.fn = self._set_fn(fn_name)
         self.batch_size = batch_size
 
+        # Logger
+        self.logger = logging.getLogger(__file__)
+        self.logger.propagate = debug
+
+
     def __call__(self, model, pool, **kwargs):
+        self.logger.info("Execute acquisition function.")
 
         data = pool.get_data()
 
         # Select values randomly? 
         # No need for batch processing
         if self.name == "random":
-            return self.fn(model, data, **kwargs)
+            return self.fn(model, pool, **kwargs)
         
         # Iterate throug batches of data
         results = None
@@ -49,6 +66,7 @@ class AcquisitionFunction:
         end = self.batch_size if num_datapoints > self.batch_size else num_datapoints
 
         # TODO: correcttion needed, throws error when batch_size == num_datapoints
+        self.logger.info("Iterate over input batches.")
         while end < num_datapoints:
             sub_result = None
             end = start + self.batch_size
@@ -70,17 +88,11 @@ class AcquisitionFunction:
             results[start:end] = sub_result[start:end]
 
         # Return selected indices and prediction values
+        self.logger.info("Iteration completed")
         default_num = 20
         num_of_elements_to_select = dict.get(kwargs, "runs", default_num)
         indices = self.__select_first(results, num_of_elements_to_select)
         return indices, results[indices]
-
-
-    def __select_next(self, data, indices):
-        """
-
-        """
-        pass
 
 
     def _adapt_selection_num(self, num_indices, num_to_select):
@@ -206,52 +218,43 @@ class AcquisitionFunction:
             Implement distinction for different model types.
         """
         # TODO: generalize for n-classes For binary classes
+        
 
         # Check if wanted num of datapoints is available
         num = self._adapt_selection_num(len(data), num)
 
-        print("------------")
-        # New: Use model class
+
         predictions = model.predict(data, runs=runs)
-        print(predictions.shape)
-        predictions = y__prepare_predictions(predictions)
 
-        print(predictions.shape)
+        posterior = model.posterior(predictions) 
+        squared_posterior = model.posterior(np.power(predictions, 2))
 
-        exp_to_square = model.expectation(model.posterior(np.power(predictions, 2)))
-        post_to_square = model.expectation(np.power(model.posterior(predictions), 2))
+        exp_to_square = model.expectation(squared_posterior)
+        post_to_square = model.expectation(np.power(posterior, 2))
         
         std_per_class = np.square(exp_to_square-post_to_square)
         return np.sum(std_per_class, axis=1)
-
-        # Old
-        # # Predict n-times
-        # predictions = butils.batch_predict_n(model, data, n_times=runs, enable_tqdm=False)
-        # predictions = self.__prepare_predictions(predictions, num_classes) # (batch_size, n-predictions, num_classes)
-
-        # # Calculate 
-        # pred_to_square = np.average(np.power(predictions, 2), axis=1)
-        # avg_to_square = np.power(np.average(predictions, axis=1), 2) # Along num of predictions axis
-
-        # # (batch-size, num classes)
-        # std_per_class = np.square(pred_to_square-avg_to_square)
-        # std_total = np.sum(std_per_class, axis=1) / num_classes # (batch_size, )
-    
-        # return std_total
         
     
-    def _random(self, model, data, num=5, **kwargs):
+    def _random(self, model, pool, num=5, **kwargs):
         """
             Randomly select a number of datapoints from the dataset.
             Baseline for comparison purposes.
+
+            Parameters:
+                model (BayesianModel): The model to perform active learning on.
+                pool (DataPool): The pool of data to use.
+                num (int): Numbers of indices to draw from unlabeled data.
            
             Returns:
                 (numpy.ndarray): Randomly selected indices for next training.
         """
+
         available_indices = pool.get_indices()
-        
         num = self._adapt_selection_num(len(available_indices), num)
         indices = np.random.choice(available_indices, num, replace=False).astype(int)
+
+        data = pool.get_data()
         return indices, data[indices]
 
 
@@ -261,7 +264,6 @@ class AcquisitionFunction:
 
             Parameters:
                 predictions (numpy.ndarray): The predictions made by the network
-
 
             Returns: 
                 (numpy.ndarray) indices of n-biggest predictions.

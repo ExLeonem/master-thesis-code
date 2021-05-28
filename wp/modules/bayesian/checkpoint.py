@@ -78,7 +78,16 @@ class Checkpoint:
 
         # Create the new checkpoint
         checkpoint_path = os.path.join(self.PATH, full_file_name)
-        self.library.export_model(model, checkpoint_path)
+
+        lib_type = self.library.get_lib_type()
+        if lib_type == LibType.TORCH:
+            pass
+        
+        elif lib_type == LibType.TENSOR_FLOW:
+            model.save_weights(checkpoint_path)
+
+        else:
+            raise ValueError("Error in Checkpoint.new(self, model). Missing library implementation for {}.".format(lib_type))
 
     
     def __try_checkpoints_recovery(self):
