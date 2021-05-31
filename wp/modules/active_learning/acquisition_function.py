@@ -136,7 +136,6 @@ class AcquisitionFunction:
             return query_fn
             
 
-
     def _random(self, pool, num=5, **kwargs):
         """
             Randomly select a number of datapoints from the dataset.

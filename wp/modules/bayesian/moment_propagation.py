@@ -15,7 +15,7 @@ from library import LibType
 
 class MomentPropagation(BayesModel):
     """
-
+    
     """
 
     def __init__(self, model, config=None, **kwargs):
@@ -130,7 +130,7 @@ class MomentPropagation(BayesModel):
     
     def __bald(self, data, **kwargs):
         """
-
+            [ ] Check if information about variance is needed here. Compare to mc dropout bald.
         """
         predictions = self.predict(data)
         expectation = self.expectation(predictions)

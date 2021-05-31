@@ -22,8 +22,6 @@ importlib.reload(active_learning)
 # import torch
 # import torch.nn as nn
 
-
-
 class ActiveLearning:
     """
         Perform active learning for given model and data. 
