@@ -18,6 +18,7 @@
 # Exclude documentation build
 /wp/docs/_build
 /wp/modules/logs
+/wp/metrics
 
 # Exclude datasets
 # /datasets

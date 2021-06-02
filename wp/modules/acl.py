@@ -13,7 +13,7 @@ import bayesian.utils as butils
 import active_learning
 importlib.reload(active_learning)
 
-from active_learning import AcquisitionFunction, Config, DataPool, LabeledPool, UnlabeledPool
+from active_learning import AcquisitionFunction, Config, DataPool, LabeledPool, UnlabeledPool, MetricWriter
 importlib.reload(active_learning)
 
 
@@ -56,6 +56,7 @@ class ActiveLearning:
 
         # Pool of labeled data
         self.history = []
+        # self.metrics = Metrics()
 
 
     def __train_test_val_split(self, data, labels):
@@ -125,12 +126,14 @@ class ActiveLearning:
 
             # Debug
 
+            # TODO: Generalize. Only works for tensorflow
             # pg_bar.set_description("Training time: {}//Acquisition: {}//Update: {} // Labeled: {}".format(train_time, acq_time, update_time, len(self.labeled_pool)))
+            train_metrics = ({} if train_history is None else train_history.history)
             self.__new_history_checkpoint(
                 iteration=i,
                 train_time=train_time,
                 query_time=acq_time,
-                training=(None if train_history is None else train_history.history)
+                **train_metrics
             )
 
         return self.history
