@@ -35,6 +35,13 @@ class AcquisitionFunction:
     """
         Query a model for next datapoints that should be labeled.
         
+        Valid acquisition functions include:
+            - Max Entropy
+            - Bald
+            - Variation Ratios
+            - Mean standard deviation
+            - Randomized selection (baseline)
+
         Parameters:
             fn_name (str): The acquisition function to apply
     """

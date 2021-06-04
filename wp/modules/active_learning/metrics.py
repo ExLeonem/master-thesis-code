@@ -30,12 +30,21 @@ class Metrics:
             Returns:
                 (dict) A subset of metrics extracted from the values. 
         """
-
         # Set default keys to use
         if keys is None:
             keys = self.metric_keys
 
-        return {key: value for key, value in values.items() if key in self.metric_keys}
+        return {key: self.__prepare_value(value) for key, value in values.items() if key in self.metric_keys}
+
+    
+    def __prepare_value(self, value):
+        """
+            Prevent's saving list of single values.
+        """
+        if isinstance(value, list) and len(value) == 1:
+            return value[0]
+        
+        return value
 
 
     def write(self, filename, values):
@@ -58,7 +67,8 @@ class Metrics:
             # Create content of csv file
             file_writer.writeheader()
             for line in values:
-                file_writer.writerow(line)
+                collected = self.collect(line)
+                file_writer.writerow(collected)
 
     
     def read(self, filename):
@@ -82,3 +92,38 @@ class Metrics:
                 values.append(row)
 
         return values
+
+
+def save_history(history, path, filename):
+    """
+        Saves values of history to the path.
+    """
+    metrics = Metric(path)
+    metrics.write(history, filename)
+
+
+def write_history(path, filename):
+    """
+        Reads values from the saved history.
+    """
+    metrics = Metric(path)
+    return metric.read(filename)
+
+
+def aggregates_per_key(history):
+    """
+        Aggregate values per key
+    """
+    
+    if len(history) == 0:
+        return history
+
+    sample_entry = history[0]
+    keys = list(sample_entry.keys())
+    aggregates = {key: [] for key in keys}
+
+    for entry in history:
+        for key, value in entry.items():
+            aggregates[key].append(value)
+
+    return aggregates

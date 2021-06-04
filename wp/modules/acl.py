@@ -13,14 +13,10 @@ import bayesian.utils as butils
 import active_learning
 importlib.reload(active_learning)
 
-from active_learning import AcquisitionFunction, Config, DataPool, LabeledPool, UnlabeledPool, MetricWriter
+from active_learning import AcquisitionFunction, Config, DataPool, LabeledPool, UnlabeledPool, Metrics
 importlib.reload(active_learning)
 
 
-
-# importlib.reload(active_learning)
-# import torch
-# import torch.nn as nn
 
 class ActiveLearning:
     """
@@ -87,6 +83,10 @@ class ActiveLearning:
 
             Parameters:
                 limit (int): Limit the number of active learning loop iterations
+                step_size (int): 
+
+            Returns:
+                (list(dict))
         """
 
         if limit is None:
@@ -137,8 +137,6 @@ class ActiveLearning:
             )
 
         return self.history
-
-
 
 
     # -------------
@@ -208,6 +206,9 @@ class ActiveLearning:
     def __query(self, indices):
         """
             Query for the next datapoints to be labeled.
+
+            Parameters:
+                indices (numpy.ndarray): The indices for which to query a label.
 
             Returns:
                 np.ndarray: The next datapoints to be labeled.
