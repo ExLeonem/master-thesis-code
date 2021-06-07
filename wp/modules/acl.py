@@ -31,32 +31,39 @@ class ActiveLearning:
             pseudo (bool): Use given labels as "user input" to evaluate active learning
     """
 
-    def __init__(self, model, data, labels=None, config=None, train_config=None, acq_config=None, acq_name=None, pseudo=True, debug=True, **kwargs):
+    def __init__(self, model, data, labels=None, config=None, train_config=None, eval_config=None, acq_config=None, acq_name=None, pseudo=True, debug=True, **kwargs):
 
         self.setup_logger(debug)
 
         # Model itself
         self.model = model
-        model.new_checkpoint()
-
-        # self.checkpoint = Checkpoint()
-        # self.checkpoint.new(model) # Create initial checkpoint []
+        if model.empty_weights():
+            model.save_weights()
+        
+        # if model.empty_checkpoint():
+        #     self.logger.info("Create new model checkpoint")
+        #     model.new_checkpoint()
 
         # Perform pseudo active learning? (Meaning: use known labels and omit user input)
         self.pseudo = pseudo
 
-        # Active learning specifics
+        # Train/Test data
         self.inputs, self.targets = self.__train_test_val_split(data, labels)
         train_inputs = self.inputs["train"]
         train_targets = self.targets["train"]
+
+        # Active learning specifics
         self.acquisition = AcquisitionFunction(acq_name, batch_size=700)
         self.labeled_pool = LabeledPool(train_inputs, targets=train_targets)
         self.unlabeled_pool = UnlabeledPool(train_inputs, init_indices=self.labeled_pool.get_indices())
-        self.train_config = train_config
 
-        # Pool of labeled data
+        # Configurations
+        self.train_config = train_config
+        self.eval_config = eval_config
+        self.acq_config = acq_config
+
+        # Active learning history
         self.history = []
-        # self.metrics = Metrics()
 
         # Callbacks
         self.pre_train_model_transform = dict.get(kwargs, "pre_train_model_transform")
@@ -66,6 +73,9 @@ class ActiveLearning:
     def setup_logger(self, propagate):
         """
             Setup a logger for the active learning loop
+
+            Parameters:
+                propagate (bool): activate logging output in console?
         """
 
         logger = logging.Logger("ActiveLearning")
@@ -79,7 +89,7 @@ class ActiveLearning:
         logger.addHandler(logger.handler)
 
         fh = logging.FileHandler("./logs/acl.log")
-        fh.setLevel(log_level)
+        fh.setLevel(logging.DEBUG)
         fh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
         logger.addHandler(fh)
 
@@ -91,18 +101,15 @@ class ActiveLearning:
             Split the the into different sets.
         """
         x_train, x_test, y_train, y_test = train_test_split(data, labels)
-        x_test, x_val, y_test, y_val = train_test_split(x_test, y_test)
 
         inputs = {
             "train": x_train,
-            "test": x_test,
-            "valid": x_val
+            "eval": x_test,
         }
 
         targets = {
             "train":y_train,
-            "test": y_test,
-            "valid":y_val
+            "eval": y_test,
         }
 
         return inputs, targets
@@ -120,11 +127,15 @@ class ActiveLearning:
                 (list(dict))
         """
 
+        self.logger.info("Start: active learning loop")
+
+
         if limit is None:
             limit = len(self.unlabeled_pool)
 
         # TODO: Initiale model selection, => random n-element, seed setzten
         # Bei wenigen gezogenen Daten: Klassenverteilung sollte gleich balanciert sein
+
 
         pg_bar = tqdm(range(0, len(self.unlabeled_pool), step_size), leave=True)
         # for i in tqdm(range(0, len(self.unlabeled_pool), step_size)):
@@ -139,12 +150,14 @@ class ActiveLearning:
             train_history = self.__train_model()
             end = time.time()
             train_time = end-start
+            self.logger.info("Fitted model")
 
             # Selected datapoints and label
             start = time.time()
             indices, _predictions = self.acquisition(self.model, self.unlabeled_pool, num=step_size)
             labels = self.__query(indices)
             self.unlabeled_pool.update(indices)
+            self.logger.info("Got next datapoints")
 
             end = time.time()
             acq_time = end - start
@@ -154,14 +167,16 @@ class ActiveLearning:
             self.labeled_pool[indices] = labels
             end = time.time()
             update_time = end - start
+            self.logger.info("Update labeled pool")
 
-            # Debug
-            gc.collect()
+            # Evaluate the model on test data
+            eval_result = self.__eval_model()
+            self.logger.info("Eval: {}".format(eval_result))
 
             # TODO: Generalize. Only works for tensorflow
             # pg_bar.set_description("Training time: {}//Acquisition: {}//Update: {} // Labeled: {}".format(train_time, acq_time, update_time, len(self.labeled_pool)))
             train_metrics = ({} if train_history is None else train_history.history)
-            self.logger.info(train_metrics)
+            self.logger.info("Train: {}".format(train_metrics))
             self.__new_history_checkpoint(
                 iteration=i,
                 train_time=train_time,
@@ -169,6 +184,9 @@ class ActiveLearning:
                 **train_metrics
             )
 
+
+        # self.model.clear_checkpoints()
+        self.logger.info("finish active learning loop")
         return self.history
 
 
@@ -206,9 +224,7 @@ class ActiveLearning:
     def __train_model(self):
         """
             Pre-train the network on already labeled data.
-        """
-        
-        self.logger.info("Start: Model fit")
+        """        
         # Labeled data pool is empty, training not possible 
         if len(self.labeled_pool) == 0:
             return
@@ -218,8 +234,7 @@ class ActiveLearning:
         #     return
 
         # Reset model weights
-        self.model.load_checkpoint()
-        self.model.compile()
+        self.model.load_weights()
 
         # Compile model
         config = self.train_config
@@ -235,8 +250,21 @@ class ActiveLearning:
 
         history =  self.model.fit(x=inputs, y=targets, batch_size=batch_size, epochs=epochs, verbose=0)
 
-        self.logger.info("End: Model fit")
         return history
+
+
+    def __eval_model(self):
+        """
+            Evaluate the model 
+        """
+
+        inputs = self.inputs["eval"]
+        targets = self.targets["eval"]
+
+        config = self.eval_config
+        batch_size = config["batch_size"]
+
+        return self.model.evaluate(inputs, targets, batch_size=batch_size)
 
 
     def __query(self, indices):
@@ -244,7 +272,7 @@ class ActiveLearning:
             Query for the next datapoints to be labeled.
 
             Parameters:
-                indices (numpy.ndarray): The indices for which to query a label.
+                indices (numpy.ndarray): The indices for which to query a label.upda
 
             Returns:
                 np.ndarray: The next datapoints to be labeled.

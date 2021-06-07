@@ -81,6 +81,30 @@ class BayesModel:
         
         raise ValueError("Error in Model.predict(self, inputs, **kwargs). Missing library implementation for {}".format(lib_type))
 
+    
+    def evaluate(self, inputs, targets, **kwargs):
+        """
+            Evaluate a model on given input data and targets.
+
+            Parameters:
+                inputs (numpy.ndarray):
+                targets (numpy.ndarray):
+
+            Returns:
+                (list) A list with two values. [loss, accuracy]  
+        """
+
+        lib_type = self._library.get_lib_type()
+        if lib_type == LibType.TORCH:
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            return self._model.evaluate(inputs, targets, verbose=0, **kwargs)
+
+        # No implementation for library type
+        raise ValueError("Error in Model.fit(**kwargs).\
+         No implementation for library type {}".format(lib_type))
+
 
     def fit(self, *args, **kwargs):
         """
@@ -180,12 +204,50 @@ class BayesModel:
     # Checkpoint creation/loading
     # ------------------------------
 
+    def empty_checkpoint(self):
+        return self._checkpoints.empty()
+
     def new_checkpoint(self):
         self._checkpoints.new(self._model)
 
     
     def load_checkpoint(self, iteration=None):
         self._checkpoints.load(self._model, iteration)
+
+
+    def clear_checkpoints(self):
+        self._checkpoints.clean()
+
+
+    def save_weights(self):
+        path = self._checkpoints.PATH
+        lib_type = self._library.get_lib_type()
+
+        if lib_type == LibType.TORCH:
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            self._model.save_weights(path)
+
+
+    def load_weights(self):
+        path = self._checkpoints.PATH
+        lib_type = self._library.get_lib_type()
+
+        if lib_type == LibType.TORCH:
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            self._model.load_weights(path)
+
+
+    def empty_weights(self):
+        try:
+            self.load_weights()
+            return False
+
+        except OSError:
+            return True
 
 
     # --------------

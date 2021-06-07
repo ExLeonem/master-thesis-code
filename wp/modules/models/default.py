@@ -6,7 +6,9 @@ from tensorflow.keras.layers import  Conv2D, MaxPool2D, Dropout, Flatten, Dense,
 
 
 
-
+""""
+    Simple CNN model for testing purposes.
+"""
 def default_model():
     input_shape = (28, 28, 1)
     return Sequential([
@@ -22,3 +24,4 @@ def default_model():
         Dense(128, activation="relu"),
         Dense(1, activation="sigmoid")
     ])
+

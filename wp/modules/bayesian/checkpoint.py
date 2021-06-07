@@ -1,4 +1,4 @@
-import os, time, sys
+import os, time, sys, shutil
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 PARENT_MODULE_PATH = os.path.join(dir_path, "..")
@@ -167,7 +167,18 @@ class Checkpoint:
         """
 
         for self.FILENAME in self.checkpoints:
-            os.remove(self.PATH)
+            shutil.rmtree(self.PATH)
+
+
+    def empty(self):
+        """
+            Are there any checkpoints?
+        """
+        
+        if self.__len__() == 0:
+            return True
+        
+        return False
 
 
     # ----------------------
@@ -175,3 +186,7 @@ class Checkpoint:
     # ---------------------------
     def __getitem__(self, key):
         return self.checkpoints[key]
+
+    
+    def __len__(self):
+        return len(self.checkpoints)

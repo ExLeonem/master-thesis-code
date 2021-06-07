@@ -11,23 +11,79 @@ import library
 importlib.reload(library)
 from library import LibType
 
+import mp.MomentPropagation as mp
+
 
 
 class MomentPropagation(BayesModel):
     """
-    
+        Takes a regular MC Dropout model as input, that is used for fitting.
+        For evaluation a moment propagation model is created an used 
+
     """
 
     def __init__(self, model, config=None, **kwargs):
         model_type = ModelType.MOMENT_PROPAGATION
-        super(MomentPropagation, self).__init__(model, config, model_type=model_type, **kwargs)
+        self._base_model = model
+        
+        # State of moment propagation model
+        self._compile_params = None
+        self._mp_compiled = False
+
+        mp_model = self.__create_mp_model()
+        super(MomentPropagation, self).__init__(mp_model, config, model_type=model_type, **kwargs)
 
 
-    def predict(self, inputs, **kwargs):
+    def __create_mp_model(self):
         """
-            Predictions returns (E, Var)
+            Transforms the set base model into an moment propagation model.
         """
-        return super().predict(inputs)
+        _mp = mp.MP()
+        return _mp.create_MP_Model(model=self._base_model, verbose=True)
+
+ 
+    def compile(self, *args, **kwargs):
+        lib_type = self._library.get_lib_type()
+
+        if lib_type == LibType.TORCH:
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            self._compile_params = kwargs
+            self._base_model.compile(**kwargs)
+
+    
+    def compile_mp(self, *args, **kwargs):
+        lib_type = self._library.get_lib_type()
+
+        if lib_type == LibType.TORCH:
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            self._model.compile(**kwargs)
+
+
+    def fit(self, *args, **kwargs):
+        """
+
+        """
+
+        lib_type = self._library.get_lib_type()
+        if lib_type == LibType.TORCH:
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            history = self._base_model.fit(**kwargs)
+            self._model = self.__create_mp_model()
+
+            if not (self._compile_params is None):
+                self._model.compile(**self._compile_params)
+        
+            return history
+
+        else:
+            # No implementation for library type available
+            raise ValueError("Error in Model.compile(self, *args, **kwargs). Missing library implementation for {}.".format(lib_type))
 
     
     def variance(self, predictions):
@@ -42,6 +98,38 @@ class MomentPropagation(BayesModel):
         
         expectation = self.prepare_predictions(expectation)
         return self.__cast_tensor_to_numpy(expectation) 
+
+
+    # --------------
+    # Checkpoint creation/loading
+    # ------------------------------
+
+    def save_weights(self):
+        path = self._checkpoints.PATH
+        lib_type = self._library.get_lib_type()
+
+        if lib_type == LibType.TORCH:
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            self._base_model.save_weights(path)
+        
+        else:
+            raise ValueError("Error in Model.compile(self, *args, **kwargs). Missing library implementation for {}.".format(lib_type))
+
+
+    def load_weights(self):
+        path = self._checkpoints.PATH
+        lib_type = self._library.get_lib_type()
+
+        if lib_type == LibType.TORCH:
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            self._base_model.load_weights(path)
+
+        else:
+            raise ValueError("Error in Model.compile(self, *args, **kwargs). Missing library implementation for {}.".format(lib_type))            
 
 
     # --------

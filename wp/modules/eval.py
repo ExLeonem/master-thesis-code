@@ -23,7 +23,7 @@ if __name__ == "__main__":
     MODULE_PATH = os.path.join(BASE_PATH, "modules")
     DS_PATH = os.path.join(BASE_PATH, "datasets")
 
-    # Set gpu parameters
+    # Set gpu growth (needed  for moment propagation)
     setup_growth()
 
     # Create deep learning models
@@ -44,11 +44,13 @@ if __name__ == "__main__":
     # x_train, x_test, y_train, y_test = train_test_split(new_inputs, new_targets)
     # x_test, x_val, y_test, y_val = train_test_split(x_test, y_test)
 
+    metrics = ["binary_accuracy", "val_loss"]
 
+    
     # ACL configuration
     train_config = TrainConfig(
-        batch_size=2,
-        epochs=1,
+        batch_size=60,
+        epochs=10,
         metrics=["binary_accuracy"]
     )
 
@@ -57,18 +59,19 @@ if __name__ == "__main__":
         pseudo=True
     )
 
-    model_name = "dp"
+    model_name = "mp"
     acq_name = "max_entropy"
 
     # Active learning models
-    mp_model = MomentPropagation(mp_m)
+    mp_model = MomentPropagation(tf_base_model)
     dp_model = McDropout(tf_base_model)
 
     # Active learning loop
     active_learning = ActiveLearning(
-        dp_model, 
+        mp_model,
         np.expand_dims(new_inputs, axis=-1), labels=new_targets, 
         train_config=train_config,
+        eval_config=train_config,
         acq_name=acq_name,
         debug=False
     )
@@ -76,5 +79,5 @@ if __name__ == "__main__":
     history = active_learning.start(step_size=40)
 
     METRICS_PATH = os.path.join(BASE_PATH, "metrics")
-    metrics = Metrics(METRICS_PATH, keys=["iteration", "train_time", "query_time", "loss", "binary_accuracy"])
+    metrics = Metrics(METRICS_PATH, keys=["iteration", "train_time", "query_time", "eval_loss", "eval_acc", "loss", "binary_accuracy"])
     metrics.write(model_name + "_" + acq_name, history)

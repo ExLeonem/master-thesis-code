@@ -15,7 +15,7 @@ class McDropout(BayesModel):
 
     def __init__(self, model, config=None, **kwargs):
         super().__init__(model, config, model_type=ModelType.MC_DROPOUT, **kwargs)
-        
+
 
     def predict(self, inputs, runs=10, **kwargs):
         """
@@ -36,6 +36,28 @@ class McDropout(BayesModel):
         super().clear_session()
         output = output.reshape(tuple([len(inputs), runs] + list(result.shape[2:])))
         return self.prepare_predictions(output)
+
+
+    def evaluate(self, inputs, targets, **kwargs):
+        """
+            Evaluate a model on given input data and targets.
+        """
+
+        lib_type = self._library.get_lib_type()
+        if lib_type == LibType.TORCH:
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+
+            output = self.predict()
+
+
+            return self._model.evaluate(inputs, targets, verbose=0, **kwargs)
+
+        # No implementation for library type
+        raise ValueError("Error in Model.fit(**kwargs).\
+         No implementation for library type {}".format(lib_type))
+
 
 
     def posterior(self, predictions):
