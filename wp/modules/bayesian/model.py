@@ -164,7 +164,16 @@ class BayesModel:
 
 
     def clear_session(self):
-        self._library.clear_session()
+
+        lib_type = self._library.get_lib_type()
+
+        if lib_type == LibType.TORCH:
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            base_module = self._library.get_base_module()
+            base_module.keras.backend.clear_session()
+            # self._library.clear_session()
 
 
     # --------------

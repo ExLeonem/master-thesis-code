@@ -1,5 +1,5 @@
 from IPython.display import clear_output
-import os, time, datetime, importlib, time
+import os, time, datetime, importlib, time, gc, sys, logging
 
 import numpy as np
 import pandas as pd
@@ -31,7 +31,11 @@ class ActiveLearning:
             pseudo (bool): Use given labels as "user input" to evaluate active learning
     """
 
-    def __init__(self, model, data, labels=None, config=None, train_config=None, acq_config=None, acq_name=None, pseudo=True):
+    def __init__(self, model, data, labels=None, config=None, train_config=None, acq_config=None, acq_name=None, pseudo=True, debug=True, **kwargs):
+
+        self.setup_logger(debug)
+
+        # Model itself
         self.model = model
         model.new_checkpoint()
 
@@ -53,6 +57,33 @@ class ActiveLearning:
         # Pool of labeled data
         self.history = []
         # self.metrics = Metrics()
+
+        # Callbacks
+        self.pre_train_model_transform = dict.get(kwargs, "pre_train_model_transform")
+        self.post_train_model_transform = dict.get(kwargs, "post_train_model_transform")
+
+
+    def setup_logger(self, propagate):
+        """
+            Setup a logger for the active learning loop
+        """
+
+        logger = logging.Logger("ActiveLearning")
+        log_level = logging.DEBUG if propagate else logging.CRITICAL
+
+        logger.handler = logging.StreamHandler(sys.stdout)
+        logger.handler.setLevel(log_level)
+        
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        logger.handler.setFormatter(formatter)
+        logger.addHandler(logger.handler)
+
+        fh = logging.FileHandler("./logs/acl.log")
+        fh.setLevel(log_level)
+        fh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        logger.addHandler(fh)
+
+        self.logger = logger
 
 
     def __train_test_val_split(self, data, labels):
@@ -125,10 +156,12 @@ class ActiveLearning:
             update_time = end - start
 
             # Debug
+            gc.collect()
 
             # TODO: Generalize. Only works for tensorflow
             # pg_bar.set_description("Training time: {}//Acquisition: {}//Update: {} // Labeled: {}".format(train_time, acq_time, update_time, len(self.labeled_pool)))
             train_metrics = ({} if train_history is None else train_history.history)
+            self.logger.info(train_metrics)
             self.__new_history_checkpoint(
                 iteration=i,
                 train_time=train_time,
@@ -174,7 +207,8 @@ class ActiveLearning:
         """
             Pre-train the network on already labeled data.
         """
-
+        
+        self.logger.info("Start: Model fit")
         # Labeled data pool is empty, training not possible 
         if len(self.labeled_pool) == 0:
             return
@@ -182,7 +216,6 @@ class ActiveLearning:
         # # Skip model evaluation debugging purposes    
         # else:
         #     return
-
 
         # Reset model weights
         self.model.load_checkpoint()
@@ -198,9 +231,12 @@ class ActiveLearning:
         # Fit model
         batch_size = config["batch_size"]
         epochs = config["epochs"]
-
         inputs, targets = self.labeled_pool[:]
-        return self.model.fit(x=inputs, y=targets, batch_size=batch_size, epochs=epochs, verbose=0)
+
+        history =  self.model.fit(x=inputs, y=targets, batch_size=batch_size, epochs=epochs, verbose=0)
+
+        self.logger.info("End: Model fit")
+        return history
 
 
     def __query(self, indices):

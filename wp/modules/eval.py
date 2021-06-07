@@ -48,7 +48,8 @@ if __name__ == "__main__":
     # ACL configuration
     train_config = TrainConfig(
         batch_size=2,
-        epochs=1
+        epochs=1,
+        metrics=["binary_accuracy"]
     )
 
     acq_config = Config(
@@ -56,7 +57,7 @@ if __name__ == "__main__":
         pseudo=True
     )
 
-    model_name = "mp"
+    model_name = "dp"
     acq_name = "max_entropy"
 
     # Active learning models
@@ -65,14 +66,15 @@ if __name__ == "__main__":
 
     # Active learning loop
     active_learning = ActiveLearning(
-        mp_model, 
+        dp_model, 
         np.expand_dims(new_inputs, axis=-1), labels=new_targets, 
         train_config=train_config,
-        acq_name=acq_name
+        acq_name=acq_name,
+        debug=False
     )
 
-    history = active_learning.start(step_size=400)
+    history = active_learning.start(step_size=40)
 
     METRICS_PATH = os.path.join(BASE_PATH, "metrics")
-    metrics = Metrics(METRICS_PATH, keys=["iteration", "train_time", "query_time", "loss"])
+    metrics = Metrics(METRICS_PATH, keys=["iteration", "train_time", "query_time", "loss", "binary_accuracy"])
     metrics.write(model_name + "_" + acq_name, history)

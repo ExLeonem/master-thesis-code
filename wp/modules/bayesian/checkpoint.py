@@ -166,9 +166,8 @@ class Checkpoint:
             Remove all checkpoint files.
         """
 
-        for file_name in self.checkpoints:
-            file_path = os.path.join(self.PATH, file_name)
-            os.remove(file_path)
+        for self.FILENAME in self.checkpoints:
+            os.remove(self.PATH)
 
 
     # ----------------------

@@ -13,14 +13,13 @@ import bayesian.utils as butils
 
 import logging
 
-LOG_FILE = os.path.join(MODULE_PATH, "logs", "acf.log")
-logging.basicConfig(
-    filename=LOG_FILE,
-    filemode="w",
-    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-    datefmt='%H:%M:%S',
-    level=logging.WARN
-)
+# logging.basicConfig(
+#     filename="./logs/acf.log",
+#     filemode="w",
+#     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+#     datefmt='%H:%M:%S',
+#     level=logging.DEBUG
+# )
 
 
 # class Functions(Enum):
@@ -47,17 +46,38 @@ class AcquisitionFunction:
     """
 
     def __init__(self, fn_name, batch_size=10, debug=False):
-        # Logger
-        self.logger = logging.getLogger(__file__)
-        self.logger.propagate = debug
+        self.setup_logger(debug)
         
         self.name = fn_name
         self.fn = None
         self.batch_size = batch_size
 
 
+    def setup_logger(self, propagate):
+        """
+            Setup a logger for the active learning loop
+        """
+
+        logger = logging.Logger("AcqLogger")
+        log_level = logging.DEBUG if propagate else logging.CRITICAL
+
+        logger.handler = logging.StreamHandler(sys.stdout)
+        logger.handler.setLevel(log_level)
+        
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        logger.handler.setFormatter(formatter)
+        logger.addHandler(logger.handler)
+
+        fh = logging.FileHandler("./logs/acf.log")
+        fh.setLevel(log_level)
+        fh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        logger.addHandler(fh)
+
+        self.logger = logger
+
+
     def __call__(self, model, pool, **kwargs):
-        self.logger.info("Execute acquisition function.")
+        self.logger.info("Start: acquisition query")
 
         # Set initial acquistion function
         if self.fn is None:
@@ -105,6 +125,9 @@ class AcquisitionFunction:
         default_num = 20
         num_of_elements_to_select = dict.get(kwargs, "runs", default_num)
         indices = self.__select_first(results, num_of_elements_to_select)
+        
+        self.logger.info("End: acquisition query")
+
         return indices, results[indices]
 
 

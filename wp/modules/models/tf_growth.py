@@ -3,7 +3,7 @@ import tensorflow as tf
 
 def setup_growth():
     gpus = tf.config.experimental.list_physical_devices("GPU")
-    cpus = tf.config.experimental.list_physical_devices("CPU")
+    # cpus = tf.config.experimental.list_physical_devices("CPU")
     if gpus:
         try:
             for gpu in gpus:
