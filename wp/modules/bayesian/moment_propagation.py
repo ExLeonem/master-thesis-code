@@ -24,68 +24,18 @@ class MomentPropagation(BayesModel):
 
     def __init__(self, model, config=None, **kwargs):
         model_type = ModelType.MOMENT_PROPAGATION
-        self._base_model = model
-        
-        # State of moment propagation model
-        self._compile_params = None
-        self._mp_compiled = False
-
-        mp_model = self.__create_mp_model()
+        mp_model = self.__create_mp_model(model)
         super(MomentPropagation, self).__init__(mp_model, config, model_type=model_type, **kwargs)
 
 
-    def __create_mp_model(self):
+    def __create_mp_model(self, model):
         """
             Transforms the set base model into an moment propagation model.
         """
         _mp = mp.MP()
-        return _mp.create_MP_Model(model=self._base_model, verbose=True)
-
- 
-    def compile(self, *args, **kwargs):
-        lib_type = self._library.get_lib_type()
-
-        if lib_type == LibType.TORCH:
-            pass
-
-        elif lib_type == LibType.TENSOR_FLOW:
-            self._compile_params = kwargs
-            self._base_model.compile(**kwargs)
-
-    
-    def compile_mp(self, *args, **kwargs):
-        lib_type = self._library.get_lib_type()
-
-        if lib_type == LibType.TORCH:
-            pass
-
-        elif lib_type == LibType.TENSOR_FLOW:
-            self._model.compile(**kwargs)
+        return _mp.create_MP_Model(model=model, use_mp=False, verbose=True)
 
 
-    def fit(self, *args, **kwargs):
-        """
-
-        """
-
-        lib_type = self._library.get_lib_type()
-        if lib_type == LibType.TORCH:
-            pass
-
-        elif lib_type == LibType.TENSOR_FLOW:
-            history = self._base_model.fit(**kwargs)
-            self._model = self.__create_mp_model()
-
-            if not (self._compile_params is None):
-                self._model.compile(**self._compile_params)
-        
-            return history
-
-        else:
-            # No implementation for library type available
-            raise ValueError("Error in Model.compile(self, *args, **kwargs). Missing library implementation for {}.".format(lib_type))
-
-    
     def variance(self, predictions):
         expectation, variance = predictions
 
@@ -98,38 +48,6 @@ class MomentPropagation(BayesModel):
         
         expectation = self.prepare_predictions(expectation)
         return self.__cast_tensor_to_numpy(expectation) 
-
-
-    # --------------
-    # Checkpoint creation/loading
-    # ------------------------------
-
-    def save_weights(self):
-        path = self._checkpoints.PATH
-        lib_type = self._library.get_lib_type()
-
-        if lib_type == LibType.TORCH:
-            pass
-
-        elif lib_type == LibType.TENSOR_FLOW:
-            self._base_model.save_weights(path)
-        
-        else:
-            raise ValueError("Error in Model.compile(self, *args, **kwargs). Missing library implementation for {}.".format(lib_type))
-
-
-    def load_weights(self):
-        path = self._checkpoints.PATH
-        lib_type = self._library.get_lib_type()
-
-        if lib_type == LibType.TORCH:
-            pass
-
-        elif lib_type == LibType.TENSOR_FLOW:
-            self._base_model.load_weights(path)
-
-        else:
-            raise ValueError("Error in Model.compile(self, *args, **kwargs). Missing library implementation for {}.".format(lib_type))            
 
 
     # --------
@@ -204,13 +122,14 @@ class MomentPropagation(BayesModel):
 
 
     def __max_entropy(self, data, **kwargs):
-        """
-
-        """
         # Expectation and variance of form (batch_size, num_classes)
         # Expectation equals the prediction
         predictions = self.predict(data)
-        class_probs = self.expectation(predictions)
+
+
+        # Need to scaled values because zeros
+        class_probs = self.expectation(predictions) + .001
+        summed_values = np.sum(class_probs, axis=1)
 
         class_prob_logs = np.log(class_probs)
         return -np.sum(class_probs-class_prob_logs, axis=1)
@@ -226,9 +145,6 @@ class MomentPropagation(BayesModel):
 
 
     def __max_var_ratio(self, data, **kwargs):
-        """
-
-        """
         predictions = self.predict(data)
         expectation = self.expectation(predictions)
 

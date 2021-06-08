@@ -128,9 +128,11 @@ class McDropout(BayesModel):
         """
         # Create predictions
         predictions = self.predict(data, runs=runs)
-        # print(predictions.shape)
         posterior = self.posterior(predictions)
-        log_post = np.log(posterior)
+        
+        # Absolute value to prevent nan values and + 0.001 to prevent infinity values
+        log_post = np.log(np.abs(posterior) + .001)
+        print(log_post)
 
         # Calculate max-entropy
         return  -np.sum(posterior*log_post, axis=1)
