@@ -25,7 +25,6 @@ class Pipeline:
         return output
 
 
-
 def select_classes(data, classes=None, **kwargs):
     """
         Select datapoints correspondings to first n labels or a specific list of classes.
@@ -79,3 +78,42 @@ def select_classes(data, classes=None, **kwargs):
         return new_inputs, new_targets
 
     raise ValueError("Error in transformer.select_class. Could not use classes parameter. Pass either nothing, an integer or a list of labels for the classes kwarg.")
+
+
+def image_channels(data, **kwargs):
+    """
+        Check if image data has enough channels.
+        If data has format of grayscale with missing color channel dimension, additional dimension will be added.
+
+        Parameter:
+            data ((numpy.ndarray, numpy.ndarray)): Inputs and targets of the dataset.
+
+        Returns:
+            ((numpy.ndarray, numpy.ndarray)) The transformed data
+    """
+
+    inputs, targets = data
+
+    # Grayscale image with missing dimension? shape: (batch, height, width) 
+    if len(inputs.shape) == 3:
+        inputs = np.expand_dims(inputs, axis=-1)
+
+
+    if len(inputs.shape) != 4:
+        raise ValueError("")
+
+    return inputs, targets
+
+
+def inputs_to_type(data, dtype=None, **kwargs):
+    """
+
+    """
+
+    if dtype is None:
+        return data
+
+    # Transform inputs to given type
+    inputs, targets = data
+    return inputs.astype(dtype), targets
+

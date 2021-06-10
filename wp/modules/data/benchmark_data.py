@@ -1,5 +1,5 @@
 from . import mnist
-from .transformer import Pipeline, select_classes
+from .transformer import Pipeline, select_classes, image_channels
 from enum import Enum
 
 class DataSetType(Enum):
@@ -80,9 +80,20 @@ class BenchmarkData:
         
         return Pipeline(
                 select_classes,
+                image_channels
             )
 
 
+    # -------------
+    # Standard Getter/-Setter
+    # -----------------------------
+    
+    def get_targets(self):
+        return self.targets
+
+    
+    def get_inputs(self):
+        return self.inputs
 
     
 
