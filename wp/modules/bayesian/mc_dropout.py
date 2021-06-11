@@ -42,8 +42,18 @@ class McDropout(BayesModel):
             
             output[run] = result
 
-        super().clear_session()
-        output = output.reshape(tuple([len(inputs), runs] + list(result.shape[2:])))
+        # super().clear_session()
+
+        # Reshape to put run dimension to last axis
+        output_shape = None
+        if output.shape[-1] == 1:
+            # Binary case last dimension can be omited
+            output_shape = tuple([len(inputs), runs] + list(result.shape[2:]))
+
+        else:
+            output_shape = tuple([len(inputs), runs] + list(result.shape[1:]))
+
+        output = output.reshape(output_shape)
         return output
 
         # return self.extend_binary_predictions(output)
@@ -84,22 +94,6 @@ class McDropout(BayesModel):
             return self.__evaluate_tf(predictions, targets)
 
 
-            # predictions = self.predict(inputs, **kwargs)
-            # posterior_approx = np.average(predictions, axis=1)
-
-            # # Will fail in regression case!!!! Add flag to function?
-            # loss_fn = self._library.get_base_module().keras.losses.get(self._model.loss)
-            # loss = loss_fn(targets, posterior_approx)
-
-            # # 
-            # labels = np.argmax(self.extend_binary_predictions(posterior_approx), axis=1)
-            # true_labels = (labels == targets).sum()
-            # acc = true_labels/len(targets)
-
-            # return [loss.numpy(), acc]
-
-            # return self._model.evaluate(inputs, targets, verbose=0, **kwargs)
-
         # No implementation for library type
         raise ValueError("Error in Model.fit(**kwargs).\
          No implementation for library type {}".format(lib_type))
@@ -113,11 +107,18 @@ class McDropout(BayesModel):
         loss_fn = self._library.get_base_module().keras.losses.get(self._model.loss)
         loss = loss_fn(targets, posterior_approx)
 
+        print(posterior_approx.shape)
         # 
-        labels = np.argmax(self.extend_binary_predictions(posterior_approx), axis=1)
-        true_labels = (labels == targets).sum()
-        acc = true_labels/len(targets)
+        extended = self.extend_binary_predictions(posterior_approx)
 
+        print(extended.shape)
+
+        labels = np.argmax(extended, axis=1)
+        acc = np.mean(labels == targets)
+
+        print(labels)
+        print(targets)
+        print(labels == targets)
         return [loss.numpy(), acc]
 
 

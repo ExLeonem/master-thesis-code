@@ -38,8 +38,8 @@ class ActiveLearning:
 
         # Model itself
         self.model = model
-        if model.empty_weights():
-            model.save_weights()
+        # if model.empty_weights():
+        #     model.save_weights()
         
           # Compile model
         config = train_config
@@ -158,7 +158,8 @@ class ActiveLearning:
             
             # Pre training evaluation
             pre_train_eval = self.__eval_model()
-            self.logger.info("Eval: {}".format(pre_train_eval))
+            self.logger.info("-------------")
+            self.logger.info("Pre-fit eval: {}".format(pre_train_eval))
 
             # Train model on labeled data
             start = time.time()
@@ -176,8 +177,6 @@ class ActiveLearning:
 
             # Update unlabeled pool
             self.unlabeled_pool.update(indices)
-            self.logger.info("Indices: {}".format(indices))
-            self.logger.info("Num labels: {}".format(len(indices)))
             self.logger.info("Unlabeled pool size: {}".format(len(self.unlabeled_pool)))
 
             # Update labeled pool
@@ -186,7 +185,7 @@ class ActiveLearning:
             self.labeled_pool[labeled_indices] = labels
             end = time.time()
             update_time = end - start
-            self.logger.info("Update labeled pool now {}".format(len(self.labeled_pool)))
+            self.logger.info("Labeled pool size {}".format(len(self.labeled_pool)))
 
 
             # Evaluate the model on test data
@@ -261,7 +260,7 @@ class ActiveLearning:
         #     return
 
         # Reset model weights
-        self.model.load_weights()
+        # self.model.load_weights()
 
         # # Compile model
         # config = self.train_config

@@ -12,6 +12,7 @@ class FcholletCNN(Model):
 
     def __init__(self, output=128):
         super(FcholletCNN, self).__init__()
+        self._name = "Fchollet-CNN"
 
         self.conv = Sequential([
             Conv2D(32, 3, activation=tf.nn.relu, padding="same"),
@@ -24,7 +25,7 @@ class FcholletCNN(Model):
         self.linear = Sequential([
             Dense(128, activation=tf.nn.relu),
             Dropout(.5),
-            Dense(output)
+            Dense(output, activation="softmax")
         ], name="Linear")
 
     
