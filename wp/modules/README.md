@@ -10,3 +10,10 @@ https://github.com/tensorflow/tensorflow/issues/31842
     - [ ] Try eager mode
     - [ ] Check if model builds multiple different graphs
     - [ ] Try custom fitting loop?
+
+
+
+
+# How to add a new model type
+
+

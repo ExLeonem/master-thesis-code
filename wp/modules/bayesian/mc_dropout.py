@@ -1,6 +1,15 @@
+import os, sys, importlib
 import numpy as np
 import logging as log
 from . import  BayesModel, ModelType, Mode
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+MODULE_PATH = os.path.join(dir_path, "..")
+sys.path.append(MODULE_PATH)
+
+import library
+importlib.reload(library)
+from library import LibType
 
 
 
@@ -35,7 +44,9 @@ class McDropout(BayesModel):
 
         super().clear_session()
         output = output.reshape(tuple([len(inputs), runs] + list(result.shape[2:])))
-        return self.prepare_predictions(output)
+        return output
+
+        # return self.extend_binary_predictions(output)
 
 
     def evaluate(self, inputs, targets, **kwargs):
@@ -49,22 +60,73 @@ class McDropout(BayesModel):
 
         elif lib_type == LibType.TENSOR_FLOW:
 
-            output = self.predict()
+            batch_size = dict.get(kwargs, "batch_size")
+            if batch_size is None:
+                predictions = self.predict(inputs, **kwargs)
+                return self.__evaluate_tf(predictions, targets)
+            
+
+            # Iterate over inputs and targets batchwise
+            predictions = None
+            for start_idx in range(0, len(inputs), batch_size):
+                
+                end_idx = start_idx + batch_size
+                sub_result = self.predict(inputs[start_idx:end_idx], **kwargs)
+
+                # Create array to hold prediction results
+                if predictions is None:
+                    shape_without_batch = sub_result.shape if batch_size == 1 else sub_result.shape[1:]
+                    result_shape = [len(inputs)] + list(shape_without_batch)
+                    predictions = np.zeros(result_shape)
+
+                predictions[start_idx:end_idx] = sub_result
+
+            return self.__evaluate_tf(predictions, targets)
 
 
-            return self._model.evaluate(inputs, targets, verbose=0, **kwargs)
+            # predictions = self.predict(inputs, **kwargs)
+            # posterior_approx = np.average(predictions, axis=1)
+
+            # # Will fail in regression case!!!! Add flag to function?
+            # loss_fn = self._library.get_base_module().keras.losses.get(self._model.loss)
+            # loss = loss_fn(targets, posterior_approx)
+
+            # # 
+            # labels = np.argmax(self.extend_binary_predictions(posterior_approx), axis=1)
+            # true_labels = (labels == targets).sum()
+            # acc = true_labels/len(targets)
+
+            # return [loss.numpy(), acc]
+
+            # return self._model.evaluate(inputs, targets, verbose=0, **kwargs)
 
         # No implementation for library type
         raise ValueError("Error in Model.fit(**kwargs).\
          No implementation for library type {}".format(lib_type))
 
 
+    def __evaluate_tf(self, predictions, targets):
 
-    def posterior(self, predictions):
+        posterior_approx = np.average(predictions, axis=1)
+
+        # Will fail in regression case!!!! Add flag to function?
+        loss_fn = self._library.get_base_module().keras.losses.get(self._model.loss)
+        loss = loss_fn(targets, posterior_approx)
+
+        # 
+        labels = np.argmax(self.extend_binary_predictions(posterior_approx), axis=1)
+        true_labels = (labels == targets).sum()
+        acc = true_labels/len(targets)
+
+        return [loss.numpy(), acc]
+
+
+    def approx_posterior(self, predictions):
         """
 
         """
         # predictions -> (batch_size, num_predictions)
+        predictions = self.extend_binary_predictions(predictions)
         return np.average(predictions, axis=1)
 
 
@@ -72,7 +134,7 @@ class McDropout(BayesModel):
         return predictions
 
 
-    def prepare_predictions(self, predictions, num_classes=2):
+    def extend_binary_predictions(self, predictions, num_classes=2):
         """
             In MC Dropout case always predictions of shape
             (batch_size, runs, classes) for classification 
@@ -128,7 +190,7 @@ class McDropout(BayesModel):
         """
         # Create predictions
         predictions = self.predict(data, runs=runs)
-        posterior = self.posterior(predictions)
+        posterior = self.approx_posterior(predictions)
         
         # Absolute value to prevent nan values and + 0.001 to prevent infinity values
         log_post = np.log(np.abs(posterior) + .001)
@@ -141,7 +203,7 @@ class McDropout(BayesModel):
         
         # predictions shape (batch, num_predictions, num_classes)
         predictions = self.predict(data, runs=runs)
-        posterior = self.posterior(predictions)
+        posterior = self.approx_posterior(predictions)
 
         first_term = -np.sum(posterior*np.log(posterior), axis=1)
         second_term = np.sum(np.sum(predictions*np.log(predictions), axis=1), axis=1)/runs
@@ -160,7 +222,7 @@ class McDropout(BayesModel):
         # (batch, sample, num classses)
         # (batch, num_classes)
         predictions = self.predict(data, runs=runs)
-        posterior = self.posterior(predictions)
+        posterior = self.approx_posterior(predictions)
 
         # Calcualte max variation rations
         return 1 + posterior.max(axis=1)
@@ -178,7 +240,7 @@ class McDropout(BayesModel):
         # TODO: generalize for n-classes For binary classes
         predictions = self.predict(data, runs=runs)
 
-        posterior = self.posterior(predictions) 
+        posterior = self.approx_posterior(predictions) 
         squared_posterior = np.power(posterior, 2)
         post_to_square = self.expectation(squared_posterior) # TODO: Solve error here. How to restructure?
 

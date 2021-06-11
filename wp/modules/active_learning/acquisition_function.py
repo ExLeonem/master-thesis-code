@@ -68,7 +68,10 @@ class AcquisitionFunction:
         logger.handler.setFormatter(formatter)
         logger.addHandler(logger.handler)
 
-        fh = logging.FileHandler("./logs/acf.log")
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        log_path = os.path.join(current_dir, "..", "logs", "acf.log")
+        
+        fh = logging.FileHandler(log_path)
         fh.setLevel(log_level)
         fh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
         logger.addHandler(fh)
@@ -88,11 +91,12 @@ class AcquisitionFunction:
         # Select values randomly? 
         # No need for batch processing
         if self.name == "random":
-            return self.fn(pool, **kwargs)
+            return self.fn(data, **kwargs)
         
         # Iterate throug batches of data
         results = None
         num_datapoints = len(data)
+        self.logger.info("Use {} unlabeled datapoints".format(num_datapoints))
         start = 0
         end = self.batch_size if num_datapoints > self.batch_size else num_datapoints
 

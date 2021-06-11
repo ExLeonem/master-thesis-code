@@ -33,6 +33,7 @@ class ActiveLearning:
 
     def __init__(self, model, data, labels=None, config=None, train_config=None, eval_config=None, acq_config=None, acq_name=None, pseudo=True, debug=True, **kwargs):
 
+        self.debug = debug
         self.setup_logger(debug)
 
         # Model itself
@@ -40,6 +41,17 @@ class ActiveLearning:
         if model.empty_weights():
             model.save_weights()
         
+          # Compile model
+        config = train_config
+        optimizer = config["optimizer"]
+        loss = config["loss"]
+        metrics = config["metrics"]
+
+        self.logger.info("Optimizer: {}".format(optimizer))
+        self.logger.info("Loss: {}".format(loss))
+        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
+
         # if model.empty_checkpoint():
         #     self.logger.info("Create new model checkpoint")
         #     model.new_checkpoint()
@@ -59,7 +71,7 @@ class ActiveLearning:
 
         # Configurations
         self.train_config = train_config
-        self.eval_config = eval_config
+        self.eval_config = train_config if eval_config is None else eval_config
         self.acq_config = acq_config
 
         # Active learning history
@@ -88,7 +100,10 @@ class ActiveLearning:
         logger.handler.setFormatter(formatter)
         logger.addHandler(logger.handler)
 
-        fh = logging.FileHandler("./logs/acl.log")
+        dir_name = os.path.dirname(os.path.realpath(__file__))
+        log_path = os.path.join(dir_name, "logs", "acl.log")
+
+        fh = logging.FileHandler(log_path)
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
         logger.addHandler(fh)
@@ -115,7 +130,7 @@ class ActiveLearning:
         return inputs, targets
 
 
-    def start(self, limit=None, step_size=100):
+    def start(self, limit_iter=None, step_size=100):
         """
             Start the active learning loop.
 
@@ -129,14 +144,10 @@ class ActiveLearning:
 
         self.logger.info("Start: active learning loop")
 
-
-        if limit is None:
-            limit = len(self.unlabeled_pool)
-
         # TODO: Initiale model selection, => random n-element, seed setzten
         # Bei wenigen gezogenen Daten: Klassenverteilung sollte gleich balanciert sein
 
-
+        current_iteration = 0
         pg_bar = tqdm(range(0, len(self.unlabeled_pool), step_size), leave=True)
         # for i in tqdm(range(0, len(self.unlabeled_pool), step_size)):
         for i in pg_bar:
@@ -145,6 +156,10 @@ class ActiveLearning:
             if self.unlabeled_pool.is_empty():
                 break
             
+            # Pre training evaluation
+            pre_train_eval = self.__eval_model()
+            self.logger.info("Eval: {}".format(pre_train_eval))
+
             # Train model on labeled data
             start = time.time()
             train_history = self.__train_model()
@@ -156,8 +171,13 @@ class ActiveLearning:
             start = time.time()
             indices, _predictions = self.acquisition(self.model, self.unlabeled_pool, num=step_size)
             labels = self.__query(indices)
+
             self.unlabeled_pool.update(indices)
+            self.logger.info("Indices: {}".format(indices))
+            self.labeled_pool[indices] = labels
+
             self.logger.info("Got next datapoints")
+            self.logger.info("Labeled Pool Size: {}".format(len(self.labeled_pool)))
 
             end = time.time()
             acq_time = end - start
@@ -176,13 +196,20 @@ class ActiveLearning:
             # TODO: Generalize. Only works for tensorflow
             # pg_bar.set_description("Training time: {}//Acquisition: {}//Update: {} // Labeled: {}".format(train_time, acq_time, update_time, len(self.labeled_pool)))
             train_metrics = ({} if train_history is None else train_history.history)
+            eval_metrics = ({} if eval_result is None else self.model.map_eval_values(eval_result))
             self.logger.info("Train: {}".format(train_metrics))
             self.__new_history_checkpoint(
                 iteration=i,
                 train_time=train_time,
                 query_time=acq_time,
-                **train_metrics
+                **eval_metrics
             )
+
+            # Iteration limit reached?
+            current_iteration += 1
+            if not (limit_iter is None) and current_iteration > limit_iter-1:
+                self.logger.info("Reached iteration limit")
+                break
 
 
         # self.model.clear_checkpoints()
@@ -236,19 +263,27 @@ class ActiveLearning:
         # Reset model weights
         self.model.load_weights()
 
-        # Compile model
+        # # Compile model
+        # config = self.train_config
+        # optimizer = config["optimizer"]
+        # loss = config["loss"]
+        # metrics = config["metrics"]
+
+        # self.logger.info("Optimizer: {}".format(optimizer))
+        # self.logger.info("Loss: {}".format(loss))
+
+        # self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
         config = self.train_config
-        optimizer = config["optimizer"]
-        loss = config["loss"]
-        metrics = config["metrics"]
-        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
         # Fit model
         batch_size = config["batch_size"]
         epochs = config["epochs"]
+        self.logger.info("Epochs: {}".format(epochs))
+        self.logger.info("Batch-Size: {}".format(batch_size))
         inputs, targets = self.labeled_pool[:]
 
-        history =  self.model.fit(x=inputs, y=targets, batch_size=batch_size, epochs=epochs, verbose=0)
+        history = self.model.fit(inputs, targets, batch_size=batch_size, epochs=epochs, verbose=0)
 
         return history
 

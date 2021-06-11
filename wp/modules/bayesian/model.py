@@ -132,7 +132,7 @@ class BayesModel:
             return []
 
         elif lib_type == LibType.TENSOR_FLOW:
-            return self._model.fit(**kwargs)
+            return self._model.fit(*args, **kwargs)
 
         # No implementation for library type
         raise ValueError("Error in Model.fit(**kwargs).\
@@ -167,6 +167,21 @@ class BayesModel:
                 (numpy.ndarray) The extended numpy array
         """
         return predictions
+
+    
+    def map_eval_values(self, values):
+        """
+            Create a dictionary mapping for evaluation metrics.
+
+            Parameters:
+                values (any): Values received from model.evaluate
+
+            Returns:
+                (dict) The values mapped to a specific key.
+        """
+        metric_names = self._model.metrics_names
+        return dict(zip(metric_names, values))
+
 
     
     def __init_library_of(self, model):
@@ -246,7 +261,7 @@ class BayesModel:
             self.load_weights()
             return False
 
-        except OSError:
+        except:
             return True
 
 

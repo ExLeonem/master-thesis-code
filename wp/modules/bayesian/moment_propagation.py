@@ -36,17 +36,18 @@ class MomentPropagation(BayesModel):
         return _mp.create_MP_Model(model=model, use_mp=False, verbose=True)
 
 
+
     def variance(self, predictions):
         expectation, variance = predictions
 
-        variance = self.prepare_predictions(variance)
+        variance = self.extend_binary_predictions(variance)
         return self.__cast_tensor_to_numpy(variance)
 
 
     def expectation(self, predictions):
         expectation, variance = predictions
         
-        expectation = self.prepare_predictions(expectation)
+        expectation = self.extend_binary_predictions(expectation)
         return self.__cast_tensor_to_numpy(expectation) 
 
 
@@ -54,7 +55,7 @@ class MomentPropagation(BayesModel):
     # Utilities
     # ---------------
 
-    def prepare_predictions(self, predictions):
+    def extend_binary_predictions(self, predictions):
         """
 
         """
@@ -126,13 +127,11 @@ class MomentPropagation(BayesModel):
         # Expectation equals the prediction
         predictions = self.predict(data)
 
-
         # Need to scaled values because zeros
-        class_probs = self.expectation(predictions) + .001
-        summed_values = np.sum(class_probs, axis=1)
-
-        class_prob_logs = np.log(class_probs)
-        return -np.sum(class_probs-class_prob_logs, axis=1)
+        class_probs = self.expectation(predictions)
+        
+        class_prob_logs = np.log(np.abs(class_probs) + .001)
+        return -np.sum(class_probs*class_prob_logs, axis=1)
 
     
     def __bald(self, data, **kwargs):
