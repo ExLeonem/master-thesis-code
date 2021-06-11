@@ -66,7 +66,7 @@ class ActiveLearning:
 
         # Active learning specifics
         self.acquisition = AcquisitionFunction(acq_name, batch_size=700)
-        self.labeled_pool = LabeledPool(train_inputs, targets=train_targets)
+        self.labeled_pool = LabeledPool(train_inputs, targets=train_targets, pseudo=pseudo)
         self.unlabeled_pool = UnlabeledPool(train_inputs, init_indices=self.labeled_pool.get_indices())
 
         # Configurations
@@ -171,23 +171,23 @@ class ActiveLearning:
             start = time.time()
             indices, _predictions = self.acquisition(self.model, self.unlabeled_pool, num=step_size)
             labels = self.__query(indices)
-
-            self.unlabeled_pool.update(indices)
-            self.logger.info("Indices: {}".format(indices))
-            self.labeled_pool[indices] = labels
-
-            self.logger.info("Got next datapoints")
-            self.logger.info("Labeled Pool Size: {}".format(len(self.labeled_pool)))
-
             end = time.time()
             acq_time = end - start
 
+            # Update unlabeled pool
+            self.unlabeled_pool.update(indices)
+            self.logger.info("Indices: {}".format(indices))
+            self.logger.info("Num labels: {}".format(len(indices)))
+            self.logger.info("Unlabeled pool size: {}".format(len(self.unlabeled_pool)))
+
             # Update labeled pool
             start = time.time()
-            self.labeled_pool[indices] = labels
+            labeled_indices = self.unlabeled_pool.get_labeled_indices()
+            self.labeled_pool[labeled_indices] = labels
             end = time.time()
             update_time = end - start
-            self.logger.info("Update labeled pool")
+            self.logger.info("Update labeled pool now {}".format(len(self.labeled_pool)))
+
 
             # Evaluate the model on test data
             eval_result = self.__eval_model()
@@ -282,6 +282,8 @@ class ActiveLearning:
         self.logger.info("Epochs: {}".format(epochs))
         self.logger.info("Batch-Size: {}".format(batch_size))
         inputs, targets = self.labeled_pool[:]
+
+        self.logger.info("Use {}-inputs for training".format(len(inputs)))
 
         history = self.model.fit(inputs, targets, batch_size=batch_size, epochs=epochs, verbose=0)
 

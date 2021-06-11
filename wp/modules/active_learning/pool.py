@@ -45,6 +45,7 @@ class UnlabeledPool(DataPool):
         super(UnlabeledPool, self).__init__(data)
         # Are there already set initial indices?
         self.indices = np.linspace(0, len(data)-1, len(data), dtype=int)
+        self._all_indices = np.linspace(0, len(data)-1, len(data), dtype=int)
 
 
     def __len__(self):
@@ -63,17 +64,28 @@ class UnlabeledPool(DataPool):
 
 
     def update(self, indices):
-        self.indices[indices] = 1 
+        unlabeled_indices = self.get_indices()
+        indices_to_update = unlabeled_indices[indices]
+        self.indices[indices_to_update] = -1
 
 
     def get_indices(self):
-        unlabeled = self.indices == -1
+        unlabeled = self.indices != -1
         return self.indices[unlabeled]
 
 
     def get_data(self):
-
         indices = self.get_indices()
+        return self.data[indices]
+
+
+    def get_labeled_indices(self):
+        labeled = np.logical_not(self.indices != -1)
+        return self._all_indices[labeled]
+
+
+    def get_labeled_data(self):
+        indices = self.get_labeled_indices()
         return self.data[indices]
 
 
@@ -90,10 +102,13 @@ class LabeledPool(DataPool):
             targets (numpy.ndarray): Targets to be used for selection for initial pool
     """
 
-    def __init__(self, data, num_init_targets=10, seed=None, targets=None):
+    def __init__(self, data, num_init_targets=10, seed=None, targets=None, pseudo=False):
         super(LabeledPool, self).__init__(data)
         self.labeled_indices = np.zeros(data.shape[0], dtype=int) - 1
         self.labels = np.zeros(data.shape[0])
+
+        self.pseudo = pseudo
+        self.targets = targets
         self.running_idx = 0
         
         # Initialize labels set
@@ -127,7 +142,7 @@ class LabeledPool(DataPool):
             self.labels[selected_indices] = unique_targets[idx]
 
 
-    def __setitem__(self, index, label):
+    def __setitem__(self, index, label=None):
         """
             Setting an item for data of given index.
 
@@ -136,6 +151,11 @@ class LabeledPool(DataPool):
                 label (numpy.ndarray): The labels to set
         """
         self.labeled_indices[index] = 1
+
+        # If pseudo selection, select von available targets
+        if not (self.targets is None) and self.pseudo:
+            label = self.targets[index]
+
         self.labels[index] = label
 
 
@@ -201,8 +221,11 @@ class LabeledPool(DataPool):
 
         if self.running_idx + num_new_labels > len(self.labeled_indices):
             raise ValueError("Can't update pool. Pool is full.")
+
         
+
         
+
         
 
     

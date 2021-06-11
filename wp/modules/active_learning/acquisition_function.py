@@ -127,7 +127,7 @@ class AcquisitionFunction:
         # Return selected indices and prediction values
         self.logger.info("Iteration completed")
         default_num = 20
-        num_of_elements_to_select = dict.get(kwargs, "runs", default_num)
+        num_of_elements_to_select = dict.get(kwargs, "num", default_num)
         indices = self.__select_first(results, num_of_elements_to_select)
         
         self.logger.info("End: acquisition query")
@@ -202,6 +202,6 @@ class AcquisitionFunction:
             Returns: 
                 (numpy.ndarray) indices of n-biggest predictions.
         """
-
+        
         return np.argpartition(predictions, -n)[-n:]
 
