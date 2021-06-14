@@ -43,7 +43,7 @@ class BayesModel:
         mode=Mode.TRAIN, 
         model_type=None, 
         classification=True, 
-        num_classes=2:
+        num_classes=2):
 
         self._model = model
         self._config = config
