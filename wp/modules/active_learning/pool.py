@@ -41,7 +41,7 @@ class UnlabeledPool(DataPool):
         
     """
 
-    def __init__(self, data, init_indices=None):
+    def __init__(self, data):
         super(UnlabeledPool, self).__init__(data)
         # Are there already set initial indices?
         self.indices = np.linspace(0, len(data)-1, len(data), dtype=int)
@@ -102,10 +102,14 @@ class LabeledPool(DataPool):
             targets (numpy.ndarray): Targets to be used for selection for initial pool
     """
 
-    def __init__(self, data, num_init_targets=10, seed=None, targets=None, pseudo=False):
+    def __init__(self, data, num_init_targets=10, seed=None, targets=None, pseudo=False, label_shape=None):
         super(LabeledPool, self).__init__(data)
         self.labeled_indices = np.zeros(data.shape[0], dtype=int) - 1
-        self.labels = np.zeros(data.shape[0])
+
+        if label_shape is None:
+            self.labels = np.zeros(data.shape[0])
+        else:
+            self.labels = np.zeros(label_shape)
 
         self.pseudo = pseudo
         self.targets = targets

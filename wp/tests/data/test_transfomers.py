@@ -34,7 +34,7 @@ class TestClassSelectTransformer:
     def test_select_same_amount_as_available(self):
         num_classes_available = 3
         inputs = np.random.randn(10, 10)
-        targets = np.random.randint(0, num_classes_available, 10)
+        targets = np.random.randint(0, num_classes_available+1, 10)
         select_classes((inputs, targets), classes=num_classes_available)
 
     
