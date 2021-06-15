@@ -2,13 +2,20 @@ from . import mnist
 from .transformer import Pipeline, select_classes, image_channels, inputs_to_type
 from enum import Enum
 
+
+# Use default dataset location?
+# DIR_PATH = os.path.dirname(os.path.realpath(__file__))
+# BASE_PATH = os.path.join(DIR_PATH, "..", "..")
+# DEFAULT_DS_PATH = os.path.join(BASE_PATH, "datasets", "mnist")
+
+
+
 class DataSetType(Enum):
     """
 
     """
     MNIST = 1
     FASHION_MNIST = 2
-
 
 
 class BenchmarkData:

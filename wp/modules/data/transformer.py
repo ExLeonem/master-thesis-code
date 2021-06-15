@@ -64,7 +64,7 @@ def select_classes(data, classes=None, **kwargs):
 
         else:
             # Less available unique classes than to select
-            raise ValueError("Can't select {} labels from {} unique labels. ")
+            raise ValueError("Can't select {} labels from {} available unique labels. ".format(classes, len(target_unique_values)))
 
     # Select specific labels
     if isinstance(classes, list):
@@ -100,7 +100,7 @@ def image_channels(data, **kwargs):
 
 
     if len(inputs.shape) != 4:
-        raise ValueError("")
+        raise ValueError("Error in image_channels/2. Expected image data to have 3 or 4 dimensions. Got {}.".format(len(inputs.shape)))
 
     return inputs, targets
 

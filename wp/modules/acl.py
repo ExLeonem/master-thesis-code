@@ -51,7 +51,6 @@ class ActiveLearning:
         self.logger.info("Loss: {}".format(loss))
         self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-
         # if model.empty_checkpoint():
         #     self.logger.info("Create new model checkpoint")
         #     model.new_checkpoint()
@@ -187,7 +186,6 @@ class ActiveLearning:
             update_time = end - start
             self.logger.info("Labeled pool size {}".format(len(self.labeled_pool)))
 
-
             # Evaluate the model on test data
             eval_result = self.__eval_model()
             self.logger.info("Eval: {}".format(eval_result))
@@ -305,7 +303,8 @@ class ActiveLearning:
 
     def __query(self, indices):
         """
-            Query for the next datapoints to be labeled.
+            Ask the oracle to label datapoints represented by given indices.
+            Select targets automatically if in pseudo mode.
 
             Parameters:
                 indices (numpy.ndarray): The indices for which to query a label.upda
