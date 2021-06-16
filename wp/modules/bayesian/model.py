@@ -30,12 +30,12 @@ class BayesModel:
         Base class for encapsulation of a bayesian deep learning model. 
 
         Attributes:
-            _model (): Tensorflow or pytorch module.
-            _config (): Model configuration
-            _mode (): The mode the model is in 'train' or 'test'/'eval'.
-            _model_type (): The model type
-            _library (): The library to use tensorflow, pytorch
-            _checkpoints (): Created checkpoints.
+            _model (tf.Model): Tensorflow or pytorch module.
+            _config (Config): Model configuration
+            _mode (Mode): The mode the model is in 'train' or 'test'/'eval'.
+            _model_type (ModelType): The model type
+            _library (Library): The library to use tensorflow, pytorch
+            _checkpoints (Checkpoint): Created checkpoints.
     """
 
     def __init__(
@@ -43,17 +43,25 @@ class BayesModel:
         mode=Mode.TRAIN, 
         model_type=None, 
         classification=True, 
-        num_classes=2):
+        is_binary=False):
 
         self._model = model
         self._config = config
         self._mode = mode
         self._model_type = model_type
         self._library = self.__init_library_of(model)
+
+        if self._library is None:
+            raise ValueError("Could not initialize the model. Passed model does not seem to match any library types. Currently available libraries: {TensorFlow, Keras}")
+        
         self._checkpoints = Checkpoint(self._library)
 
         self.__classification = classification
-        self.__num_classes = num_classes
+        if not self.__classification:
+            # Binary classification always false, when regression problem
+            self.__is_binary = False
+        else:
+            self.__is_binary = is_binary
     
     
     def __call__(self, *args, **kwargs):
@@ -182,7 +190,6 @@ class BayesModel:
         metric_names = self._model.metrics_names
         return dict(zip(metric_names, values))
 
-
     
     def __init_library_of(self, model):
         """
@@ -277,6 +284,10 @@ class BayesModel:
         return self.__classification
 
 
+    def is_binary(self):
+        return self.__is_binary
+
+
     # ---------------
     # Acquisition functions
     # --------------------------
@@ -319,10 +330,6 @@ class BayesModel:
         
         self._library.set_mode(self.model, mode)
         self._mode = mode
-
-
-    def get_num_classes(self):
-        return self.__num_classes
 
     # ---------------
     # Dunder

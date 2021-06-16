@@ -67,6 +67,7 @@ class ActiveLearning:
         self.acquisition = AcquisitionFunction(acq_name, batch_size=700)
         self.labeled_pool = LabeledPool(train_inputs, targets=train_targets, pseudo=pseudo)
         self.unlabeled_pool = UnlabeledPool(train_inputs, init_indices=self.labeled_pool.get_indices())
+        self.__init_pool_of_indices()
 
         # Configurations
         self.train_config = train_config
@@ -328,3 +329,43 @@ class ActiveLearning:
             labels = train_labels[indices]
 
         return labels
+
+
+    
+    def __init_pool_of_indices(self, num_init_targets=10, seed=None):
+        """
+            Initialize the pool with randomly selected values.
+
+            TODO:
+                - Make it work for labels with additional dimensions (e.g. bag-of-words, one-hot vectors)
+        """
+
+        self.unlabeled_pool.update(indices)
+        self.labeled_pool[indices] = labels
+
+        # Use initial target values?
+        if num_init_targets <= 0:
+            return
+
+        # Reproducability?
+        if not (seed is None):
+            np.random.seed(seed)
+
+        # Select 'num_init_targets' per unique label 
+        unique_targets = np.unique(self.targets["train"])
+        for idx in range(len(unique_targets)):
+
+            # Select indices of labels for unique label[idx]
+            with_unique_value = self.targets["train"] == unique_targets[idx]
+            indices_of_label = np.argwhere(with_unique_value)
+
+            # Set randomly selected labels
+            selected_indices = np.random.choice(indices_of_label.flatten(), num_init_targets, replace=True)
+
+            # WILL NOT WORK FOR LABELS with more than 1 dimension
+            self.unlabeled_pool.update(selected_indices)
+            new_labels = np.full(len(selected_indices), unique_targets[idx])
+            self.labeled_pool[selected_indices] = new_labels
+
+            # self.labeled_indices[selected_indices] = 1
+            # self.labels[selected_indices] = unique_targets[idx]

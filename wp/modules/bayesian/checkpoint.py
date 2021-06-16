@@ -45,6 +45,11 @@ class Checkpoint:
         if ext_passed:
             return extension
 
+        
+        # Library was not loaded?
+        if library is None:
+            raise ValueError("Error in checkpoint.__init_checkpoint_ext(self, library, extension). Passed library object is None.")
+
         # Use fallback extension depending the library
         lib_type = library.get_lib_type()
         if lib_type == LibType.TORCH:

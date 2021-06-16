@@ -53,7 +53,7 @@ class TestUnlabeledPool:
         assert len(indices) == len(data)
 
         # Check
-        indices_to_update = np.random.choice(indices, 2)
+        indices_to_update = np.random.choice(indices, 2, replace=False)
         pool.update(indices_to_update)
         new_indices = pool.get_indices()
         assert len(new_indices) == (len(indices)-2) 
@@ -90,7 +90,7 @@ class TestUnlabeledPool:
 
         # Updated
         indices = pool.get_indices()
-        indices_to_update = np.random.choice(indices, 2)
+        indices_to_update = np.random.choice(indices, 2, replace=False)
         pool.update(indices_to_update)
         new_labeled_indices = pool.get_labeled_indices()
         assert len(new_labeled_indices) == 2
@@ -103,14 +103,61 @@ class TestUnlabeledPool:
 
 
 
-class LabeledPseudo:
+class TestLabeledPool:
     """
         Test functionality of pool of labeled data
     """
 
-    def missing_targets(self):
-        """Missing targets on pseudo LabeledPool"""
-        data = np.random.randn(10, 28)
-        pool = LabeledPool(data, pseudo=True)
+    def test_initial_emptiness(self):
+        num_samples = 10
+        data = np.random.randn(num_samples, 28)
+        pool = LabeledPool(data)
+        assert 0 == len(pool)
+
+    
+    def test_adding_labels(self):
+        num_samples = 10
+        data = np.random.randn(num_samples, 28)
+        pool = LabeledPool(data)
+        pool[0] = 1
+        assert len(pool) == 1
+        
+
+    def test_setting_batch(self):
+        num_samples = 10
+        inputs = np.random.randn(num_samples, 28, 28)
+        targets = np.random.randint(0, 3, num_samples)
+        indices = np.linspace(0, num_samples-1, num_samples).astype(np.int32)
+        pool = LabeledPool(inputs)
+        pool[indices[:2]] = targets[:2]
+        assert len(pool) == 2
+
+    
+    def test_get_labeled_items(self):
+        num_samples = 10
+        inputs = np.random.randn(num_samples, 28, 28)
+        targets = np.random.randint(0, 3, num_samples)
+        indices = np.linspace(0, num_samples-1, num_samples).astype(np.int32)
+        pool = LabeledPool(inputs)
+        pool[indices[:2]] = targets[:2]
+
+        # Check items at postion x
+        (input_at_pos, target_at_pos) = pool[0]
+        assert target_at_pos == targets[0]
+
+
+    def test_get_indices_of_labeled_samples(self):
+        num_samples = 10
+        inputs = np.random.randn(num_samples, 28, 28)
+        targets = np.random.randint(0, 3, num_samples)
+        indices = np.linspace(0, num_samples-1, num_samples).astype(np.int32)
+        pool = LabeledPool(inputs)
+        pool[indices[:2]] = targets[:2]
+        assert True
+
+
+
+
+
 
     

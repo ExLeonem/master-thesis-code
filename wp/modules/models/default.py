@@ -9,8 +9,7 @@ from tensorflow.keras.layers import  Conv2D, MaxPool2D, Dropout, Flatten, Dense,
 """"
     Simple CNN model for testing purposes.
 """
-def default_model():
-    input_shape = (28, 28, 1)
+def default_model(input_shape=(28, 28, 1)):
     return Sequential([
         Conv2D(128, 4,activation="relu", input_shape=input_shape),
         MaxPool2D(),

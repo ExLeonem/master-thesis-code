@@ -102,51 +102,20 @@ class LabeledPool(DataPool):
             targets (numpy.ndarray): Targets to be used for selection for initial pool
     """
 
-    def __init__(self, data, num_init_targets=10, seed=None, targets=None, pseudo=False, label_shape=None):
+    def __init__(self, data, target_shape=None):
         super(LabeledPool, self).__init__(data)
         self.labeled_indices = np.zeros(data.shape[0], dtype=int) - 1
 
-        if label_shape is None:
+        if target_shape is None:
             self.labels = np.zeros(data.shape[0])
         else:
-            self.labels = np.zeros(label_shape)
-
-        self.pseudo = pseudo
-        self.targets = targets
-        self.running_idx = 0
+            self.labels = np.zeros(target_shape)
         
         # Initialize labels set
-        self.__init_pool_of_indices(num_init_targets, seed, targets)
+        # self.__init_pool_of_indices(num_init_targets, seed, targets)
 
 
-    def __init_pool_of_indices(self, num_init_targets, seed, targets):
-        """
-            Initialize the pool with randomly selected values.
-        """
-
-        # Use initial target values?
-        if num_init_targets <= 0:
-            return
-
-        # Reproducability?
-        if not (seed is None):
-            np.random.seed(seed)
-
-        # Select 'num_init_targets' per unique label 
-        unique_targets = np.unique(targets)
-        for idx in range(len(unique_targets)):
-
-            # Select indices of labels for unique label[idx]
-            with_unique_value = targets == unique_targets[idx]
-            indices_of_label = np.argwhere(with_unique_value)
-
-            # Set randomly selected labels
-            selected_indices = np.random.choice(indices_of_label.flatten(), num_init_targets, replace=True)
-            self.labeled_indices[selected_indices] = 1
-            self.labels[selected_indices] = unique_targets[idx]
-
-
-    def __setitem__(self, index, label=None):
+    def __setitem__(self, index, label):
         """
             Setting an item for data of given index.
 
@@ -155,11 +124,6 @@ class LabeledPool(DataPool):
                 label (numpy.ndarray): The labels to set
         """
         self.labeled_indices[index] = 1
-
-        # If pseudo selection, select von available targets
-        if not (self.targets is None) and self.pseudo:
-            label = self.targets[index]
-
         self.labels[index] = label
 
 
@@ -173,10 +137,16 @@ class LabeledPool(DataPool):
         """
 
         indices = self.labeled_indices != -1
-        return (self.data[indices])[index], (self.labeled_indices[indices])[index] 
+        return (self.data[indices])[index], (self.labels[indices])[index] 
 
 
     def __len__(self):
+        """
+            How many labeled samples are existent?
+
+            Returns:
+                (int) Number of labeled samples in pool of labeled data.
+        """
         indices = self.labeled_indices != -1
         return len(self.labels[indices])
 
@@ -196,63 +166,3 @@ class LabeledPool(DataPool):
             Get indices of labels that are already set
         """
         return np.argwhere(self.labeled_indices != -1)
-
-
-    def put(self, index, label):
-        """
-            Put a new set of labeled information into
-            the data pool.
-
-            Parameters:
-                index (int | numpy.ndarray): Indices of the data
-        """
-
-        if self.running_idx > len(self.labeled_indices):
-            raise ArgumentError("Can't update pool. Pool is full.")
-
-        if isinstance(index, np.ndarray) or isinstance(label, np.ndarray):
-            self.__set_with_array(index, label)
-
-        else:
-            self.labeled_indices[running_idx] = index
-            self.labels[running_idx] = label
-            self.running_idx += 1
-
-
-    def __set_with_array(self, labels):
-
-        num_new_labels = len(labels)
-
-        if self.running_idx + num_new_labels > len(self.labeled_indices):
-            raise ValueError("Can't update pool. Pool is full.")
-
-        
-
-        
-
-        
-
-    
-    def __put_batch_batch(self, indices, labels):
-        """
-            Put a batch of data into the pool.
-
-            Parameters:
-                indices (numpy.ndarray): 
-                labels (numpy.ndarray): 
-        """
-
-        # For each datapoint a label?
-        if len(labeled_indices) != len(labels):
-            raise ArgumentError("Shape of indices and labels do not match")
-
-        # Is slice out of range for number of max. labels?
-        running_idx_length = len(labeled_indices)
-        new_running_idx = self.running_idx + running_idx_length
-        if new_running_idx > len(self.labels):
-            raise ArugmentError("Can't update pool. Pool is full.")
-
-        # Set data indices and labels, update running index
-        self.labeled_indices[self.running_idx:new_running_idx] = indices
-        self.labels[self.running_idx:new_running_idx] = labels
-        self.running_idx = new_running_idx

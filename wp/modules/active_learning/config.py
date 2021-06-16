@@ -37,7 +37,7 @@ class Config:
 
         # Are defaults given as dict?
         if not isinstance(defaults, dict):
-            raise ArgumentError("Can't set defaults. 'defaults' needs to be of type 'dict'.")
+            raise ValueError("Can't set defaults. 'defaults' needs to be of type 'dict'.")
 
         # Set default values
         for key, default_value in defaults.items():
@@ -73,6 +73,11 @@ class TrainConfig(Config):
             "loss": "binary_crossentropy",
             "metrics": ["accuracy"]
         }
+
+        # User trying to overwrite defaults?
+        if not (dict.get(kwargs, "defaults") is None):
+            raise ValueError("Error in TrainConfig. Can't overwrite defaults. Remove defaults from **kwargs.")
+
 
         super(TrainConfig, self).__init__(defaults=defaults, **kwargs)
 
