@@ -43,7 +43,8 @@ class BayesModel:
         mode=Mode.TRAIN, 
         model_type=None, 
         classification=True, 
-        is_binary=False):
+        is_binary=False,
+        **kwargs):
 
         self._model = model
         self._config = config
@@ -319,7 +320,9 @@ class BayesModel:
     def get_library(self):
         return self._library
 
-    
+    def get_model_type(self):
+        return self._model_type
+
     def get_mode(self):
         return self._mode
 

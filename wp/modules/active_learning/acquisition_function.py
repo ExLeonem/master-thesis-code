@@ -87,18 +87,20 @@ class AcquisitionFunction:
             self.fn = self._set_fn(model)
 
         data = pool.get_data()
+        indices = pool.get_indices()
 
         # Select values randomly? 
         # No need for batch processing
         if self.name == "random":
-            return self.fn(data, **kwargs)
+            return self.fn(indices, pool.data, **kwargs)
         
         # Iterate throug batches of data
         results = None
         num_datapoints = len(data)
         self.logger.info("Use {} unlabeled datapoints".format(num_datapoints))
         start = 0
-        end = self.batch_size if num_datapoints > self.batch_size else num_datapoints
+        # end = self.batch_size if num_datapoints > self.batch_size else num_datapoints
+        end = 0
 
         # TODO: correcttion needed, throws error when batch_size == num_datapoints
         self.logger.info("Iterate over input batches.")
@@ -111,7 +113,6 @@ class AcquisitionFunction:
                 end = num_datapoints
             
             # Calcualte results of batch
-            # print("Start: {}, end: {}".format(start, end))
             sub_result = self.fn(data[start:end], **kwargs)
             start = end
 
@@ -120,19 +121,18 @@ class AcquisitionFunction:
                 shape = [len(data)] + list(sub_result.shape[1:])
                 results = np.zeros(shape)
 
-            # print(sub_result.shape)
-            # print(results.shape)
             results[start:end] = sub_result[start:end]
+
+        # Dataset is empty
+        if results is None:
+            pass
 
         # Return selected indices and prediction values
         self.logger.info("Iteration completed")
         default_num = 20
-        num_of_elements_to_select = dict.get(kwargs, "num", default_num)
-        indices = self.__select_first(results, num_of_elements_to_select)
+        num_of_elements_to_select = self._adapt_selection_num(len(results), dict.get(kwargs, "num", default_num))
         
-        self.logger.info("End: acquisition query")
-
-        return indices, results[indices]
+        return self.__select_first(results, indices, num_of_elements_to_select)
 
 
     def _adapt_selection_num(self, num_indices, num_to_select):
@@ -170,7 +170,7 @@ class AcquisitionFunction:
             return query_fn
             
 
-    def _random(self, pool, num=5, **kwargs):
+    def _random(self, available_indices, data, num=5, **kwargs):
         """
             Randomly select a number of datapoints from the dataset.
             Baseline for comparison purposes.
@@ -184,15 +184,13 @@ class AcquisitionFunction:
                 (numpy.ndarray): Randomly selected indices for next training.
         """
 
-        available_indices = pool.get_indices()
         num = self._adapt_selection_num(len(available_indices), num)
         indices = np.random.choice(available_indices, num, replace=False).astype(int)
 
-        data = pool.get_data()
         return indices, data[indices]
 
 
-    def __select_first(self, predictions, n):
+    def __select_first(self, predictions, indices, n):
         """
             Select n biggest elements from k- predictions.
 
@@ -202,6 +200,8 @@ class AcquisitionFunction:
             Returns: 
                 (numpy.ndarray) indices of n-biggest predictions.
         """
-        
-        return np.argpartition(predictions, -n)[-n:]
+
+        sorted_keys = np.argsort(predictions)
+        n_biggest_keys = sorted_keys[-n:]
+        return indices[n_biggest_keys], predictions[n_biggest_keys]
 

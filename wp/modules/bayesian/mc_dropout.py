@@ -25,13 +25,14 @@ class McDropout(BayesModel):
     def __init__(self, model, config=None, **kwargs):
         super().__init__(model, config, model_type=ModelType.MC_DROPOUT, **kwargs)
 
+        # disable batch norm
+        super().disable_batch_norm()
+
 
     def predict(self, inputs, runs=10, **kwargs):
         """
 
         """
-        # disable batch norm
-        super().disable_batch_norm()
         output = None
         for run in range(runs):
             result = super().predict(inputs, **kwargs)
@@ -107,18 +108,10 @@ class McDropout(BayesModel):
         loss_fn = self._library.get_base_module().keras.losses.get(self._model.loss)
         loss = loss_fn(targets, posterior_approx)
 
-        print(posterior_approx.shape)
-        # 
         extended = self.extend_binary_predictions(posterior_approx)
-
-        print(extended.shape)
 
         labels = np.argmax(extended, axis=1)
         acc = np.mean(labels == targets)
-
-        print(labels)
-        print(targets)
-        print(labels == targets)
         return [loss.numpy(), acc]
 
 
@@ -148,7 +141,7 @@ class McDropout(BayesModel):
 
 
         # Binary case: calculate complementary prediction and concatenate
-        if self.get_num_classes() == 2:
+        if self.is_binary():
             bin_alt_class = (1 + np.zeros(predictions.shape)) - predictions
 
             # Expand dimensions for predictions to concatenate. Is this needed?
@@ -206,9 +199,8 @@ class McDropout(BayesModel):
         predictions = self.predict(data, runs=runs)
         posterior = self.approx_posterior(predictions)
 
-        first_term = -np.sum(posterior*np.log(posterior), axis=1)
-        second_term = np.sum(np.sum(predictions*np.log(predictions), axis=1), axis=1)/runs
-
+        first_term = -np.sum(posterior*np.log(np.abs(posterior) + .001), axis=1)
+        second_term = np.mean(predictions*np.log(np.abs(predictions) + .001), axis=1)
         return first_term + second_term
 
 

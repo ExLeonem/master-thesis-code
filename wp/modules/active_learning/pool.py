@@ -38,7 +38,11 @@ class DataPool:
 
 class UnlabeledPool(DataPool):
     """
-        
+        Create a pool, holding  information about unlabeled input values.
+
+        Parameters:
+            data (np.ndarray): The inputs of the dataset
+
     """
 
     def __init__(self, data):
@@ -49,6 +53,12 @@ class UnlabeledPool(DataPool):
 
 
     def __len__(self):
+        """
+            How many inputs are labeled?
+
+            Returns:
+                (int) The number of unlabeled inputs.
+        """
         unlabeled = self.indices != -1
         return len(self.indices[unlabeled])
 
@@ -63,28 +73,53 @@ class UnlabeledPool(DataPool):
         return self.__len__() == 0
 
 
-    def update(self, indices):
-        unlabeled_indices = self.get_indices()
-        indices_to_update = unlabeled_indices[indices]
+    def update(self, indices_to_update):
+        """
+            Mark specific indices as 'labeled'.
+
+            Parameters:
+                indices (np.ndarray | int): The indices of inputs to mark as labeled
+        """
         self.indices[indices_to_update] = -1
 
 
     def get_indices(self):
+        """
+            Get the indices of unlabeld input values.
+        """
         unlabeled = self.indices != -1
         return self.indices[unlabeled]
 
 
     def get_data(self):
+        """
+            Get input values of unlabeled data.
+
+            Returns:
+                (np.ndarray) inputs which are not labeled.
+        """
         indices = self.get_indices()
         return self.data[indices]
 
 
     def get_labeled_indices(self):
+        """
+            Get indices of already labeled inputs.
+
+            Returns:
+                (np.ndarray) indices of already labeled inputs.
+        """
         labeled = np.logical_not(self.indices != -1)
         return self._all_indices[labeled]
 
 
     def get_labeled_data(self):
+        """
+            Get values of already labeled datapoints.
+
+            Returns:
+                (np.ndarray) datapoints which are already labeled.
+        """
         indices = self.get_labeled_indices()
         return self.data[indices]
 
@@ -123,6 +158,8 @@ class LabeledPool(DataPool):
                 index (slice | int | numpy.ndarray): The data for which to set the labels
                 label (numpy.ndarray): The labels to set
         """
+
+
         self.labeled_indices[index] = 1
         self.labels[index] = label
 
