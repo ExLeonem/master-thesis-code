@@ -108,7 +108,7 @@ class BayesModel:
             pass
 
         elif lib_type == LibType.TENSOR_FLOW:
-            return self._model.evaluate(inputs, targets, verbose=0, **kwargs)
+            return self._model.evaluate(inputs, targets, **kwargs)
 
         # No implementation for library type
         raise ValueError("Error in Model.fit(**kwargs).\

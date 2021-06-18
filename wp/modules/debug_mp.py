@@ -10,6 +10,8 @@ from bayesian import McDropout, MomentPropagation
 from data import BenchmarkData, DataSetType
 from models import default_model, setup_growth
 
+import mp.MomentPropagation as mp
+
 import tensorflow as tf
 import logging
 
@@ -42,35 +44,6 @@ def setup_logger(debug):
     return logger
 
 
-
-def select_model(model_name, base_model, **kwargs):
-    """
-        Select metrics and create a specific bayesian model from the given base model.
-
-        Parameters:
-            model_name (str): The model type. One of ["dp", "mp"]
-            base_model (tf.Model): Tensorflow model
-
-        Returns:
-            ((model, list())) The BayesianModel and specific model metrics for the metric writer.
-    """
-    metrics = None 
-    model = None
-    if model_name == "dp":
-        model = McDropout(base_model, **kwargs)
-        metrics = ['loss', 'binary_accuracy']
-
-    elif model_name == "mp":
-        model = MomentPropagation(base_model, **kwargs)
-        metrics = [
-            'loss', 'tf_op_layer_Sigmoid_1_loss', 
-            'tf_op_layer_Mul_8_loss', 'tf_op_layer_Sigmoid_1_binary_accuracy', 
-            'tf_op_layer_Mul_8_binary_accuracy'
-        ]
-    else:
-        raise ValueError("There is nothing specified for model type {}.".format(model_switch))
-
-    return model, metrics
 
 
 def keys_to_dict(**kwargs):
@@ -134,7 +107,6 @@ if __name__ == "__main__":
 
     # Parse script arguments
     parser = argparse.ArgumentParser(description="Active learning parser")
-    parser.add_argument("-m", "--model", default="dp")
     parser.add_argument("-c", "--class_count", default=2, type=int)
     parser.add_argument("-aqf", "--acquisition_function", default="bald")
     parser.add_argument("-aqb", "--acquisition_batch_size", default=900, type=int)

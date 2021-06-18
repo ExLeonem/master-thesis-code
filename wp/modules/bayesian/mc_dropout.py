@@ -70,29 +70,29 @@ class McDropout(BayesModel):
             pass
 
         elif lib_type == LibType.TENSOR_FLOW:
-
-            batch_size = dict.get(kwargs, "batch_size")
-            if batch_size is None:
-                predictions = self.predict(inputs, **kwargs)
-                return self.__evaluate_tf(predictions, targets)
+            return self._model.evaluate(inputs, targets, **kwargs)
+            # batch_size = dict.get(kwargs, "batch_size")
+            # if batch_size is None:
+            #     predictions = self.predict(inputs, **kwargs)
+            #     return self.__evaluate_tf(predictions, targets)
             
 
-            # Iterate over inputs and targets batchwise
-            predictions = None
-            for start_idx in range(0, len(inputs), batch_size):
+            # # Iterate over inputs and targets batchwise
+            # predictions = None
+            # for start_idx in range(0, len(inputs), batch_size):
                 
-                end_idx = start_idx + batch_size
-                sub_result = self.predict(inputs[start_idx:end_idx], **kwargs)
+            #     end_idx = start_idx + batch_size
+            #     sub_result = self.predict(inputs[start_idx:end_idx], **kwargs)
 
-                # Create array to hold prediction results
-                if predictions is None:
-                    shape_without_batch = sub_result.shape if batch_size == 1 else sub_result.shape[1:]
-                    result_shape = [len(inputs)] + list(shape_without_batch)
-                    predictions = np.zeros(result_shape)
+            #     # Create array to hold prediction results
+            #     if predictions is None:
+            #         shape_without_batch = sub_result.shape if batch_size == 1 else sub_result.shape[1:]
+            #         result_shape = [len(inputs)] + list(shape_without_batch)
+            #         predictions = np.zeros(result_shape)
 
-                predictions[start_idx:end_idx] = sub_result
+            #     predictions[start_idx:end_idx] = sub_result
 
-            return self.__evaluate_tf(predictions, targets)
+            # return self.__evaluate_tf(predictions, targets)
 
 
         # No implementation for library type
