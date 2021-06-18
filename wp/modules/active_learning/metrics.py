@@ -84,7 +84,10 @@ class Metrics:
 
         values = []
 
-        file_path = os.path.join(self.BASE_PATH, filename+"."+self.EXT)
+        if not ("."+self.EXT in filename):
+            filename = filename + "." + self.EXT 
+
+        file_path = os.path.join(self.BASE_PATH, filename)
         with open(file_path, "r") as csv_file:
 
             reader = csv.DictReader(csv_file, delimiter=self.delimiter, quotechar=self.quotechar)

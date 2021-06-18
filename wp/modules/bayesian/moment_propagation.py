@@ -24,6 +24,7 @@ class MomentPropagation(BayesModel):
 
     def __init__(self, model, config=None, **kwargs):
         model_type = ModelType.MOMENT_PROPAGATION
+        self._base_model = model
         mp_model = self.__create_mp_model(model)
         super(MomentPropagation, self).__init__(mp_model, config, model_type=model_type, **kwargs)
 
@@ -35,6 +36,58 @@ class MomentPropagation(BayesModel):
         _mp = mp.MP()
         return _mp.create_MP_Model(model=model, use_mp=False, verbose=True)
 
+
+    def compile(self, *args, **kwargs):
+        """
+            Compile the model if needed
+        """
+        lib_type = self._library.get_lib_type()
+        if lib_type == LibType.TORCH:
+            # No compilation for pytorch model needed
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            self._base_model.compile(**kwargs)
+
+        else:
+            # No implementation for library type available
+            raise ValueError("Error in Model.compile(self, *args, **kwargs). Missing library implementation for {}.".format(lib_type))
+
+
+    def fit(self, *args, **kwargs):
+        """
+            Fit the model to the given data. The **kwargs are library depending.
+
+            Args:
+                x (numpy.ndarray): The inputs to train the model on. (default=None)
+                y (numpy.ndarray): The targets to fit the model to. (default=None)
+                batch_size (int): The size of each individual batch
+
+            Returns:
+
+        """
+
+        lib_type = self._library.get_lib_type()
+        if lib_type == LibType.TORCH:
+            # TODO: implement for pytorch
+            fit_routine_callback = dict.get(kwargs, "routine")
+            if fit_routine_callback is None:
+                # Execute default
+                pass
+            else:
+                pass
+
+            return []
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            history = self._base_model.fit(*args, **kwargs)
+            self._model = self.__create_mp_model(self._base_model)
+            return history
+            # return self._model.fit(*args, **kwargs)
+
+        # No implementation for library type
+        raise ValueError("Error in Model.fit(**kwargs).\
+         No implementation for library type {}".format(lib_type))
 
 
     def variance(self, predictions):
@@ -65,7 +118,7 @@ class MomentPropagation(BayesModel):
 
 
         # Binary case: calculate complementary prediction and concatenate
-        if self.get_num_classes() == 2:
+        if self.is_binary():
             bin_alt_class = (1 + np.zeros(predictions.shape)) - predictions
 
             # Expand dimensions for predictions to concatenate. Is this needed?
@@ -101,6 +154,32 @@ class MomentPropagation(BayesModel):
         
         else:
             raise ValueError("Error in MomentPropagation.__cast_tensor_to_numpy(self, values). Can't cast Tensor of given type, missing implementation detail.")
+
+
+    # ----------------
+    #
+    # ----------------------
+
+    def save_weights(self):
+        path = self._checkpoints.PATH
+        lib_type = self._library.get_lib_type()
+
+        if lib_type == LibType.TORCH:
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            self._base_model.save_weights(path)
+
+
+    def load_weights(self):
+        path = self._checkpoints.PATH
+        lib_type = self._library.get_lib_type()
+
+        if lib_type == LibType.TORCH:
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+            self._base_model.load_weights(path)
 
 
     # ----------------

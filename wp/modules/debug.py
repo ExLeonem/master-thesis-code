@@ -6,13 +6,71 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 from active_learning import TrainConfig, Config, Metrics, LabeledPool, UnlabeledPool, AcquisitionFunction
-from bayesian import McDropout
+from bayesian import McDropout, MomentPropagation
 from data import BenchmarkData, DataSetType
 from models import default_model, setup_growth
 
 import tensorflow as tf
 import logging
 
+
+def setup_logger(debug):
+    """
+        Setup a logger for the active learning loop
+
+        Parameters:
+            propagate (bool): activate logging output in console?
+    """
+
+    logger = logging.Logger("Runner")
+    log_level = logging.DEBUG if debug else logging.CRITICAL
+
+    logger.handler = logging.StreamHandler(sys.stdout)
+    logger.handler.setLevel(log_level)
+    
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    logger.handler.setFormatter(formatter)
+    logger.addHandler(logger.handler)
+
+    dir_name = os.path.dirname(os.path.realpath(__file__))
+    log_path = os.path.join(dir_name, "logs", "debug.log")
+
+    fh = logging.FileHandler(log_path)
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+    logger.addHandler(fh)
+    return logger
+
+
+
+def select_model(model_name, base_model, **kwargs):
+    """
+        Select metrics and create a specific bayesian model from the given base model.
+
+        Parameters:
+            model_name (str): The model type. One of ["dp", "mp"]
+            base_model (tf.Model): Tensorflow model
+
+        Returns:
+            ((model, list())) The BayesianModel and specific model metrics for the metric writer.
+    """
+    metrics = None 
+    model = None
+    if model_name == "dp":
+        model = McDropout(base_model, **kwargs)
+        metrics = ['loss', 'binary_accuracy']
+
+    elif model_name == "mp":
+        model = MomentPropagation(base_model, **kwargs)
+        metrics = [
+            'loss', 'tf_op_layer_Sigmoid_1_loss', 
+            'tf_op_layer_Mul_8_loss', 'tf_op_layer_Sigmoid_1_binary_accuracy', 
+            'tf_op_layer_Mul_8_binary_accuracy'
+        ]
+    else:
+        raise ValueError("There is nothing specified for model type {}.".format(model_switch))
+
+    return model, metrics
 
 
 def keys_to_dict(**kwargs):
@@ -63,9 +121,11 @@ if __name__ == "__main__":
         Several runtime parameters are parsable to the script.
 
         Argv:
-            -c, --class_count - The number of classes to use from targets
-            -acq, --acquisition_function - The acquisition function to use for evaluation
-            -s, --step_size - The step size to iterate the dataset over.
+            -m, --model (str) The name of the model to use. One of ['mp', 'dp']
+            -c, --class_count (int) The number of classes to use from targets
+            -acq, --acquisition_function (str): The acquisition function to use for evaluation. One of ['max_entropy', 'bald', 'max_var_ratio', 'std_mean', 'random']
+            -s, --step_size (int): The step size to iterate the dataset over
+
     """
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -74,6 +134,7 @@ if __name__ == "__main__":
 
     # Parse script arguments
     parser = argparse.ArgumentParser(description="Active learning parser")
+    parser.add_argument("-m", "--model", default="dp")
     parser.add_argument("-c", "--class_count", default=2, type=int)
     parser.add_argument("-aqf", "--acquisition_function", default="bald")
     parser.add_argument("-aqb", "--acquisition_batch_size", default=900, type=int)
@@ -82,10 +143,12 @@ if __name__ == "__main__":
     parser.add_argument("--tf_seed", default=2, type=int)
     parser.add_argument("-e", "--epochs", default=5, type=int)
     parser.add_argument("-l", "--limit", default=None, type=int)
+    parser.add_argument("-d", "--debug", default=False, type=bool)
     # parser.add_argument("")
     args = parser.parse_args()
 
     # Runtime arguments
+    model_name = args.model
     num_classes = args.class_count
     acq_function_name = args.acquisition_function
     acq_batch_size = args.acquisition_batch_size
@@ -94,6 +157,8 @@ if __name__ == "__main__":
     seed = args.seed
     tf_seed = args.tf_seed
     limit = args.limit
+
+    logger = setup_logger(args.debug)
 
     # Set seeds for reproducability?
     if not (seed is None):
@@ -116,7 +181,9 @@ if __name__ == "__main__":
     setup_growth()
     config = TrainConfig()
     base_model = default_model()
-    model = McDropout(base_model, is_binary=(num_classes == 2))
+
+    model, metrics = select_model(model_name, base_model, is_binary=(num_classes == 2))
+    # model = McDropout(base_model, is_binary=(num_classes == 2))
     model.compile(optimizer=config["optimizer"], loss=config["loss"], metrics=["binary_accuracy"])
     model.save_weights()
 
@@ -128,14 +195,15 @@ if __name__ == "__main__":
 
         tf.keras.backend.clear_session()
         if not (limit is None) and it > limit:
-            # print("Iteration: {}".format(it))
+            # Defined iteration limit reached
             break
-
         model.load_weights()
+        logger.info("---------")
 
         # Fit the model
         lab_inputs, lab_targets = labeled_pool[:]
         history = model.fit(lab_inputs, lab_targets, batch_size=config["batch_size"], epochs=epochs, verbose=False)
+        logger.info("Training: {}".format(history.history))
 
         # Selected datapoints and labels
         indices, _pred = acquisition(model, unlabeled_pool, num=step_size)
@@ -154,10 +222,13 @@ if __name__ == "__main__":
             **eval_metrics
         ))
 
+        logger.info("Iteration {}".format(i))
+        logger.info("Metrics: {}".format(str(eval_metrics)))
+        logger.info("Labeled_size: {}".format(len(labeled_pool)))
         it += 1
 
     METRICS_PATH = os.path.join(BASE_PATH, "metrics")
-    metrics = Metrics(METRICS_PATH, keys=["iteration", "loss", "binary_accuracy"])
+    metrics = Metrics(METRICS_PATH, keys=["iteration"] + metrics)
     model_name = str(model.get_model_type()).split(".")[1].lower() 
     metrics.write(model_name + "_" + acq_function_name, acl_history)
 
