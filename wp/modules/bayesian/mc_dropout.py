@@ -69,10 +69,10 @@ class McDropout(BayesModel):
         # Create predictions
         predictions = self.batch_prediction(inputs, **kwargs)
         self.logger.info("evaluate/predictions.shape: {}".format(predictions.shape))
-        return self.__evaluate_tf(predictions, targets)
+        return self.__evaluate(predictions, targets)
 
-    def __evaluate_tf(self, predictions, targets):
 
+    def __evaluate(self, predictions, targets):
         # Returns dim: (batch, ) in binary case, else: (batch, nn_output_dim)
         expectation = np.average(predictions, axis=1)
 
@@ -94,15 +94,6 @@ class McDropout(BayesModel):
         """
         # predictions -> (batch_size, num_predictions)
         predictions = self.extend_binary_predictions(predictions)
-
-        # if not self.is_binary():
-        #     self.logger("Calculate mean of binary case")
-            # 
-            # if len(predictions.shape) == 2:
-            #     self.logger.warn("")
-
-            # return np.average(predictions, axis=1)
-
         return np.average(predictions, axis=1)
 
 
@@ -140,7 +131,6 @@ class McDropout(BayesModel):
     # Loss function
     # -----------------------
 
-
     def _nll(self, prediction):
         # Shape (batch, classes) (already reduces with np.mean)
         prediction = self.extend_binary_predictions(prediction)
@@ -150,7 +140,6 @@ class McDropout(BayesModel):
     
     def _entropy(self, prediction):
         pass
-
 
 
     # -----

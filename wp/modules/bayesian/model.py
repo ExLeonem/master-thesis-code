@@ -8,7 +8,6 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 PARENT_MODULE_PATH = os.path.join(dir_path, "..")
 sys.path.append(PARENT_MODULE_PATH)
 
-
 from . import Checkpoint
 
 
@@ -64,7 +63,7 @@ class BayesModel:
     
     
     def __call__(self, *args, **kwargs):
-        pass
+        return self._model(inputs, training=self.in_mode(Mode.TRAIN))
 
 
     def predict(self, inputs, **kwargs):
@@ -113,6 +112,7 @@ class BayesModel:
         """
         self._model.compile(**kwargs)
 
+
     def prepare_predictions(self, predictions):
         """
             Extend predictions for binary classification case.
@@ -149,14 +149,13 @@ class BayesModel:
         """
 
         disabled = False
-        for l in model.layers:
+        for l in self._model.layers:
             if l.__class__.__name__ == "BatchNormalization":
                 disabled = True
                 l.trainable = False
 
         if disabled:
-            print("Disabled BatchNorm-Layers.")
-
+            self.logger.info("Disabled BatchNorm-Layers.")
 
 
     def clear_session(self):
@@ -195,7 +194,6 @@ class BayesModel:
         self.logger = logger
 
 
-    
     def batch_prediction(self, inputs, **kwargs):
         # Predict all data at once
         batch_size = dict.get(kwargs, "batch_size")

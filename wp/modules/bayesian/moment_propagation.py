@@ -26,28 +26,9 @@ class MomentPropagation(BayesModel):
 
 
     def evaluate(self, inputs, targets, **kwargs):
-        batch_size = dict.get(kwargs, "batch_size")
-        if batch_size is None:
-            predictions, var = self._model(inputs)
-            return self.__evaluate(predictions, targets)
-        
-        # Iterate over inputs and targets batchwise
-        predictions = None
-        for start_idx in range(0, len(inputs), batch_size):
-            
-            end_idx = start_idx + batch_size
-            sub_result, var = self._model(inputs[start_idx:end_idx], training=False)
-
-            # Create array to hold prediction results
-            if predictions is None:
-                shape_without_batch = sub_result.shape if batch_size == 1 else sub_result.shape[1:]
-                result_shape = [len(inputs)] + list(shape_without_batch)
-                predictions = np.zeros(result_shape)
-
-            predictions[start_idx:end_idx] = sub_result
-
+        self.set_mode(Mode.EVAL)
+        predictions = self.batch_prediction(inputs, **kwargs)
         return self.__evaluate(predictions, targets)
-
 
     def __evaluate(self, prediction, targets):
 
