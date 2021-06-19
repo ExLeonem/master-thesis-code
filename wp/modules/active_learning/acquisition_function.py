@@ -113,6 +113,7 @@ class AcquisitionFunction:
                 end = num_datapoints
             
             # Calcualte results of batch
+            self.logger.info(data.shape)
             sub_result = self.fn(data[start:end], **kwargs)
             start = end
 
@@ -169,6 +170,10 @@ class AcquisitionFunction:
         else:
             return query_fn
             
+
+    def set_fn(self, fn):
+        self.fn = fn
+
 
     def _random(self, available_indices, data, num=5, **kwargs):
         """

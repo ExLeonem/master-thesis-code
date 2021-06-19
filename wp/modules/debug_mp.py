@@ -6,44 +6,39 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 from active_learning import TrainConfig, Config, Metrics, LabeledPool, UnlabeledPool, AcquisitionFunction
-from bayesian import McDropout, MomentPropagation
+from bayesian import McDropout, MomentPropagation, BayesModel
 from data import BenchmarkData, DataSetType
 from models import default_model, setup_growth
-
-import mp.MomentPropagation as mp
+from utils import setup_logger
 
 import tensorflow as tf
 import logging
 
 
-def setup_logger(debug):
+
+def select_model(model_name, base_model, **kwargs):
     """
-        Setup a logger for the active learning loop
+        Select metrics and create a specific bayesian model from the given base model.
 
         Parameters:
-            propagate (bool): activate logging output in console?
+            model_name (str): The model type. One of ["dp", "mp"]
+            base_model (tf.Model): Tensorflow model
+
+        Returns:
+            ((model, list())) The BayesianModel and specific model metrics for the metric writer.
     """
+    metrics = None 
+    model = None
+    if model_name == "dp":
+        model = McDropout(base_model, **kwargs)
+        metrics = ['loss', 'binary_accuracy']
 
-    logger = logging.Logger("Runner")
-    log_level = logging.DEBUG if debug else logging.CRITICAL
+    elif model_name == "mp":
+        pass
+    else:
+        raise ValueError("There is nothing specified for model type {}.".format(model_switch))
 
-    logger.handler = logging.StreamHandler(sys.stdout)
-    logger.handler.setLevel(log_level)
-    
-    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    logger.handler.setFormatter(formatter)
-    logger.addHandler(logger.handler)
-
-    dir_name = os.path.dirname(os.path.realpath(__file__))
-    log_path = os.path.join(dir_name, "logs", "debug.log")
-
-    fh = logging.FileHandler(log_path)
-    fh.setLevel(logging.DEBUG)
-    fh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-    logger.addHandler(fh)
-    return logger
-
-
+    return model, metrics
 
 
 def keys_to_dict(**kwargs):
@@ -108,20 +103,19 @@ if __name__ == "__main__":
     # Parse script arguments
     parser = argparse.ArgumentParser(description="Active learning parser")
     parser.add_argument("-c", "--class_count", default=2, type=int)
-    parser.add_argument("-aqf", "--acquisition_function", default="bald")
+    parser.add_argument("-aqf", "--acquisition_function", default="max_entropy")
     parser.add_argument("-aqb", "--acquisition_batch_size", default=900, type=int)
-    parser.add_argument("-s", "--step_size", default=1200, type=int)
-    parser.add_argument("--seed", default=1, type=int)
-    parser.add_argument("--tf_seed", default=2, type=int)
+    parser.add_argument("-s", "--step_size", default=1, type=int)
+    parser.add_argument("--seed", default=None, type=int)
+    parser.add_argument("--tf_seed", default=None, type=int)
     parser.add_argument("-e", "--epochs", default=5, type=int)
     parser.add_argument("-l", "--limit", default=None, type=int)
     parser.add_argument("-d", "--debug", default=False, type=bool)
-    parser.add_argument("-i", "--initial_size", default=10, type=int)
+    parser.add_argument("-i", "--initial_size", default=2, type=int)
     # parser.add_argument("")
     args = parser.parse_args()
 
     # Runtime arguments
-    model_name = args.model
     num_classes = args.class_count
     acq_function_name = args.acquisition_function
     acq_batch_size = args.acquisition_batch_size
@@ -131,7 +125,10 @@ if __name__ == "__main__":
     tf_seed = args.tf_seed
     limit = args.limit
 
-    logger = setup_logger(args.debug)
+    # Setup Logger
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    log_path = os.path.join(current_dir, "logs")
+    logger = setup_logger(args.debug, file="debug_mp.log", path=log_path)
 
     # Set seeds for reproducability?
     if not (seed is None):
@@ -148,22 +145,19 @@ if __name__ == "__main__":
     acquisition = AcquisitionFunction(acq_function_name, batch_size=acq_batch_size)
     labeled_pool = LabeledPool(x_train)
     unlabeled_pool = UnlabeledPool(x_train)
-    init_pools(unlabeled_pool, labeled_pool, y_train, num_init_per_target=args.initial_size)
+    init_pools(unlabeled_pool, labeled_pool, y_train, num_init_per_target=args.step_size)
 
     # Setup the Model
     setup_growth()
     config = TrainConfig(
-
+        batch_size=step_size
     )
-    base_model = default_model()
 
-    model, metrics = select_model(model_name, base_model, is_binary=(num_classes == 2))
+    # model, metrics = select_model(model_name, base_model, is_binary=(num_classes == 2))
     # model = McDropout(base_model, is_binary=(num_classes == 2))
-    model.compile(optimizer=config["optimizer"], loss=config["loss"], metrics=["binary_accuracy"])
-    base_model.compile(optimizer=config["optimizer"], loss=config["loss"], metrics=["binary_accuracy"])
-    model.save_weights()
 
     # Active learning loop
+    save_state_exists = False
     iterator = tqdm(range(0, len(unlabeled_pool), step_size), leave=True)
     acl_history = []
     it = 0
@@ -173,13 +167,25 @@ if __name__ == "__main__":
         if not (limit is None) and it > limit:
             # Defined iteration limit reached
             break
-        model.load_weights()
-        logger.info("---------")
+        
+        # Create base model and fit the base model
+        base_model = BayesModel(default_model(), config)
+        if not save_state_exists:
+            base_model.save_weights()
+        else:
+            base_model.load_weights()
+        base_model.compile(optimizer=config["optimizer"], loss=config["loss"], metrics=["binary_accuracy"])
 
-        # Fit the model
+
+        logger.info("---------")
+        # Fit the base model
         lab_inputs, lab_targets = labeled_pool[:]
-        history = model.fit(lab_inputs, lab_targets, batch_size=config["batch_size"], epochs=epochs, verbose=False)
+        history = base_model.fit(lab_inputs, lab_targets, batch_size=config["batch_size"], epochs=epochs, verbose=False)
         logger.info("Training: {}".format(history.history))
+
+        # Create MP model
+        model = MomentPropagation(base_model.get_model(), is_binary=(num_classes==2))
+        model.compile(optimizer=config["optimizer"], loss=config["loss"], metrics=["binary_accuracy"])
 
         # Selected datapoints and labels
         indices, _pred = acquisition(model, unlabeled_pool, num=step_size)
@@ -195,7 +201,7 @@ if __name__ == "__main__":
         eval_result = model.evaluate(x_test, y_test, batch_size=config["batch_size"], verbose=False)
         eval_metrics = model.map_eval_values(eval_result)
         acl_history.append(keys_to_dict(
-            iteration=i,
+            iteration=it,
             labeled_size=lab_pool_size,
             **eval_metrics
         ))
@@ -206,9 +212,9 @@ if __name__ == "__main__":
         it += 1
 
     METRICS_PATH = os.path.join(BASE_PATH, "metrics")
-    metrics = Metrics(METRICS_PATH, keys=["iteration", "labeled_size"] + metrics)
+    metrics = Metrics(METRICS_PATH, keys=["iteration", "labeled_size", "loss", "accuracy"])
     model_name = str(model.get_model_type()).split(".")[1].lower() 
-    metrics.write(model_name + "_" + acq_function_name, acl_history)
+    metrics.write("moment_propagation" + "_" + acq_function_name, acl_history)
 
 
     # Check length of pool and initial data

@@ -9,38 +9,10 @@ from active_learning import TrainConfig, Config, Metrics, LabeledPool, Unlabeled
 from bayesian import McDropout, MomentPropagation
 from data import BenchmarkData, DataSetType
 from models import default_model, setup_growth
+from utils import setup_logger
 
 import tensorflow as tf
 import logging
-
-
-def setup_logger(debug):
-    """
-        Setup a logger for the active learning loop
-
-        Parameters:
-            propagate (bool): activate logging output in console?
-    """
-
-    logger = logging.Logger("Runner")
-    log_level = logging.DEBUG if debug else logging.CRITICAL
-
-    logger.handler = logging.StreamHandler(sys.stdout)
-    logger.handler.setLevel(log_level)
-    
-    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    logger.handler.setFormatter(formatter)
-    logger.addHandler(logger.handler)
-
-    dir_name = os.path.dirname(os.path.realpath(__file__))
-    log_path = os.path.join(dir_name, "logs", "debug.log")
-
-    fh = logging.FileHandler(log_path)
-    fh.setLevel(logging.DEBUG)
-    fh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-    logger.addHandler(fh)
-    return logger
-
 
 
 def select_model(model_name, base_model, **kwargs):
@@ -115,6 +87,8 @@ def init_pools(unlabeled_pool, labeled_pool, targets, num_init_per_target=10):
         labeled_pool[selected_indices] = new_labels
 
 
+
+
 if __name__ == "__main__":
     """
         Execute a manually constructed active learning loop.
@@ -134,17 +108,17 @@ if __name__ == "__main__":
 
     # Parse script arguments
     parser = argparse.ArgumentParser(description="Active learning parser")
-    parser.add_argument("-m", "--model", default="dp")
-    parser.add_argument("-c", "--class_count", default=2, type=int)
-    parser.add_argument("-aqf", "--acquisition_function", default="bald")
-    parser.add_argument("-aqb", "--acquisition_batch_size", default=900, type=int)
-    parser.add_argument("-s", "--step_size", default=1200, type=int)
-    parser.add_argument("--seed", default=1, type=int)
-    parser.add_argument("--tf_seed", default=2, type=int)
-    parser.add_argument("-e", "--epochs", default=5, type=int)
-    parser.add_argument("-l", "--limit", default=None, type=int)
-    parser.add_argument("-d", "--debug", default=False, type=bool)
-    parser.add_argument("-i", "--initial_size", default=10, type=int)
+    parser.add_argument("-m", "--model", default="dp", help="Select the model the run an experiment for.")
+    parser.add_argument("-c", "--class_count", default=2, type=int, help="Select the num of classes to run the experiment for.")
+    parser.add_argument("-aqf", "--acquisition_function", default="bald", help="Select an aquisition function to execute. One of ['max_entropy', 'bald', 'std_mean', 'max_var_ratio']")
+    parser.add_argument("-aqb", "--acquisition_batch_size", default=900, type=int, help="Set an batch size for the acquisition function iterations.")
+    parser.add_argument("-s", "--step_size", default=1200, type=int, help="Set a step size. How many datapoints to add per iteration to pool of labeled data.")
+    parser.add_argument("--n_times", default=10, type=int, help="The number of predictions to do for mc dropout predictions. (default=10)")
+    parser.add_argument("--seed", default=None, type=int, help="Setting a seed for random processes.")
+    parser.add_argument("-e", "--epochs", default=5, type=int, help="The number of epochs to fit the network. (default=5)")
+    parser.add_argument("-l", "--limit", default=None, type=int, help="A limit for the iteration to do.")
+    parser.add_argument("-d", "--debug", default=False, action="store_true", help="Output logging messages?")
+    parser.add_argument("-i", "--initial_size", default=10, type=int, help="The initial size of the pool of labeled data. (default=10)")
     # parser.add_argument("")
     args = parser.parse_args()
 
@@ -156,17 +130,18 @@ if __name__ == "__main__":
     step_size = args.step_size
     epochs = args.epochs
     seed = args.seed
-    tf_seed = args.tf_seed
     limit = args.limit
 
-    logger = setup_logger(args.debug)
+    # Setup Logger
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    log_path = os.path.join(current_dir, "logs")
+    logger = setup_logger(args.debug, file="debug.log", path=log_path)
 
     # Set seeds for reproducability?
     if not (seed is None):
         np.random.seed(seed)
+        tf.random.set_seed(seed)
 
-    if not (tf_seed is None):
-        tf.random.set_seed(tf_seed)
 
     # Load and transform mnist dataset
     mnist = BenchmarkData(DataSetType.MNIST, os.path.join(DATASET_PATH, "mnist"), classes=num_classes)
@@ -178,17 +153,21 @@ if __name__ == "__main__":
     unlabeled_pool = UnlabeledPool(x_train)
     init_pools(unlabeled_pool, labeled_pool, y_train, num_init_per_target=args.initial_size)
 
-    # Setup the Model
+    # Setup/configure the Model
     setup_growth()
+    loss = "sparse_categorical_crossentropy" if num_classes > 2 else "binary_crossentropy"
     config = TrainConfig(
-
+        batch_size=5,
+        loss=loss
     )
-    base_model = default_model()
+
+    output_classes = num_classes if num_classes != 2 else 1
+    base_model = default_model(output_classes=output_classes)
+
 
     model, metrics = select_model(model_name, base_model, is_binary=(num_classes == 2))
     # model = McDropout(base_model, is_binary=(num_classes == 2))
     model.compile(optimizer=config["optimizer"], loss=config["loss"], metrics=["binary_accuracy"])
-    base_model.compile(optimizer=config["optimizer"], loss=config["loss"], metrics=["binary_accuracy"])
     model.save_weights()
 
     # Active learning loop
@@ -220,10 +199,10 @@ if __name__ == "__main__":
         labeled_pool[indices] = labels
 
         # Evaluate model
-        eval_result = model.evaluate(x_test, y_test, batch_size=config["batch_size"], verbose=False)
+        eval_result = model.evaluate(x_test[:100], y_test[:100], batch_size=config["batch_size"], verbose=False)
         eval_metrics = model.map_eval_values(eval_result)
         acl_history.append(keys_to_dict(
-            iteration=i,
+            iteration=it,
             labeled_size=lab_pool_size,
             **eval_metrics
         ))
@@ -232,6 +211,7 @@ if __name__ == "__main__":
         logger.info("Metrics: {}".format(str(eval_metrics)))
         logger.info("Labeled_size: {}".format(len(labeled_pool)))
         it += 1
+        break
 
     METRICS_PATH = os.path.join(BASE_PATH, "metrics")
     metrics = Metrics(METRICS_PATH, keys=["iteration", "labeled_size"] + metrics)
@@ -240,6 +220,6 @@ if __name__ == "__main__":
 
 
     # Check length of pool and initial data
-    # print("Initial data: {}".format(len(x_train)))
-    # print("Labeled data: {}".format(len(labeled_pool)))
+    print("Initial data: {}".format(len(x_train)))
+    print("Labeled data: {}".format(len(labeled_pool)))
 

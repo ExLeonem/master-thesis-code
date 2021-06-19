@@ -1,5 +1,8 @@
 import os, sys, importlib
-import logging as log
+import logging
+import numpy as np
+from abc import ABC, abstractmethod
+from enum import Enum
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 PARENT_MODULE_PATH = os.path.join(dir_path, "..")
@@ -7,8 +10,6 @@ sys.path.append(PARENT_MODULE_PATH)
 
 from library import Library, LibraryDispatcher, LibType
 from . import Checkpoint
-from abc import ABC, abstractmethod
-from enum import Enum
 
 
 class Mode(Enum):
@@ -44,8 +45,10 @@ class BayesModel:
         model_type=None, 
         classification=True, 
         is_binary=False,
+        debug=False,
         **kwargs):
 
+        self.setup_logger(debug)
         self._model = model
         self._config = config
         self._mode = mode
@@ -223,6 +226,77 @@ class BayesModel:
             # self._library.clear_session()
 
 
+    # ----------------------
+    # Utilities
+    # ------------------------------
+
+    def setup_logger(self, debug):
+        """
+            Setup a logger for the active learning loop
+
+            Parameters:
+                propagate (bool): activate logging output in console?
+        """
+
+        logger = logging.Logger("Runner")
+        log_level = logging.DEBUG if debug else logging.CRITICAL
+
+        logger.handler = logging.StreamHandler(sys.stdout)
+        logger.handler.setLevel(log_level)
+        
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        logger.handler.setFormatter(formatter)
+        logger.addHandler(logger.handler)
+
+        dir_name = os.path.dirname(os.path.realpath(__file__))
+        log_path = os.path.join(dir_name, "..", "logs", "model.log")
+
+        fh = logging.FileHandler(log_path)
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        logger.addHandler(fh)
+        self.logger = logger
+
+
+    
+    def batch_prediction(self, inputs, **kwargs):
+        
+        lib_type = self._library.get_lib_type()
+        if lib_type == LibType.TORCH:
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+
+            # Predict all data at once
+            batch_size = dict.get(kwargs, "batch_size")
+            if batch_size is None:
+                prediction = self.predict(inputs, **kwargs)
+                return prediction
+            
+
+            # Sequential batchwise prediction
+            predictions = None
+            for start_idx in range(0, len(inputs), batch_size):
+                
+                end_idx = start_idx + batch_size
+                sub_result = self.predict(inputs[start_idx:end_idx], **kwargs)
+
+                # Create array to hold prediction results
+                if predictions is None:
+                    shape_without_batch = sub_result.shape if batch_size == 1 else sub_result.shape[1:]
+                    result_shape = [len(inputs)] + list(shape_without_batch)
+                    predictions = np.zeros(result_shape)
+
+                predictions[start_idx:end_idx] = sub_result
+
+            return predictions
+
+
+        # No implementation for library type
+        raise ValueError("Error in Model.fit(**kwargs).\
+         No implementation for library type {}".format(lib_type))
+
+
     # --------------
     # Checkpoint creation/loading
     # ------------------------------
@@ -322,6 +396,9 @@ class BayesModel:
 
     def get_model_type(self):
         return self._model_type
+
+    def get_model(self):
+        return self._model
 
     def get_mode(self):
         return self._mode

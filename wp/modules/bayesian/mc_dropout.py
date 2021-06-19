@@ -29,35 +29,39 @@ class McDropout(BayesModel):
         super().disable_batch_norm()
 
 
-    def predict(self, inputs, runs=10, **kwargs):
+    def predict(self, inputs, n_times=10, **kwargs):
         """
+            Predict n_times (n_times) for every datapoint in inputs.
 
+            Parameters:
+                inputs (numpy.ndarray): Input data to predict for. (Datapoints)
+                n_times (int): The number of predictions to do per datapoint.
+
+            Returns:
+                (numpy.ndarray) of shape (num_of_datapoints, ...output_shape, n_times)
         """
         output = None
-        for run in range(runs):
+        for run in range(n_times):
             result = super().predict(inputs, **kwargs)
 
             # Set initial shape of the ouput
             if output is None:
-                output = np.zeros(tuple([runs] + list(result.shape)))
+                output = np.zeros(tuple([n_times] + list(result.shape)))
             
             output[run] = result
 
-        # super().clear_session()
 
         # Reshape to put run dimension to last axis
         output_shape = None
         if output.shape[-1] == 1:
             # Binary case last dimension can be omited
-            output_shape = tuple([len(inputs), runs] + list(result.shape[2:]))
+            output_shape = tuple([len(inputs), n_times] + list(result.shape[2:]))
 
         else:
-            output_shape = tuple([len(inputs), runs] + list(result.shape[1:]))
+            output_shape = tuple([len(inputs), n_times] + list(result.shape[1:]))
 
         output = output.reshape(output_shape)
         return output
-
-        # return self.extend_binary_predictions(output)
 
 
     def evaluate(self, inputs, targets, **kwargs):
@@ -65,54 +69,37 @@ class McDropout(BayesModel):
             Evaluate a model on given input data and targets.
         """
 
+        # Create predictions
+        predictions = self.batch_prediction(inputs, **kwargs)
+        self.logger.info("evaluate/predictions.shape: {}".format(predictions.shape))
+
         lib_type = self._library.get_lib_type()
         if lib_type == LibType.TORCH:
             pass
-
+        
         elif lib_type == LibType.TENSOR_FLOW:
-            return self._model.evaluate(inputs, targets, **kwargs)
-            # batch_size = dict.get(kwargs, "batch_size")
-            # if batch_size is None:
-            #     predictions = self.predict(inputs, **kwargs)
-            #     return self.__evaluate_tf(predictions, targets)
-            
+            return self.__evaluate_tf(predictions, targets)
 
-            # # Iterate over inputs and targets batchwise
-            # predictions = None
-            # for start_idx in range(0, len(inputs), batch_size):
-                
-            #     end_idx = start_idx + batch_size
-            #     sub_result = self.predict(inputs[start_idx:end_idx], **kwargs)
-
-            #     # Create array to hold prediction results
-            #     if predictions is None:
-            #         shape_without_batch = sub_result.shape if batch_size == 1 else sub_result.shape[1:]
-            #         result_shape = [len(inputs)] + list(shape_without_batch)
-            #         predictions = np.zeros(result_shape)
-
-            #     predictions[start_idx:end_idx] = sub_result
-
-            # return self.__evaluate_tf(predictions, targets)
-
-
-        # No implementation for library type
-        raise ValueError("Error in Model.fit(**kwargs).\
-         No implementation for library type {}".format(lib_type))
+        else:
+            raise ValueError("Error in Model.fit(**kwargs).\
+                No implementation for library type {}".format(lib_type))
 
 
     def __evaluate_tf(self, predictions, targets):
 
-        posterior_approx = np.average(predictions, axis=1)
+        # Returns dim: (batch, ) in binary case, else: (batch, nn_output_dim)
+        expectation = np.average(predictions, axis=1)
 
         # Will fail in regression case!!!! Add flag to function?
         loss_fn = self._library.get_base_module().keras.losses.get(self._model.loss)
-        loss = loss_fn(targets, posterior_approx)
+        loss = loss_fn(targets, expectation)
 
-        extended = self.extend_binary_predictions(posterior_approx)
+        # Extend dimension in binary case 
+        extended = self.extend_binary_predictions(expectation)
 
         labels = np.argmax(extended, axis=1)
         acc = np.mean(labels == targets)
-        return [loss.numpy(), acc]
+        return [np.mean(loss.numpy()), acc]
 
 
     def approx_posterior(self, predictions):
@@ -121,6 +108,15 @@ class McDropout(BayesModel):
         """
         # predictions -> (batch_size, num_predictions)
         predictions = self.extend_binary_predictions(predictions)
+
+        # if not self.is_binary():
+        #     self.logger("Calculate mean of binary case")
+            # 
+            # if len(predictions.shape) == 2:
+            #     self.logger.warn("")
+
+            # return np.average(predictions, axis=1)
+
         return np.average(predictions, axis=1)
 
 
@@ -131,8 +127,8 @@ class McDropout(BayesModel):
     def extend_binary_predictions(self, predictions, num_classes=2):
         """
             In MC Dropout case always predictions of shape
-            (batch_size, runs, classes) for classification 
-            or (batch_size, runs) for binary/regression case
+            (batch_size, n_times, classes) for classification 
+            or (batch_size, n_times) for binary/regression case
         """
 
         # Don't modify predictions shape in regression case
@@ -149,10 +145,26 @@ class McDropout(BayesModel):
             predictions = np.expand_dims(predictions, axis=-1)
 
             # Concatenate predictions
-            class_axis = len(predictions.shape) + 1
             predictions = np.concatenate([predictions, bin_alt_class], axis=len(predictions.shape)-1)
         
         return predictions
+
+
+    # ---------------
+    # Loss function
+    # -----------------------
+
+
+    def _nll(self, prediction):
+        # Shape (batch, classes) (already reduces with np.mean)
+        prediction = self.extend_binary_predictions(prediction)
+        max_prediction = np.max(prediction, axis=1)
+        return np.log(max_prediction)
+
+    
+    def _entropy(self, prediction):
+        pass
+
 
 
     # -----
@@ -174,7 +186,7 @@ class McDropout(BayesModel):
             return self.__std_mean
 
 
-    def __max_entropy(self, data, runs=5, **kwargs):
+    def __max_entropy(self, data, n_times=5, **kwargs):
         """
             Select datapoints by using max entropy.
 
@@ -183,7 +195,7 @@ class McDropout(BayesModel):
                 unlabeled_pool (UnlabeledPool) The pool of unlabeled data to select
         """
         # Create predictions
-        predictions = self.predict(data, runs=runs)
+        predictions = self.predict(data, n_times=n_times)
         posterior = self.approx_posterior(predictions)
         
         # Absolute value to prevent nan values and + 0.001 to prevent infinity values
@@ -193,18 +205,28 @@ class McDropout(BayesModel):
         return  -np.sum(posterior*log_post, axis=1)
 
 
-    def __bald(self, data, runs=5, **kwargs):
-        
+    def __bald(self, data, n_times=10, **kwargs):
+        self.logger.info("------------ BALD -----------")
         # predictions shape (batch, num_predictions, num_classes)
-        predictions = self.predict(data, runs=runs)
+        self.logger.info("_bald/data-shape: {}".format(data.shape))
+        predictions = self.predict(data, n_times=n_times)
+
+        self.logger.info("_bald/predictions-shape: {}".format(predictions.shape))
         posterior = self.approx_posterior(predictions)
+        self.logger.info("_bald/posterior-shape: {}".format(posterior.shape))
 
         first_term = -np.sum(posterior*np.log(np.abs(posterior) + .001), axis=1)
-        second_term = np.mean(predictions*np.log(np.abs(predictions) + .001), axis=1)
+
+        # Missing dimension in binary case?
+        predictions = self.extend_binary_predictions(predictions)
+        second_term = np.sum(np.mean(predictions*np.log(np.abs(predictions) + .001), axis=1), axis=1)
+
+        self.logger.info("_bald/first-term-shape: {}".format(first_term.shape))
+        self.logger.info("_bald/second-term-shape: {}".format(second_term.shape))
         return first_term + second_term
 
 
-    def __max_var_ratio(self, data, runs=10, **kwargs):
+    def __max_var_ratio(self, data, n_times=10, **kwargs):
         """
             Select datapoints by maximising variation ratios.
 
@@ -214,14 +236,14 @@ class McDropout(BayesModel):
 
         # (batch, sample, num classses)
         # (batch, num_classes)
-        predictions = self.predict(data, runs=runs)
+        predictions = self.predict(data, n_times=n_times)
         posterior = self.approx_posterior(predictions)
 
         # Calcualte max variation rations
         return 1 + posterior.max(axis=1)
 
 
-    def __std_mean(self, data, runs=10, **kwargs):
+    def __std_mean(self, data, n_times=10, **kwargs):
         """
            Maximise mean standard deviation.
            Check std mean calculation. Depending the model type calculation of p(y=c|x, w) can differ.
@@ -231,7 +253,7 @@ class McDropout(BayesModel):
             Implement distinction for different model types.
         """
         # TODO: generalize for n-classes For binary classes
-        predictions = self.predict(data, runs=runs)
+        predictions = self.predict(data, n_times=n_times)
 
         posterior = self.approx_posterior(predictions) 
         squared_posterior = np.power(posterior, 2)

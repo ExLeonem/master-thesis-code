@@ -28,6 +28,58 @@ class MomentPropagation(BayesModel):
         super(MomentPropagation, self).__init__(mp_model, config, model_type=model_type, **kwargs)
 
 
+    def evaluate(self, inputs, targets, **kwargs):
+
+        lib_type = self._library.get_lib_type()
+        if lib_type == LibType.TORCH:
+            pass
+
+        elif lib_type == LibType.TENSOR_FLOW:
+
+            batch_size = dict.get(kwargs, "batch_size")
+            if batch_size is None:
+                predictions, var = self._model(inputs)
+                return self.__evaluate(predictions, targets)
+            
+            # Iterate over inputs and targets batchwise
+            predictions = None
+            for start_idx in range(0, len(inputs), batch_size):
+                
+                end_idx = start_idx + batch_size
+                sub_result, var = self._model(inputs[start_idx:end_idx], training=False)
+
+                # Create array to hold prediction results
+                if predictions is None:
+                    shape_without_batch = sub_result.shape if batch_size == 1 else sub_result.shape[1:]
+                    result_shape = [len(inputs)] + list(shape_without_batch)
+                    predictions = np.zeros(result_shape)
+
+                predictions[start_idx:end_idx] = sub_result
+
+            return self.__evaluate(predictions, targets)
+
+        # No implementation for library type
+        raise ValueError("Error in Model.fit(**kwargs).\
+         No implementation for library type {}".format(lib_type))
+
+
+    def __evaluate(self, prediction, targets):
+
+        loss_fn = self._library.get_base_module().keras.losses.get(self._model.loss)
+        loss = loss_fn(targets, prediction)
+        
+        prediction = self.extend_binary_predictions(prediction)
+
+        labels = np.argmax(prediction, axis=1)
+        acc = np.mean(labels == targets)
+        return [np.mean(loss.numpy()), acc]
+
+
+    def map_eval_values(self, values, custom_names=None):
+        metric_names = ["loss", "accuracy"] if custom_names is None else custom_names
+        return dict(zip(metric_names, values))
+
+
     def __create_mp_model(self, model):
         """
             Transforms the set base model into an moment propagation model.
@@ -48,6 +100,17 @@ class MomentPropagation(BayesModel):
         
         expectation = self.extend_binary_predictions(expectation)
         return self.__cast_tensor_to_numpy(expectation) 
+
+
+    def _nll(self, prediction):
+        prediction = self.extend_binary_predictions(prediction)
+        max_prediction = np.max(prediction,axis=1)
+        return np.log(max_prediction)
+
+
+    def _entropy(self, prediction):
+        prediciton = self.extend_binary_predictions(prediction)
+        return np.array([-np.sum( pred_mp[i] * np.log2(pred_mp[i] + 1E-14)) for i in range(0,len(pred_mp))])
 
 
     # --------
@@ -124,7 +187,7 @@ class MomentPropagation(BayesModel):
     def __max_entropy(self, data, **kwargs):
         # Expectation and variance of form (batch_size, num_classes)
         # Expectation equals the prediction
-        predictions = self.predict(data)
+        predictions = self._model.predict(x=data)
 
         # Need to scaled values because zeros
         class_probs = self.expectation(predictions)
@@ -137,13 +200,13 @@ class MomentPropagation(BayesModel):
         """
             [ ] Check if information about variance is needed here. Compare to mc dropout bald.
         """
-        predictions = self.predict(data)
+        predictions = self._model.predict(x=data)
         expectation = self.expectation(predictions)
         variance = self.variance(predictions)
 
 
     def __max_var_ratio(self, data, **kwargs):
-        predictions = self.predict(data)
+        predictions = self._model.predict(x=data)
         expectation = self.expectation(predictions)
 
         col_max_indices = np.argmax(expectation, axis=1)        
