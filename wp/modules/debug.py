@@ -87,8 +87,6 @@ def init_pools(unlabeled_pool, labeled_pool, targets, num_init_per_target=10):
         labeled_pool[selected_indices] = new_labels
 
 
-
-
 if __name__ == "__main__":
     """
         Execute a manually constructed active learning loop.
@@ -167,7 +165,7 @@ if __name__ == "__main__":
 
     model, metrics = select_model(model_name, base_model, is_binary=(num_classes == 2))
     # model = McDropout(base_model, is_binary=(num_classes == 2))
-    model.compile(optimizer=config["optimizer"], loss=config["loss"], metrics=["binary_accuracy"])
+    model.compile(optimizer=config["optimizer"], loss=config["loss"], metrics=["accuracy"])
     model.save_weights()
 
     # Active learning loop
@@ -189,7 +187,7 @@ if __name__ == "__main__":
         logger.info("Training: {}".format(history.history))
 
         # Selected datapoints and labels
-        indices, _pred = acquisition(model, unlabeled_pool, num=step_size)
+        indices, _pred = acquisition(model, unlabeled_pool, num=step_size, n_times=args.n_times)
         labels = y_train[indices]
         
         # Update pools
@@ -211,7 +209,7 @@ if __name__ == "__main__":
         logger.info("Metrics: {}".format(str(eval_metrics)))
         logger.info("Labeled_size: {}".format(len(labeled_pool)))
         it += 1
-        break
+        # break
 
     METRICS_PATH = os.path.join(BASE_PATH, "metrics")
     metrics = Metrics(METRICS_PATH, keys=["iteration", "labeled_size"] + metrics)

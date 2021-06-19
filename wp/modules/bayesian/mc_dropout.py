@@ -7,9 +7,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 MODULE_PATH = os.path.join(dir_path, "..")
 sys.path.append(MODULE_PATH)
 
-import library
-importlib.reload(library)
-from library import LibType
+import tensorflow as tf
 
 
 
@@ -68,22 +66,10 @@ class McDropout(BayesModel):
         """
             Evaluate a model on given input data and targets.
         """
-
         # Create predictions
         predictions = self.batch_prediction(inputs, **kwargs)
         self.logger.info("evaluate/predictions.shape: {}".format(predictions.shape))
-
-        lib_type = self._library.get_lib_type()
-        if lib_type == LibType.TORCH:
-            pass
-        
-        elif lib_type == LibType.TENSOR_FLOW:
-            return self.__evaluate_tf(predictions, targets)
-
-        else:
-            raise ValueError("Error in Model.fit(**kwargs).\
-                No implementation for library type {}".format(lib_type))
-
+        return self.__evaluate_tf(predictions, targets)
 
     def __evaluate_tf(self, predictions, targets):
 
@@ -91,7 +77,7 @@ class McDropout(BayesModel):
         expectation = np.average(predictions, axis=1)
 
         # Will fail in regression case!!!! Add flag to function?
-        loss_fn = self._library.get_base_module().keras.losses.get(self._model.loss)
+        loss_fn = tf.keras.losses.get(self._model.loss)
         loss = loss_fn(targets, expectation)
 
         # Extend dimension in binary case 

@@ -7,11 +7,8 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 MODULE_PATH = os.path.join(dir_path, "..")
 sys.path.append(MODULE_PATH)
 
-import library
-importlib.reload(library)
-from library import LibType
-
 import mp.MomentPropagation as mp
+import tensorflow as tf
 
 
 
@@ -29,43 +26,32 @@ class MomentPropagation(BayesModel):
 
 
     def evaluate(self, inputs, targets, **kwargs):
-
-        lib_type = self._library.get_lib_type()
-        if lib_type == LibType.TORCH:
-            pass
-
-        elif lib_type == LibType.TENSOR_FLOW:
-
-            batch_size = dict.get(kwargs, "batch_size")
-            if batch_size is None:
-                predictions, var = self._model(inputs)
-                return self.__evaluate(predictions, targets)
-            
-            # Iterate over inputs and targets batchwise
-            predictions = None
-            for start_idx in range(0, len(inputs), batch_size):
-                
-                end_idx = start_idx + batch_size
-                sub_result, var = self._model(inputs[start_idx:end_idx], training=False)
-
-                # Create array to hold prediction results
-                if predictions is None:
-                    shape_without_batch = sub_result.shape if batch_size == 1 else sub_result.shape[1:]
-                    result_shape = [len(inputs)] + list(shape_without_batch)
-                    predictions = np.zeros(result_shape)
-
-                predictions[start_idx:end_idx] = sub_result
-
+        batch_size = dict.get(kwargs, "batch_size")
+        if batch_size is None:
+            predictions, var = self._model(inputs)
             return self.__evaluate(predictions, targets)
+        
+        # Iterate over inputs and targets batchwise
+        predictions = None
+        for start_idx in range(0, len(inputs), batch_size):
+            
+            end_idx = start_idx + batch_size
+            sub_result, var = self._model(inputs[start_idx:end_idx], training=False)
 
-        # No implementation for library type
-        raise ValueError("Error in Model.fit(**kwargs).\
-         No implementation for library type {}".format(lib_type))
+            # Create array to hold prediction results
+            if predictions is None:
+                shape_without_batch = sub_result.shape if batch_size == 1 else sub_result.shape[1:]
+                result_shape = [len(inputs)] + list(shape_without_batch)
+                predictions = np.zeros(result_shape)
+
+            predictions[start_idx:end_idx] = sub_result
+
+        return self.__evaluate(predictions, targets)
 
 
     def __evaluate(self, prediction, targets):
 
-        loss_fn = self._library.get_base_module().keras.losses.get(self._model.loss)
+        loss_fn = tf.keras.losses.get(self._model.loss)
         loss = loss_fn(targets, prediction)
         
         prediction = self.extend_binary_predictions(prediction)
@@ -152,17 +138,7 @@ class MomentPropagation(BayesModel):
         if isinstance(values, np.ndarray):
             return values
 
-        # Cast Tensor of different
-        lib_type = self._library.get_lib_type()
-        if lib_type == LibType.TORCH:
-            pass
-
-        elif lib_type == LibType.TENSOR_FLOW:
-            base_module = self._library.get_base_module()
-            values = base_module.make_ndarray(values)
-        
-        else:
-            raise ValueError("Error in MomentPropagation.__cast_tensor_to_numpy(self, values). Can't cast Tensor of given type, missing implementation detail.")
+        values = tf.make_ndarray(values)
 
 
     # ----------------

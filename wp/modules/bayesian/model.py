@@ -8,7 +8,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 PARENT_MODULE_PATH = os.path.join(dir_path, "..")
 sys.path.append(PARENT_MODULE_PATH)
 
-from library import Library, LibraryDispatcher, LibType
+
 from . import Checkpoint
 
 
@@ -35,7 +35,6 @@ class BayesModel:
             _config (Config): Model configuration
             _mode (Mode): The mode the model is in 'train' or 'test'/'eval'.
             _model_type (ModelType): The model type
-            _library (Library): The library to use tensorflow, pytorch
             _checkpoints (Checkpoint): Created checkpoints.
     """
 
@@ -53,12 +52,8 @@ class BayesModel:
         self._config = config
         self._mode = mode
         self._model_type = model_type
-        self._library = self.__init_library_of(model)
 
-        if self._library is None:
-            raise ValueError("Could not initialize the model. Passed model does not seem to match any library types. Currently available libraries: {TensorFlow, Keras}")
-        
-        self._checkpoints = Checkpoint(self._library)
+        self._checkpoints = Checkpoint()
 
         self.__classification = classification
         if not self.__classification:
@@ -80,20 +75,9 @@ class BayesModel:
                 inputs (numpy.ndarray): The inputs for the approximation
 
         """
-        # No library was set for the given model
-        if self._library is None:
-            raise ValueError("Error in BayesModel.predict/2. Missing library.")
-
-        lib_type = self._library.get_lib_type()
-        if lib_type == LibType.TORCH:
-            return None
-
-        elif lib_type == LibType.TENSOR_FLOW:
-            return self._model(inputs, training=self.in_mode(Mode.TRAIN))
-        
-        raise ValueError("Error in Model.predict(self, inputs, **kwargs). Missing library implementation for {}".format(lib_type))
-
+        return self._model(inputs, training=self.in_mode(Mode.TRAIN))
     
+
     def evaluate(self, inputs, targets, **kwargs):
         """
             Evaluate a model on given input data and targets.
@@ -105,22 +89,12 @@ class BayesModel:
             Returns:
                 (list) A list with two values. [loss, accuracy]  
         """
-
-        lib_type = self._library.get_lib_type()
-        if lib_type == LibType.TORCH:
-            pass
-
-        elif lib_type == LibType.TENSOR_FLOW:
-            return self._model.evaluate(inputs, targets, **kwargs)
-
-        # No implementation for library type
-        raise ValueError("Error in Model.fit(**kwargs).\
-         No implementation for library type {}".format(lib_type))
+        return self._model.evaluate(inputs, targets, **kwargs)
 
 
     def fit(self, *args, **kwargs):
         """
-            Fit the model to the given data. The **kwargs are library depending.
+            Fit the model to the given data.
 
             Args:
                 x (numpy.ndarray): The inputs to train the model on. (default=None)
@@ -130,43 +104,14 @@ class BayesModel:
             Returns:
 
         """
-
-        lib_type = self._library.get_lib_type()
-        if lib_type == LibType.TORCH:
-            # TODO: implement for pytorch
-            fit_routine_callback = dict.get(kwargs, "routine")
-            if fit_routine_callback is None:
-                # Execute default
-                pass
-            else:
-                pass
-
-            return []
-
-        elif lib_type == LibType.TENSOR_FLOW:
-            return self._model.fit(*args, **kwargs)
-
-        # No implementation for library type
-        raise ValueError("Error in Model.fit(**kwargs).\
-         No implementation for library type {}".format(lib_type))
+        return self._model.fit(*args, **kwargs)
 
 
     def compile(self, *args, **kwargs):
         """
             Compile the model if needed
         """
-        lib_type = self._library.get_lib_type()
-        if lib_type == LibType.TORCH:
-            # No compilation for pytorch model needed
-            pass
-
-        elif lib_type == LibType.TENSOR_FLOW:
-            self._model.compile(**kwargs)
-
-        else:
-            # No implementation for library type available
-            raise ValueError("Error in Model.compile(self, *args, **kwargs). Missing library implementation for {}.".format(lib_type))
-
+        self._model.compile(**kwargs)
 
     def prepare_predictions(self, predictions):
         """
@@ -194,36 +139,28 @@ class BayesModel:
         metric_names = self._model.metrics_names
         return dict(zip(metric_names, values))
 
-    
-    def __init_library_of(self, model):
-        """
-            Identify which library was used for the given model
-
-            Parameters:
-                model (Module | Sequential | Layer): The neural network model, built with a library.
-
-            Returns:
-                (Library) The library that was used to build the model.
-        """
-        dispatcher = LibraryDispatcher()
-        return dispatcher.get_lib_of(model)
-
 
     def disable_batch_norm(self):
-        self._library.disable_batch_norm(self._model)
+        """
+            Disable batch normalization for activation of dropout during prediction.
+
+            Parameters:
+                - model (tf.Model) Tensorflow neural network model.
+        """
+
+        disabled = False
+        for l in model.layers:
+            if l.__class__.__name__ == "BatchNormalization":
+                disabled = True
+                l.trainable = False
+
+        if disabled:
+            print("Disabled BatchNorm-Layers.")
+
 
 
     def clear_session(self):
-
-        lib_type = self._library.get_lib_type()
-
-        if lib_type == LibType.TORCH:
-            pass
-
-        elif lib_type == LibType.TENSOR_FLOW:
-            base_module = self._library.get_base_module()
-            base_module.keras.backend.clear_session()
-            # self._library.clear_session()
+        tf.keras.backend.clear_session()
 
 
     # ----------------------
@@ -260,41 +197,29 @@ class BayesModel:
 
     
     def batch_prediction(self, inputs, **kwargs):
+        # Predict all data at once
+        batch_size = dict.get(kwargs, "batch_size")
+        if batch_size is None:
+            prediction = self.predict(inputs, **kwargs)
+            return prediction
         
-        lib_type = self._library.get_lib_type()
-        if lib_type == LibType.TORCH:
-            pass
 
-        elif lib_type == LibType.TENSOR_FLOW:
-
-            # Predict all data at once
-            batch_size = dict.get(kwargs, "batch_size")
-            if batch_size is None:
-                prediction = self.predict(inputs, **kwargs)
-                return prediction
+        # Sequential batchwise prediction
+        predictions = None
+        for start_idx in range(0, len(inputs), batch_size):
             
+            end_idx = start_idx + batch_size
+            sub_result = self.predict(inputs[start_idx:end_idx], **kwargs)
 
-            # Sequential batchwise prediction
-            predictions = None
-            for start_idx in range(0, len(inputs), batch_size):
-                
-                end_idx = start_idx + batch_size
-                sub_result = self.predict(inputs[start_idx:end_idx], **kwargs)
+            # Create array to hold prediction results
+            if predictions is None:
+                shape_without_batch = sub_result.shape if batch_size == 1 else sub_result.shape[1:]
+                result_shape = [len(inputs)] + list(shape_without_batch)
+                predictions = np.zeros(result_shape)
 
-                # Create array to hold prediction results
-                if predictions is None:
-                    shape_without_batch = sub_result.shape if batch_size == 1 else sub_result.shape[1:]
-                    result_shape = [len(inputs)] + list(shape_without_batch)
-                    predictions = np.zeros(result_shape)
+            predictions[start_idx:end_idx] = sub_result
 
-                predictions[start_idx:end_idx] = sub_result
-
-            return predictions
-
-
-        # No implementation for library type
-        raise ValueError("Error in Model.fit(**kwargs).\
-         No implementation for library type {}".format(lib_type))
+        return predictions
 
 
     # --------------
@@ -318,25 +243,13 @@ class BayesModel:
 
     def save_weights(self):
         path = self._checkpoints.PATH
-        lib_type = self._library.get_lib_type()
-
-        if lib_type == LibType.TORCH:
-            pass
-
-        elif lib_type == LibType.TENSOR_FLOW:
-            self._model.save_weights(path)
+        self._model.save_weights(path)
 
 
     def load_weights(self):
         path = self._checkpoints.PATH
-        lib_type = self._library.get_lib_type()
-
-        if lib_type == LibType.TORCH:
-            pass
-
-        elif lib_type == LibType.TENSOR_FLOW:
-            self._model.load_weights(path)
-
+        self._model.load_weights(path)
+        
 
     def empty_weights(self):
         try:
@@ -391,9 +304,6 @@ class BayesModel:
     # Setter/-Getter
     # --------------------------
 
-    def get_library(self):
-        return self._library
-
     def get_model_type(self):
         return self._model_type
 
@@ -405,10 +315,6 @@ class BayesModel:
 
 
     def set_mode(self, mode):
-        if self._library is None:
-            raise ValueError("Error in BayesModel.set_mode(mode). Could not set the mode, missing library.")
-        
-        self._library.set_mode(self.model, mode)
         self._mode = mode
 
     # ---------------
