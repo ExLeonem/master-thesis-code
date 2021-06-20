@@ -2,10 +2,19 @@ import os, sys, logging
 
 def setup_logger(debug, name="Default", file=None, file_level=logging.DEBUG, stream_level=logging.CRITICAL, path=None):
     """
-        Setup a logger for the active learning loop
+        Setup a logger for the active learning loop. 
+        By default the logger will write to a file, whenever one is setup.
 
         Parameters:
-            propagate (bool): activate logging output in console?
+            debug (bool): Activate logger?
+            name (str): Name of the logger. (default='Default')
+            file (str): Name of the file where logs are written to. (default=None)
+            path (str): The path where the log file will be created. (default=None)
+            file_level (logging.level): The logging level for the file handler. (default=logging.DEBUG)
+            stream_level (logging.level): The logging level for the stream handler. (default=logging.CRITICAL)
+
+        Returns:
+            (logging.Logger) a logger object.
     """
 
     logger = logging.Logger(name)

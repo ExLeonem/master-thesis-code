@@ -86,12 +86,17 @@ class MomentPropagation(BayesModel):
 
     def extend_binary_predictions(self, predictions):
         """
+            Extend dimensions for binary classification problems.
 
+            Parameters:
+                predictions (numpy.ndarray): Predictions made by the network.
+
+            Returns:
+                (numpy.ndarray) The predictions with extended dimension.
         """
         # Don't modify predictions shape in regression case
         if not self.is_classification():
             return predictions
-
 
         # Binary case: calculate complementary prediction and concatenate
         if self.is_binary():
@@ -107,7 +112,6 @@ class MomentPropagation(BayesModel):
         
         return predictions
 
-
     
     def __cast_tensor_to_numpy(self, values):
         """
@@ -120,6 +124,7 @@ class MomentPropagation(BayesModel):
             return values
 
         values = tf.make_ndarray(values)
+        return values
 
 
     # ----------------

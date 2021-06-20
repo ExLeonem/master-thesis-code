@@ -17,3 +17,14 @@ https://github.com/tensorflow/tensorflow/issues/31842
 # How to add a new model type
 
 
+
+
+# Scripts
+
+Clear all generated logs
+
+```shell
+$ python clear.py
+```
+
+
