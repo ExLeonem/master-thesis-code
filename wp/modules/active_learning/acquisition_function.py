@@ -47,7 +47,7 @@ class AcquisitionFunction:
 
     def __init__(self, fn_name, batch_size=10, debug=False):
         self.setup_logger(debug)
-        
+
         self.name = fn_name
         self.fn = None
         self.batch_size = batch_size
@@ -80,6 +80,10 @@ class AcquisitionFunction:
 
 
     def __call__(self, model, pool, **kwargs):
+        """
+
+        """
+
         self.logger.info("Start: acquisition query")
 
         # Set initial acquistion function
@@ -107,6 +111,7 @@ class AcquisitionFunction:
         while end < num_datapoints:
             sub_result = None
             end = start + self.batch_size
+            self.logger.info("Iteration: [Start: {}, End: {}]".format(start, end))
 
             # Less elements than specified by batch_size?
             if num_datapoints <= (start + self.batch_size):

@@ -18,7 +18,6 @@ def mock_targets(num_targets=10, unique_targets=3):
     return np.random.choice(labels, num_targets)
 
 
-
 # # Mock of a sequential model
 # mock_seq_model = Sequential([
 #     Conv2D(3, 3, activation="relu"),
@@ -62,9 +61,3 @@ class TestModel:
     #         Flatten(),
     #         Dense(3, activation="softmax")
     #     ])
-
-    
-    def test_invalid_library_model(self):
-        config = TrainConfig()
-        with pytest.raises(ValueError) as e:
-            BayesModel(InvalidMockModel(), config)

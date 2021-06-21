@@ -9,7 +9,7 @@ from active_learning import TrainConfig, Config, Metrics, LabeledPool, Unlabeled
 from bayesian import McDropout, MomentPropagation
 from data import BenchmarkData, DataSetType
 from models import default_model, setup_growth
-from utils import setup_logger
+from utils import setup_logger, init_pools
 
 import tensorflow as tf
 import logging
@@ -47,44 +47,6 @@ def select_model(model_name, base_model, **kwargs):
 
 def keys_to_dict(**kwargs):
     return kwargs
-
-
-def init_pools(unlabeled_pool, labeled_pool, targets, num_init_per_target=10):
-    """
-        Initialize the pool with randomly selected values.
-
-        Paramters:
-            unlabeled_pool (UnlabeldPool): Pool that holds information about unlabeld datapoints.
-            labeled_pool (LabeledPool): Pool that holds information about labeled datapoints.
-            targest (numpy.ndarray): The labels of input values.
-            num_init_per_target (int): The initial labels used per target. 
-
-        Todo:
-            - Make it work for labels with additional dimensions (e.g. bag-of-words, one-hot vectors)
-    """
-
-    # unlabeled_pool.update(indices)
-    # labeled_pool[indices] = labels
-
-    # Use initial target values?
-    if num_init_per_target <= 0:
-        return
-
-    # Select 'num_init_per_target' per unique label 
-    unique_targets = np.unique(targets)
-    for idx in range(len(unique_targets)):
-
-        # Select indices of labels for unique label[idx]
-        with_unique_value = targets == unique_targets[idx]
-        indices_of_label = np.argwhere(with_unique_value)
-
-        # Set randomly selected labels
-        selected_indices = np.random.choice(indices_of_label.flatten(), num_init_per_target, replace=True)
-
-        # WILL NOT WORK FOR LABELS with more than 1 dimension
-        unlabeled_pool.update(selected_indices)
-        new_labels = np.full(len(selected_indices), unique_targets[idx])
-        labeled_pool[selected_indices] = new_labels
 
 
 if __name__ == "__main__":
@@ -211,6 +173,7 @@ if __name__ == "__main__":
         it += 1
         # break
 
+    # Write metrics
     METRICS_PATH = os.path.join(BASE_PATH, "metrics")
     metrics = Metrics(METRICS_PATH, keys=["iteration", "labeled_size"] + metrics)
     model_name = str(model.get_model_type()).split(".")[1].lower() 
