@@ -74,7 +74,7 @@ class BayesModel:
                 inputs (numpy.ndarray): The inputs for the approximation
 
         """
-        return self._model.predict(inputs, training=self.in_mode(Mode.TRAIN), **kwargs)
+        return self._model(inputs, training=self.in_mode(Mode.TRAIN))
     
 
     def evaluate(self, inputs, targets, **kwargs):

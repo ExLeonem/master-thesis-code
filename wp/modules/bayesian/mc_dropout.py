@@ -24,7 +24,7 @@ class McDropout(BayesModel):
         super().__init__(model, config, model_type=ModelType.MC_DROPOUT, **kwargs)
 
         # disable batch norm
-        super().disable_batch_norm()
+        # super().disable_batch_norm()
 
 
     def predict(self, inputs, n_times=10, **kwargs):
@@ -40,14 +40,13 @@ class McDropout(BayesModel):
         """
         output = None
         for run in range(n_times):
-            result = super().predict(inputs, **kwargs)
+            result = self._model(inputs, training=True)
 
             # Set initial shape of the ouput
             if output is None:
                 output = np.zeros(tuple([n_times] + list(result.shape)))
             
             output[run] = result
-
 
         # Reshape to put run dimension to last axis
         output_shape = None
