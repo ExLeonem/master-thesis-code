@@ -25,12 +25,40 @@ class MomentPropagation(BayesModel):
         super(MomentPropagation, self).__init__(mp_model, config, model_type=model_type, **kwargs)
 
 
+    def __call__(self, inputs, **kwargs):
+        return self._model.predict(inputs, **kwargs)
+
+
     def evaluate(self, inputs, targets, **kwargs):
+        """
+            Evaluates the performance of the model.
+
+            Parameters:
+                inputs (numpy.ndarray): The inputs of the neural network.
+                targets (numpy.ndarray): The true output values.
+                batch_size (int): The number of batches to use for the prediction. (default=1)
+                
+
+            Returns:
+                (list()) Loss and accuracy of the model.
+        """
         self.set_mode(Mode.EVAL)
         predictions = self.batch_prediction(inputs, **kwargs)
         return self.__evaluate(predictions, targets)
 
+
     def __evaluate(self, prediction, targets):
+        """
+            Calculate the accuracy and the loss
+            of the prediction.
+
+            Parameters:
+                prediction (numpy.ndarray): The predictions made.
+                targets (numpy.ndarray): The target values.
+
+            Returns:
+                (list()) The accuracy and 
+        """
 
         loss_fn = tf.keras.losses.get(self._model.loss)
         loss = loss_fn(targets, prediction)
@@ -43,6 +71,9 @@ class MomentPropagation(BayesModel):
 
 
     def map_eval_values(self, values, custom_names=None):
+        """
+            Maps the values returned from evaluate(inputs, targets) to specific keys.
+        """
         metric_names = ["loss", "accuracy"] if custom_names is None else custom_names
         return dict(zip(metric_names, values))
 
@@ -50,6 +81,9 @@ class MomentPropagation(BayesModel):
     def __create_mp_model(self, model):
         """
             Transforms the set base model into an moment propagation model.
+
+            Returns:
+                (tf.Model) as a moment propagation model.
         """
         _mp = mp.MP()
         return _mp.create_MP_Model(model=model, use_mp=False, verbose=True)
@@ -68,6 +102,10 @@ class MomentPropagation(BayesModel):
         expectation = self.extend_binary_predictions(expectation)
         return self.__cast_tensor_to_numpy(expectation) 
 
+
+    # --------
+    # Metrics
+    # ---------------
 
     def _nll(self, prediction):
         prediction = self.extend_binary_predictions(prediction)

@@ -45,8 +45,8 @@ class AcquisitionFunction:
             fn_name (str): The acquisition function to apply
     """
 
-    def __init__(self, fn_name, batch_size=10, debug=False):
-        self.setup_logger(debug)
+    def __init__(self, fn_name, batch_size=10, verbose=False):
+        self.setup_logger(verbose)
 
         self.name = fn_name
         self.fn = None
@@ -108,26 +108,28 @@ class AcquisitionFunction:
 
         # TODO: correcttion needed, throws error when batch_size == num_datapoints
         self.logger.info("Iterate over input batches.")
-        while end < num_datapoints:
-            sub_result = None
-            end = start + self.batch_size
-            self.logger.info("Iteration: [Start: {}, End: {}]".format(start, end))
+        # while end < num_datapoints:
+        #     sub_result = None
+        #     end = start + self.batch_size
+        #     self.logger.info("Iteration: [Start: {}, End: {}]".format(start, end))
 
-            # Less elements than specified by batch_size?
-            if num_datapoints <= (start + self.batch_size):
-                end = num_datapoints
+        #     # Less elements than specified by batch_size?
+        #     if num_datapoints <= (start + self.batch_size):
+        #         end = num_datapoints
             
-            # Calcualte results of batch
-            self.logger.info(data.shape)
-            sub_result = self.fn(data[start:end], **kwargs)
-            start = end
+        #     # Calcualte results of batch
+        #     self.logger.info(data.shape)
+        #     sub_result = self.fn(data[start:end], **kwargs)
+        #     start = end
 
-            # Initialize shape of results array
-            if results is None:
-                shape = [len(data)] + list(sub_result.shape[1:])
-                results = np.zeros(shape)
+        #     # Initialize shape of results array
+        #     if results is None:
+        #         shape = [len(data)] + list(sub_result.shape[1:])
+        #         results = np.zeros(shape)
 
-            results[start:end] = sub_result[start:end]
+        #     results[start:end] = sub_result[start:end]
+
+        results = self.fn(data, batch_size=self.batch_size, **kwargs)
 
         # Dataset is empty
         if results is None:

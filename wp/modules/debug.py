@@ -72,13 +72,13 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--class_count", default=2, type=int, help="Select the num of classes to run the experiment for.")
     parser.add_argument("-aqf", "--acquisition_function", default="bald", help="Select an aquisition function to execute. One of ['max_entropy', 'bald', 'std_mean', 'max_var_ratio']")
     parser.add_argument("-aqb", "--acquisition_batch_size", default=900, type=int, help="Set an batch size for the acquisition function iterations.")
-    parser.add_argument("-s", "--step_size", default=1200, type=int, help="Set a step size. How many datapoints to add per iteration to pool of labeled data.")
+    parser.add_argument("-s", "--step_size", default=10, type=int, help="Set a step size. How many datapoints to add per iteration to pool of labeled data.")
     parser.add_argument("--n_times", default=10, type=int, help="The number of predictions to do for mc dropout predictions. (default=10)")
     parser.add_argument("--seed", default=None, type=int, help="Setting a seed for random processes.")
     parser.add_argument("-e", "--epochs", default=5, type=int, help="The number of epochs to fit the network. (default=5)")
-    parser.add_argument("-l", "--limit", default=None, type=int, help="A limit for the iteration to do.")
+    parser.add_argument("-l", "--limit", default=5, type=int, help="A limit for the iteration to do.")
     parser.add_argument("-d", "--debug", default=False, action="store_true", help="Output logging messages?")
-    parser.add_argument("-i", "--initial_size", default=10, type=int, help="The initial size of the pool of labeled data. (default=10)")
+    parser.add_argument("-i", "--initial_size", default=2, type=int, help="The initial size of the pool of labeled data. (default=10)")
     # parser.add_argument("")
     args = parser.parse_args()
 
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     x_train, x_test, y_train, y_test = train_test_split(mnist.inputs, mnist.targets)
 
     # Setup active learning specifics
-    acquisition = AcquisitionFunction(acq_function_name, batch_size=acq_batch_size)
+    acquisition = AcquisitionFunction(acq_function_name, batch_size=acq_batch_size, verbose=True)
     labeled_pool = LabeledPool(x_train)
     unlabeled_pool = UnlabeledPool(x_train)
     init_pools(unlabeled_pool, labeled_pool, y_train, num_init_per_target=args.initial_size)
@@ -149,7 +149,7 @@ if __name__ == "__main__":
         logger.info("Training: {}".format(history.history))
 
         # Selected datapoints and labels
-        indices, _pred = acquisition(model, unlabeled_pool, num=step_size, n_times=args.n_times)
+        indices, _pred = acquisition(model, unlabeled_pool, num=step_size, sample_size=args.n_times)
         labels = y_train[indices]
         
         # Update pools

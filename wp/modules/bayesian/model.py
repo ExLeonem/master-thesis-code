@@ -1,4 +1,4 @@
-import os, sys, importlib
+import os, sys, math
 import logging
 import numpy as np
 from abc import ABC, abstractmethod
@@ -194,30 +194,27 @@ class BayesModel:
         self.logger = logger
 
 
-    def batch_prediction(self, inputs, **kwargs):
-        # Predict all data at once
-        batch_size = dict.get(kwargs, "batch_size")
-        if batch_size is None:
-            prediction = self.predict(inputs, **kwargs)
-            return prediction
-        
-
-        # Sequential batchwise prediction
-        predictions = None
-        for start_idx in range(0, len(inputs), batch_size):
+    def batch_prediction(self, inputs, batch_size=1, **kwargs):
+        """
             
-            end_idx = start_idx + batch_size
-            sub_result = self.predict(inputs[start_idx:end_idx], **kwargs)
+            Parameters:
+                inputs (numpy.ndarray): Inputs going into the model
+                n_times (int): How many times to sample from posterior?
+                batch_size (int): In how many batches to split the data?
+        """
+    
+        if batch_size < 1:
+            raise ValueError("Error in McDropout.__call__(). Can't select negative amount of batches.")
 
-            # Create array to hold prediction results
-            if predictions is None:
-                shape_without_batch = sub_result.shape if batch_size == 1 else sub_result.shape[1:]
-                result_shape = [len(inputs)] + list(shape_without_batch)
-                predictions = np.zeros(result_shape)
+        total_len = len(inputs)
+        num_batches = math.ceil(total_len/batch_size)
+        batches = np.array_split(inputs, num_batches, axis=0)
 
-            predictions[start_idx:end_idx] = sub_result
+        predictions = []
+        for batch in batches:
+            predictions.append(self._model(batch, training=True))
 
-        return predictions
+        return np.vstack(predictions)
 
 
     # --------------
