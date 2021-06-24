@@ -30,7 +30,7 @@ def select_model(model_name, base_model, **kwargs):
     model = None
     if model_name == "dp":
         model = McDropout(base_model, **kwargs)
-        metrics = ['loss', 'binary_accuracy']
+        metrics = ['loss', 'accuracy']
 
     elif model_name == "mp":
         model = MomentPropagation(base_model, **kwargs)
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     x_train, x_test, y_train, y_test = train_test_split(mnist.inputs, mnist.targets)
 
     # Setup active learning specifics
-    acquisition = AcquisitionFunction(acq_function_name, batch_size=acq_batch_size, verbose=True)
+    acquisition = AcquisitionFunction(acq_function_name, batch_size=acq_batch_size, verbose=False)
     labeled_pool = LabeledPool(x_train)
     unlabeled_pool = UnlabeledPool(x_train)
     init_pools(unlabeled_pool, labeled_pool, y_train, num_init_per_target=args.initial_size)
@@ -118,7 +118,8 @@ if __name__ == "__main__":
     loss = "sparse_categorical_crossentropy" if num_classes > 2 else "binary_crossentropy"
     config = TrainConfig(
         batch_size=5,
-        loss=loss
+        loss=loss,
+        optimizer="adadelta"
     )
 
     output_classes = num_classes if num_classes != 2 else 1
@@ -144,23 +145,30 @@ if __name__ == "__main__":
         logger.info("---------")
 
         # Fit the model
+        logger.info("Start training")
         lab_inputs, lab_targets = labeled_pool[:]
         history = model.fit(lab_inputs, lab_targets, batch_size=config["batch_size"], epochs=epochs, verbose=False)
         logger.info("Training: {}".format(history.history))
 
+        # Evaluate model
+        logger.info("Start Evaluation")
+        eval_result = model.evaluate(x_test[:100], y_test[:100], batch_size=config["batch_size"])
+        eval_metrics = model.map_eval_values(eval_result)
+        logger.info("Eval: {}".format(str(eval_metrics)))
+
+        # Needs to be moved: in last iteration no aquisition
         # Selected datapoints and labels
+        logger.info("Start aquisition")
         indices, _pred = acquisition(model, unlabeled_pool, num=step_size, sample_size=args.n_times)
         labels = y_train[indices]
+        logger.info("End aquisition")
         
         # Update pools
         lab_pool_size = len(labeled_pool)
         unlabeled_pool.update(indices)
         labeled_indices = unlabeled_pool.get_labeled_indices()
         labeled_pool[indices] = labels
-
-        # Evaluate model
-        eval_result = model.evaluate(x_test[:100], y_test[:100], batch_size=config["batch_size"], verbose=False)
-        eval_metrics = model.map_eval_values(eval_result)
+        
         acl_history.append(keys_to_dict(
             iteration=it,
             labeled_size=lab_pool_size,
@@ -168,7 +176,6 @@ if __name__ == "__main__":
         ))
 
         logger.info("Iteration {}".format(i))
-        logger.info("Metrics: {}".format(str(eval_metrics)))
         logger.info("Labeled_size: {}".format(len(labeled_pool)))
         it += 1
         # break

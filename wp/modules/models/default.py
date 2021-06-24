@@ -21,6 +21,6 @@ def default_model(input_shape=(28, 28, 1), output_classes=2):
         Dense(512, activation="relu"),
         Dense(256, activation="relu"),
         Dense(128, activation="relu"),
-        Dense(output_classes, activation="sigmoid")
+        Dense(output_classes, activation="softmax")
     ])
 

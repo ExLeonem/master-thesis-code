@@ -1,4 +1,5 @@
 import os, sys, math
+import time
 import numpy as np
 import logging as log
 from sklearn.metrics import accuracy_score
@@ -27,7 +28,7 @@ class McDropout(BayesModel):
         # super().disable_batch_norm()
 
 
-    def __call__(self, inputs, sample_size=10, batch_size=1, callback=None, **kwargs):
+    def __call__(self, inputs, sample_size=10, batch_size=None, callback=None, **kwargs):
         """
             
             Parameters:
@@ -35,6 +36,9 @@ class McDropout(BayesModel):
                 sample_size (int): How many times to sample from posterior?
                 batch_size (int): In how many batches to split the data?
         """
+
+        if batch_size is None:
+            batch_size = len(inputs)
         
         if batch_size < 1:
             raise ValueError("Error in McDropout.__call__(). Can't select negative amount of batches.")
@@ -49,7 +53,6 @@ class McDropout(BayesModel):
         predictions = []
 
         for batch in batches:
-
             # Sample from posterior
             posterior_samples = []
             for i in range(sample_size):
@@ -61,6 +64,10 @@ class McDropout(BayesModel):
                 predictions.append(stacked)
             else:
                 predictions.append(posterior_samples[0])
+
+
+        if len(predictions) == 1:
+            return predictions[0]
 
         return np.vstack(predictions)
 
@@ -115,8 +122,12 @@ class McDropout(BayesModel):
         return [np.mean(loss.numpy()), acc]
 
 
-    def approx_posterior(self, predictions):
+    def expectation(self, predictions):
         """
+            Calculate the mean of the distribution
+            output distribution.
+
+            Returns:
 
         """
         # predictions -> (batch_size, num_predictions)
@@ -124,7 +135,7 @@ class McDropout(BayesModel):
         return np.average(predictions, axis=1)
 
 
-    def expectation(self, predictions):
+    def just_return(self, predictions):
         return predictions
 
 
@@ -154,20 +165,6 @@ class McDropout(BayesModel):
         return predictions
 
 
-    # ---------------
-    # Loss function
-    # -----------------------
-
-    def _nll(self, prediction):
-        # Shape (batch, classes) (already reduces with np.mean)
-        prediction = self.extend_binary_predictions(prediction)
-        max_prediction = np.max(prediction, axis=1)
-        return np.log(max_prediction)
-
-    
-    def _entropy(self, prediction):
-        pass
-
 
     # -----
     # Acquisition functions
@@ -188,7 +185,7 @@ class McDropout(BayesModel):
             return self.__std_mean
 
 
-    def __max_entropy(self, data, sample_size=5, **kwargs):
+    def __max_entropy(self, data, sample_size=10, **kwargs):
         """
             Select datapoints by using max entropy.
 
@@ -198,23 +195,25 @@ class McDropout(BayesModel):
         """
         # Create predictions
         predictions = self.__call__(data, sample_size=sample_size)
-        posterior = self.approx_posterior(predictions)
+        posterior = self.expectation(predictions)
         
         # Absolute value to prevent nan values and + 0.001 to prevent infinity values
         log_post = np.log(np.abs(posterior) + .001)
 
         # Calculate max-entropy
-        return  -np.sum(posterior*log_post, axis=1)
+        return -np.sum(posterior*log_post, axis=1)
 
 
     def __bald(self, data, sample_size=10, **kwargs):
+        # TODO: dimensions do not line up in mutli class
+        
         self.logger.info("------------ BALD -----------")
         # predictions shape (batch, num_predictions, num_classes)
         self.logger.info("_bald/data-shape: {}".format(data.shape))
-        predictions = self.__call__(data, sample_size=sample_size)
+        predictions = super().predict(data, sample_size=sample_size)
 
         self.logger.info("_bald/predictions-shape: {}".format(predictions.shape))
-        posterior = self.approx_posterior(predictions)
+        posterior = self.expectation(predictions)
         self.logger.info("_bald/posterior-shape: {}".format(posterior.shape))
 
         first_term = -np.sum(posterior*np.log(np.abs(posterior) + .001), axis=1)
@@ -238,8 +237,8 @@ class McDropout(BayesModel):
 
         # (batch, sample, num classses)
         # (batch, num_classes)
-        predictions = self.__call__(data, sample_size=sample_size, batch_size=batch_size)
-        posterior = self.approx_posterior(predictions)
+        predictions = super().predict(data, sample_size=sample_size, batch_size=batch_size)
+        posterior = self.expectation(predictions)
 
         # Calcualte max variation rations
         return 1 + posterior.max(axis=1)
@@ -255,12 +254,37 @@ class McDropout(BayesModel):
             Implement distinction for different model types.
         """
         # TODO: generalize for n-classes For binary classes
-        predictions = self.__call__(data, sample_size=sample_size, batch_size=1)
+        predictions = super().predict(data, sample_size=sample_size, batch_size=1)
 
-        posterior = self.approx_posterior(predictions) 
+        posterior = self.expectation(predictions) 
         squared_posterior = np.power(posterior, 2)
-        post_to_square = self.expectation(squared_posterior) # TODO: Solve error here. How to restructure?
+        post_to_square = self.just_return(squared_posterior) # TODO: Solve error here. How to restructure?
 
         exp_to_square = np.power(posterior, 2)
         std_per_class = np.square(post_to_square-exp_to_square)
         return np.sum(std_per_class, axis=1)
+
+
+    # ----------
+    # Loss Function
+    # ---------------------
+
+    def nll(self, predictions, targets):
+        """
+            Calculates the negative log-likelihood of.
+
+            Parameters:
+                predictions (numpy.ndarray): The predictions made by an mc dropout model.
+                targets (numpy.ndarray): 
+        """
+
+        dist_expectation = self.expectation(predictions)
+        return super().nll(dist_expectation, targets)
+
+        
+
+
+    def entropy(self, predictions, targets):
+        """
+
+        """

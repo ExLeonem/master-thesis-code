@@ -1,4 +1,6 @@
 import os, sys, importlib
+import time
+import logging
 import numpy as np
 from enum import Enum
 
@@ -11,23 +13,6 @@ importlib.reload(bayesian)
 import bayesian.utils as butils
 
 
-import logging
-
-# logging.basicConfig(
-#     filename="./logs/acf.log",
-#     filemode="w",
-#     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-#     datefmt='%H:%M:%S',
-#     level=logging.DEBUG
-# )
-
-
-# class Functions(Enum):
-#     PRED_ENTROPY,
-#     BALD,
-#     VAR_RATIO,
-#     STD_MEAN,
-#     RANDOM
 
 
 class AcquisitionFunction:
@@ -45,7 +30,7 @@ class AcquisitionFunction:
             fn_name (str): The acquisition function to apply
     """
 
-    def __init__(self, fn_name, batch_size=10, verbose=False):
+    def __init__(self, fn_name, batch_size=None, verbose=False):
         self.setup_logger(verbose)
 
         self.name = fn_name
@@ -81,10 +66,15 @@ class AcquisitionFunction:
 
     def __call__(self, model, pool, **kwargs):
         """
+            
+            Parameter:
+                model (BayesModel): 
+                pool (Pool): 
 
+            Returns:
+                (numpy.ndarray) Indices
         """
 
-        self.logger.info("Start: acquisition query")
 
         # Set initial acquistion function
         if self.fn is None:
@@ -96,8 +86,8 @@ class AcquisitionFunction:
         # Select values randomly? 
         # No need for batch processing
         if self.name == "random":
-            return self.fn(indices, pool.data, **kwargs)
-        
+            return self.fn(indices, pool.data, **kwargs)            
+
         # Iterate throug batches of data
         results = None
         num_datapoints = len(data)
@@ -105,42 +95,28 @@ class AcquisitionFunction:
         start = 0
         # end = self.batch_size if num_datapoints > self.batch_size else num_datapoints
         end = 0
-
-        # TODO: correcttion needed, throws error when batch_size == num_datapoints
-        self.logger.info("Iterate over input batches.")
-        # while end < num_datapoints:
-        #     sub_result = None
-        #     end = start + self.batch_size
-        #     self.logger.info("Iteration: [Start: {}, End: {}]".format(start, end))
-
-        #     # Less elements than specified by batch_size?
-        #     if num_datapoints <= (start + self.batch_size):
-        #         end = num_datapoints
-            
-        #     # Calcualte results of batch
-        #     self.logger.info(data.shape)
-        #     sub_result = self.fn(data[start:end], **kwargs)
-        #     start = end
-
-        #     # Initialize shape of results array
-        #     if results is None:
-        #         shape = [len(data)] + list(sub_result.shape[1:])
-        #         results = np.zeros(shape)
-
-        #     results[start:end] = sub_result[start:end]
-
-        results = self.fn(data, batch_size=self.batch_size, **kwargs)
-
-        # Dataset is empty
-        if results is None:
-            pass
-
-        # Return selected indices and prediction values
-        self.logger.info("Iteration completed")
-        default_num = 20
-        num_of_elements_to_select = self._adapt_selection_num(len(results), dict.get(kwargs, "num", default_num))
         
-        return self.__select_first(results, indices, num_of_elements_to_select)
+        self.logger.info("Kwargs: {}".format(kwargs))
+
+        # ---------
+        # Alternative
+        if self.batch_size is None:
+            self.batch_size = len(data)
+
+        num_batches = num_datapoints/self.batch_size        
+        batches = np.array_split(data, num_batches, axis=0)
+        results = []
+        for batch in batches:
+
+            sub_result = self.fn(batch, **kwargs)
+            self.logger.info("Result shape: {}".format(sub_result.shape))
+            results.append(sub_result)
+
+        stacked = np.hstack(results)
+        self.logger.info("Stacked shaped: {}".format(stacked.shape))
+        default_num = 20
+        num_of_elements_to_select = self._adapt_selection_num(len(stacked), dict.get(kwargs, "num", default_num))
+        return self.__select_first(stacked, indices, num_of_elements_to_select)
 
 
     def _adapt_selection_num(self, num_indices, num_to_select):

@@ -40,17 +40,19 @@ class BayesModel:
     def __init__(
         self, model, config, 
         mode=Mode.TRAIN, 
+        name=None,
         model_type=None, 
         classification=True, 
         is_binary=False,
-        debug=False,
+        verbose=False,
         **kwargs):
 
-        self.setup_logger(debug)
+        self.setup_logger(verbose)
         self._model = model
         self._config = config
         self._mode = mode
         self._model_type = model_type
+        self._name = name
 
         self._checkpoints = Checkpoint()
 
@@ -255,6 +257,32 @@ class BayesModel:
             return True
 
 
+    # ---------------
+    # Loss function
+    # -----------------------
+
+    def nll(self, predictions, targets):
+        """
+            Calculate the negative log likelihood per element.
+
+            Parameters:
+                prediction (numpy.ndarray): 
+        """
+
+        num_datapoints = len(predictions)
+        true_preds = np.zeros(num_datapoints)
+        for i in range(num_datapoints):
+            true_target_index = targets[i]
+            true_preds[i] = predictions[i][true_target_index]
+
+        return -np.log(true_preds)
+
+
+    
+    def entropy(self, prediction):
+        pass
+
+
     # --------------
     # Access important flags for predictions
     # -----------------------------
@@ -278,6 +306,12 @@ class BayesModel:
     def get_query_fn(self, name):
         """
             Get model specific acquisition function.
+
+            Parameters:
+                name (str): The name of the acquisition function to return.
+
+            Returns:
+                (function) the acquisition function to use.
         """
         pass
 
@@ -299,6 +333,32 @@ class BayesModel:
     # Setter/-Getter
     # --------------------------
 
+    def get_model_name(self, prefix=True):
+        """
+            Returns the model name.
+        """
+
+        model_type = None
+        if not (self._model_type is None) and prefix:
+            _pre, model_type = str(self._model_type).split(".")
+            model_typ3 = model_type.lower()
+
+
+        # 
+        if not (self._name is None): 
+            if not (model_type is None) and prefix:
+                return model_type + "_" + sel._name
+
+            return self._name
+
+        # No specific name set
+        if not (model_type is None):
+            return model_type
+
+        return "model"
+        
+
+
     def get_model_type(self):
         return self._model_type
 
@@ -308,6 +368,8 @@ class BayesModel:
     def get_mode(self):
         return self._mode
 
+    def get_metric_names(self):
+        return self._model.metrics_names
 
     def set_mode(self, mode):
         self._mode = mode

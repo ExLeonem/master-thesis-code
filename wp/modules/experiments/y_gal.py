@@ -1,11 +1,11 @@
 import argparse
-import os, sys
+import os, sys, time
 
 import numpy as np
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 import tensorflow as tf
-import tensorflow_addons as tfa
+# import tensorflow_addons as tfa
 
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -16,7 +16,7 @@ sys.path.append(MODULES_PATH)
 from active_learning import TrainConfig, LabeledPool, UnlabeledPool, Metrics, AcquisitionFunction
 from bayesian import McDropout
 from data import BenchmarkData, DataSetType
-from models import FcholletCNN, setup_growth
+from models import fchollet_cnn, setup_growth
 from utils import setup_logger, init_pools
 
 
@@ -68,9 +68,10 @@ if __name__ == "__main__":
     test_set_size = 10_000
     step_size = 10
     batch_size = 10
+    verbose = False
 
     # Split data into (x, 10K, 100) = (train/test/valid)
-    mnist = BenchmarkData(DataSetType.MNIST, os.path.join(DATASET_PATH, "mnist"), dtype=np.float32)
+    mnist = BenchmarkData(DataSetType.MNIST, os.path.join(DATASET_PATH, "mnist"), dtype=np.float32, classes=3)
     x_train, x_test, y_train, y_test = train_test_split(mnist.inputs, mnist.targets, test_size=test_set_size)
     x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=val_set_size)
     labeled_pool = LabeledPool(x_train)
@@ -79,61 +80,90 @@ if __name__ == "__main__":
 
     # Setup model
     setup_growth()
-    base_model = FcholletCNN(output=len(mnist.targets))
-    model = McDropout(base_model)
-    step = tf.Variable(0, trainable=False)
-    schedule = tf.optimizers.schedules.PiecewiseConstantDecay([1407*20, 1407*30], [1e-3, 1e-4, 1e-5])
-    wd = lambda: 1e-1 * schedule(step)
-    optimizer = tfa.optimizers.AdamW(weight_decay=wd)
-    model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+    base_model = fchollet_cnn(output=len(np.unique(mnist.targets)))
+    model = McDropout(base_model, verbose=verbose)
+
+    # step = tf.Variable(0, trainable=False)
+    # schedule = tf.optimizers.schedules.PiecewiseConstantDecay([1407*20, 1407*30], [1e-3, 1e-4, 1e-5])
+    # wd = lambda: 1e-1 * schedule(step)
+    # optimizer = tfa.optimizers.AdamW(weight_decay=wd)
+    
+    model.compile(optimizer="adadelta", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     model.save_weights()
 
     # Active learning loop
     num_iterations = 100
-    acquisition = AcquisitionFunction(args.acquisition, batch_size=300, debug=True)
+    acquisition = AcquisitionFunction(args.acquisition, batch_size=1000, verbose=verbose)
     iterator = tqdm(range(num_iterations), leave=True)
     acl_history = []
     it = 0
     logger.info("Start loop")
     for i in iterator:
+        logger.info("----------")
+        loop_start = time.time()
 
         # Reset
         tf.keras.backend.clear_session()
         model.load_weights()
 
         # Fit model
+        logger.info("(Start) Train Model")
+        start = time.time()
         lab_inputs, lab_targets = labeled_pool[:]
-        history = model.fit(
+        h = model.fit(
             lab_inputs, lab_targets, 
-            batch_size=batch_size, epochs=args.epochs, verbose=False,
+            batch_size=batch_size, epochs=args.epochs, verbose=verbose,
             validation_data=(x_val, y_val)
         )
-        logger.info("Model fitted: {}".format(history.history))
+        end = time.time()
+        logger.info("History: {}".format(h.history))
+        logger.info("--(Finish) Train Model (%.1fs)" % (end-start))
 
-        # Select datapoints from unlabeled pool
-        logger.info("Start aquisition")
-        indices, _pred = acquisition(model, unlabeled_pool, num=step_size, n_times=100)
-        labels = y_train[indices]
+        # Last iteration? No need for new acquisition
+        if i < num_iterations -1:
+            logger.info("(Start) Acquisiton")
 
-        # Update ppols
-        logger.info("Update pools")
-        lab_pool_size = len(labeled_pool)
-        unlabeled_pool.update(indices)
-        labeled_indices = unlabeled_pool.get_labeled_indices()
-        labeled_pool[indices] = labeles
+            # Acquisition process
+            start = time.time()
+            indices, _pred = acquisition(model, unlabeled_pool, num=step_size, sample_size=100)
+            labels = y_train[indices]
+            end = time.time()
+            logger.info("--(Finish) Acquisiton (%.1fs)" % (end-start))
+
+            # Update ppols
+            logger.info("(Start) Update pool")
+            start = time.time()
+            lab_pool_size = len(labeled_pool)
+            unlabeled_pool.update(indices)
+            labeled_indices = unlabeled_pool.get_labeled_indices()
+            labeled_pool[indices] = labels
+            end = time.time()
+            logger.info("Pool-Size: {}".format(len(labeled_pool)))
+            logger.info("--(Finish) Update pool (%.1fs)" % (end-start))
+            
 
         # Evaluate
-        eval_result = model.evaluate(x_test, y_test, batch_size=900, verbose=False)
+        logger.info("(Start) Eval")
+        start = time.time()
+        eval_result = model.evaluate(x_test[:100], y_test[:100], sample_size=100, batch_size=900)
         eval_metrics = model.map_eval_values(eval_result)
+        end = time.time()
+        logger.info("Metrics: {}".format(eval_metrics))
+        logger.info("--(End) Eval (%.1fs)" % (end-start))
+
+        loop_end = time.time()
         acl_history.append(
             keys_to_dict(
                 iteration=it,
+                time=(loop_end-loop_start),
                 labeled_size=lab_pool_size,
                 **eval_metrics
             )
         )
-        logger.info("Eval: {}".format(eval_metrics))
         it += 1
-        break
-
     
+    # Write metrics
+    METRICS_PATH = os.path.join(BASE_PATH, "metrics")
+    metrics = Metrics(METRICS_PATH, keys=["iteration", "time", "labeled_size"] + model.get_metric_names())
+    model_name = str(model.get_model_type()).split(".")[1].lower() 
+    metrics.write(model_name + "_" + args.acquisition , acl_history)
