@@ -267,6 +267,9 @@ class BayesModel:
 
             Parameters:
                 prediction (numpy.ndarray): 
+
+            Returns:
+                (numpy.ndarray) the NLL values.
         """
 
         num_datapoints = len(predictions)
@@ -278,9 +281,17 @@ class BayesModel:
         return -np.log(true_preds)
 
 
-    
     def entropy(self, prediction):
-        pass
+        """
+            Calculate the shannon entropy per datapoint.
+
+            Parameters:
+                prediction (numpy.ndarray): The predictions made by the network.
+            
+            Returns:
+                (numpy.ndarray) the entropy values.
+        """
+        return np.sum(-(mp_exp*np.log2(mp_exp+1e-10)), axis=-1)
 
 
     # --------------

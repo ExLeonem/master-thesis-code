@@ -210,7 +210,7 @@ class McDropout(BayesModel):
         self.logger.info("------------ BALD -----------")
         # predictions shape (batch, num_predictions, num_classes)
         self.logger.info("_bald/data-shape: {}".format(data.shape))
-        predictions = super().predict(data, sample_size=sample_size)
+        predictions = self.__call__(data, sample_size=sample_size)
 
         self.logger.info("_bald/predictions-shape: {}".format(predictions.shape))
         posterior = self.expectation(predictions)
@@ -227,7 +227,7 @@ class McDropout(BayesModel):
         return first_term + second_term
 
 
-    def __max_var_ratio(self, data, sample_size=10, batch_size=1, **kwargs):
+    def __max_var_ratio(self, data, sample_size=10, **kwargs):
         """
             Select datapoints by maximising variation ratios.
 
@@ -237,14 +237,14 @@ class McDropout(BayesModel):
 
         # (batch, sample, num classses)
         # (batch, num_classes)
-        predictions = super().predict(data, sample_size=sample_size, batch_size=batch_size)
+        predictions = self.__call__(data, sample_size=sample_size)
         posterior = self.expectation(predictions)
 
         # Calcualte max variation rations
         return 1 + posterior.max(axis=1)
 
 
-    def __std_mean(self, data, sample_size=10, batch_size=1, **kwargs):
+    def __std_mean(self, data, sample_size=10,  **kwargs):
         """
            Maximise mean standard deviation.
            Check std mean calculation. Depending the model type calculation of p(y=c|x, w) can differ.
@@ -254,7 +254,7 @@ class McDropout(BayesModel):
             Implement distinction for different model types.
         """
         # TODO: generalize for n-classes For binary classes
-        predictions = super().predict(data, sample_size=sample_size, batch_size=1)
+        predictions = self.__call__(data, sample_size=sample_size)
 
         posterior = self.expectation(predictions) 
         squared_posterior = np.power(posterior, 2)
@@ -281,10 +281,11 @@ class McDropout(BayesModel):
         dist_expectation = self.expectation(predictions)
         return super().nll(dist_expectation, targets)
 
+
+    def entropy(self, predictions):
+        """
         
-
-
-    def entropy(self, predictions, targets):
         """
-
-        """
+        result = -(mc_pred * np.log2(mc_pred+1e-10))
+        summed_up = np.sum(result, axis=-1)
+        return np.average(summed_up, axis=-1)

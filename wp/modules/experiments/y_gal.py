@@ -131,16 +131,10 @@ if __name__ == "__main__":
             logger.info("--(Finish) Acquisiton (%.1fs)" % (end-start))
 
             # Update ppols
-            logger.info("(Start) Update pool")
-            start = time.time()
             lab_pool_size = len(labeled_pool)
             unlabeled_pool.update(indices)
             labeled_indices = unlabeled_pool.get_labeled_indices()
             labeled_pool[indices] = labels
-            end = time.time()
-            logger.info("Pool-Size: {}".format(len(labeled_pool)))
-            logger.info("--(Finish) Update pool (%.1fs)" % (end-start))
-            
 
         # Evaluate
         logger.info("(Start) Eval")
