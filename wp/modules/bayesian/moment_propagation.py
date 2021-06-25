@@ -42,9 +42,12 @@ class MomentPropagation(BayesModel):
             Returns:
                 (list()) Loss and accuracy of the model.
         """
+
+        self.logger.info("Evaluate kwargs: {}".format(kwargs))
+
         self.set_mode(Mode.EVAL)
-        predictions = self.batch_prediction(inputs, **kwargs)
-        return self.__evaluate(predictions, targets)
+        exp, var = self._model.predict(inputs, **kwargs)
+        return self.__evaluate(exp, targets)
 
 
     def __evaluate(self, prediction, targets):
@@ -59,6 +62,8 @@ class MomentPropagation(BayesModel):
             Returns:
                 (list()) The accuracy and 
         """
+
+        self.logger.info("Prediction shape: {}".format(prediction.shape))
 
         loss_fn = tf.keras.losses.get(self._model.loss)
         loss = loss_fn(targets, prediction)
@@ -101,21 +106,6 @@ class MomentPropagation(BayesModel):
         
         expectation = self.extend_binary_predictions(expectation)
         return self.__cast_tensor_to_numpy(expectation) 
-
-
-    # --------
-    # Metrics
-    # ---------------
-
-    def _nll(self, prediction):
-        prediction = self.extend_binary_predictions(prediction)
-        max_prediction = np.max(prediction,axis=1)
-        return np.log(max_prediction)
-
-
-    def _entropy(self, prediction):
-        prediciton = self.extend_binary_predictions(prediction)
-        return np.array([-np.sum( pred_mp[i] * np.log2(pred_mp[i] + 1E-14)) for i in range(0,len(pred_mp))])
 
 
     # --------
@@ -204,6 +194,11 @@ class MomentPropagation(BayesModel):
         expectation = self.expectation(predictions)
         variance = self.variance(predictions)
 
+        first_term = -np.sum(expectation * np.log(np.abs(expectation) + 1e-100), axis=1)
+        predictions = self.extend_binary_predictions(predictions)
+        second_term = np.sum(np.mean(predictions*np.log(np.abs(predictions) + 1e-100), axis=1), axis=1)
+        return first_term + second_term
+
 
     def __max_var_ratio(self, data, **kwargs):
         predictions = self._model.predict(x=data)
@@ -216,4 +211,7 @@ class MomentPropagation(BayesModel):
 
     
     def __std_mean(self, data, **kwargs):
-        pass
+        predictions = self._model.predict(data, **kwargs)
+        variance = self.variance(predictions)
+        std = np.square(variance)
+        return np.mean(std, axis=-1)

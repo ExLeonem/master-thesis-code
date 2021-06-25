@@ -85,6 +85,7 @@ class BenchmarkData:
             Transformation pipeline for datasets with labeled image data.
         """
         
+        # (batch_size, height, width, image_chanell)
         return Pipeline(
                 select_classes,
                 image_channels, 

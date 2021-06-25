@@ -14,7 +14,6 @@ import bayesian.utils as butils
 
 
 
-
 class AcquisitionFunction:
     """
         Query a model for next datapoints that should be labeled.
@@ -64,7 +63,7 @@ class AcquisitionFunction:
         self.logger = logger
 
 
-    def __call__(self, model, pool, **kwargs):
+    def __call__(self, model, pool, num=20, **kwargs):
         """
             
             Parameter:
@@ -114,8 +113,7 @@ class AcquisitionFunction:
 
         stacked = np.hstack(results)
         self.logger.info("Stacked shaped: {}".format(stacked.shape))
-        default_num = 20
-        num_of_elements_to_select = self._adapt_selection_num(len(stacked), dict.get(kwargs, "num", default_num))
+        num_of_elements_to_select = self._adapt_selection_num(len(stacked), num)
         return self.__select_first(stacked, indices, num_of_elements_to_select)
 
 
@@ -188,8 +186,11 @@ class AcquisitionFunction:
             Returns: 
                 (numpy.ndarray) indices of n-biggest predictions.
         """
-
+        
+        self.logger.info("__select_first/start-sort")
         sorted_keys = np.argsort(predictions)
         n_biggest_keys = sorted_keys[-n:]
+
+        self.logger.info("__select_first/finish_sort")
         return indices[n_biggest_keys], predictions[n_biggest_keys]
 

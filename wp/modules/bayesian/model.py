@@ -265,6 +265,8 @@ class BayesModel:
         """
             Calculate the negative log likelihood per element.
 
+            NLL: -np.log(true_class_prob)
+
             Parameters:
                 prediction (numpy.ndarray): 
 
@@ -281,7 +283,7 @@ class BayesModel:
         return -np.log(true_preds)
 
 
-    def entropy(self, prediction):
+    def entropy(self, predictions):
         """
             Calculate the shannon entropy per datapoint.
 
@@ -291,7 +293,7 @@ class BayesModel:
             Returns:
                 (numpy.ndarray) the entropy values.
         """
-        return np.sum(-(mp_exp*np.log2(mp_exp+1e-10)), axis=-1)
+        return np.sum(-(predictions*np.log2(predictions+1e-10)), axis=-1)
 
 
     # --------------

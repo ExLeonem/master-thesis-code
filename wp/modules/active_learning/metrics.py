@@ -97,6 +97,16 @@ class Metrics:
         return values
 
 
+
+    # -------------
+    # Setter/-Getter
+    # ------------------
+
+    def get_path(self):
+        return self.BASE_PATH
+
+
+
 def save_history(history, path, filename):
     """
         Saves values of history to the path.

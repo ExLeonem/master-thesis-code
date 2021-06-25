@@ -81,6 +81,7 @@ class McDropout(BayesModel):
             raise ValueError("Error in McDropout.evaluate(). Targets and inputs not of equal length.")
 
         # Returns: (batch_size, sample_size, target_len) or (batch_size, target_len)
+        self.logger.info("evaluate/call")
         predictions = self.__call__(inputs, sample_size=sample_size, **kwargs)
         self.logger.info("evaluate/predictions.shape: {}".format(predictions.shape))
         return self.__evaluate(predictions, targets, sample_size)
@@ -128,11 +129,33 @@ class McDropout(BayesModel):
             output distribution.
 
             Returns:
-
+                (numpy.ndarray) The expectation per datapoint
         """
         # predictions -> (batch_size, num_predictions)
         predictions = self.extend_binary_predictions(predictions)
         return np.average(predictions, axis=1)
+
+
+    def variance(self, predictions):
+        """
+            Calculate the variance of the distribution.
+
+            Returns:
+                (numpy.ndarray) The variance per datapoint and target
+        """
+        predictions = self.extend_binary_predictions(predictions)
+        return np.var(predictions, axis=1)
+
+
+    def std(self, predictions):
+        """
+            Calculate the standard deviation.
+
+            Returns:
+                (numpy.ndarray) The standard deviation per datapoint and target
+        """
+        predictions = self.extend_binary_predictions(predictions)
+        return np.std(predictions, axis=1)
 
 
     def just_return(self, predictions):
@@ -183,6 +206,8 @@ class McDropout(BayesModel):
 
         if name == "std_mean":
             return self.__std_mean
+
+        return None
 
 
     def __max_entropy(self, data, sample_size=10, **kwargs):
@@ -256,13 +281,12 @@ class McDropout(BayesModel):
         # TODO: generalize for n-classes For binary classes
         predictions = self.__call__(data, sample_size=sample_size)
 
-        posterior = self.expectation(predictions) 
-        squared_posterior = np.power(posterior, 2)
-        post_to_square = self.just_return(squared_posterior) # TODO: Solve error here. How to restructure?
+        # Calculate variance/standard deviation from samples
+        variance = self.variance(predictions)
+        std = np.square(variance)
 
-        exp_to_square = np.power(posterior, 2)
-        std_per_class = np.square(post_to_square-exp_to_square)
-        return np.sum(std_per_class, axis=1)
+        # Mean over target variables
+        return np.mean(std, axis=-1)
 
 
     # ----------
@@ -284,8 +308,9 @@ class McDropout(BayesModel):
 
     def entropy(self, predictions):
         """
-        
+            predictions shape: (batch_size, sample_size, target_size)
+
         """
-        result = -(mc_pred * np.log2(mc_pred+1e-10))
-        summed_up = np.sum(result, axis=-1)
-        return np.average(summed_up, axis=-1)
+        predictions = np.average(predictions, axis=1)
+        result = -(predictions * np.log2(predictions+1e-10))
+        return np.sum(result, axis=-1)

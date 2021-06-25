@@ -1,4 +1,5 @@
 import argparse
+import time
 import os, sys, importlib
 import numpy as np
 from tqdm import tqdm
@@ -69,16 +70,16 @@ if __name__ == "__main__":
     # Parse script arguments
     parser = argparse.ArgumentParser(description="Active learning parser")
     parser.add_argument("-m", "--model", default="dp", help="Select the model the run an experiment for.")
-    parser.add_argument("-c", "--class_count", default=2, type=int, help="Select the num of classes to run the experiment for.")
-    parser.add_argument("-aqf", "--acquisition_function", default="bald", help="Select an aquisition function to execute. One of ['max_entropy', 'bald', 'std_mean', 'max_var_ratio']")
+    parser.add_argument("-c", "--class_count", default=10, type=int, help="Select the num of classes to run the experiment for.")
+    parser.add_argument("-aqf", "--acquisition_function", default="max_entropy", help="Select an aquisition function to execute. One of ['max_entropy', 'bald', 'std_mean', 'max_var_ratio']")
     parser.add_argument("-aqb", "--acquisition_batch_size", default=900, type=int, help="Set an batch size for the acquisition function iterations.")
     parser.add_argument("-s", "--step_size", default=10, type=int, help="Set a step size. How many datapoints to add per iteration to pool of labeled data.")
-    parser.add_argument("--n_times", default=10, type=int, help="The number of predictions to do for mc dropout predictions. (default=10)")
+    parser.add_argument("--n_times", default=5, type=int, help="The number of predictions to do for mc dropout predictions. (default=10)")
     parser.add_argument("--seed", default=None, type=int, help="Setting a seed for random processes.")
-    parser.add_argument("-e", "--epochs", default=5, type=int, help="The number of epochs to fit the network. (default=5)")
-    parser.add_argument("-l", "--limit", default=5, type=int, help="A limit for the iteration to do.")
+    parser.add_argument("-e", "--epochs", default=100, type=int, help="The number of epochs to fit the network. (default=5)")
+    parser.add_argument("-l", "--limit", default=100, type=int, help="A limit for the iteration to do.")
     parser.add_argument("-d", "--debug", default=False, action="store_true", help="Output logging messages?")
-    parser.add_argument("-i", "--initial_size", default=2, type=int, help="The initial size of the pool of labeled data. (default=10)")
+    parser.add_argument("-i", "--initial_size", default=1, type=int, help="The initial size of the pool of labeled data. (default=10)")
     # parser.add_argument("")
     args = parser.parse_args()
 
@@ -108,7 +109,7 @@ if __name__ == "__main__":
     x_train, x_test, y_train, y_test = train_test_split(mnist.inputs, mnist.targets)
 
     # Setup active learning specifics
-    acquisition = AcquisitionFunction(acq_function_name, batch_size=acq_batch_size, verbose=False)
+    acquisition = AcquisitionFunction(acq_function_name, batch_size=acq_batch_size)
     labeled_pool = LabeledPool(x_train)
     unlabeled_pool = UnlabeledPool(x_train)
     init_pools(unlabeled_pool, labeled_pool, y_train, num_init_per_target=args.initial_size)
@@ -117,7 +118,7 @@ if __name__ == "__main__":
     setup_growth()
     loss = "sparse_categorical_crossentropy" if num_classes > 2 else "binary_crossentropy"
     config = TrainConfig(
-        batch_size=5,
+        batch_size=10,
         loss=loss,
         optimizer="adadelta"
     )
@@ -136,6 +137,7 @@ if __name__ == "__main__":
     acl_history = []
     it = 0
     for i in iterator:
+        loop_start = time.time()
 
         tf.keras.backend.clear_session()
         if not (limit is None) and it > limit:
@@ -145,33 +147,48 @@ if __name__ == "__main__":
         logger.info("---------")
 
         # Fit the model
-        logger.info("Start training")
+        logger.info("(Start) Train")
+        start = time.time()
         lab_inputs, lab_targets = labeled_pool[:]
         history = model.fit(lab_inputs, lab_targets, batch_size=config["batch_size"], epochs=epochs, verbose=False)
+        end = time.time()
         logger.info("Training: {}".format(history.history))
-
-        # Evaluate model
-        logger.info("Start Evaluation")
-        eval_result = model.evaluate(x_test[:100], y_test[:100], batch_size=config["batch_size"])
-        eval_metrics = model.map_eval_values(eval_result)
-        logger.info("Eval: {}".format(str(eval_metrics)))
-
+        logger.info("(Finish) Train (%.2fs)" % (end-start))
+        
         # Needs to be moved: in last iteration no aquisition
         # Selected datapoints and labels
-        logger.info("Start aquisition")
+        logger.info("(Start) Acquisition")
+        start = time.time()
         indices, _pred = acquisition(model, unlabeled_pool, num=step_size, sample_size=args.n_times)
         labels = y_train[indices]
-        logger.info("End aquisition")
+        end = time.time()
+        logger.info("(Finish) Acquisition (%.2fs)" % (end-start))
         
         # Update pools
+        logger.info("(Start) Update pool")
+        start = time.time()
         lab_pool_size = len(labeled_pool)
         unlabeled_pool.update(indices)
         labeled_indices = unlabeled_pool.get_labeled_indices()
         labeled_pool[indices] = labels
+        end = time.time()
+        logger.info("(Finish) Update pool (%.2fs)" % (end-start))
         
+         # Evaluate model
+        logger.info("(Start) Evaluation")
+        start = time.time()
+        eval_result = model.evaluate(x_test, y_test, sample_size=args.n_times, batch_size=1000)
+        eval_metrics = model.map_eval_values(eval_result)
+        end = time.time()
+        logger.info("Metrics: {}".format(str(eval_metrics)))
+        logger.info("(End) Eval (%.2fs)" % (end-start))
+
+        # Accumulate history
+        loop_end = time.time()
         acl_history.append(keys_to_dict(
             iteration=it,
             labeled_size=lab_pool_size,
+            time=(loop_end-loop_start),
             **eval_metrics
         ))
 
@@ -182,7 +199,7 @@ if __name__ == "__main__":
 
     # Write metrics
     METRICS_PATH = os.path.join(BASE_PATH, "metrics")
-    metrics = Metrics(METRICS_PATH, keys=["iteration", "labeled_size"] + metrics)
+    metrics = Metrics(METRICS_PATH, keys=["iteration", "labeled_size", "time"] + metrics)
     model_name = str(model.get_model_type()).split(".")[1].lower() 
     metrics.write(model_name + "_" + acq_function_name, acl_history)
 

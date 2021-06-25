@@ -1,5 +1,6 @@
 import argparse
 import os, sys, importlib
+import time
 import numpy as np
 from tqdm import tqdm
 
@@ -102,16 +103,16 @@ if __name__ == "__main__":
 
     # Parse script arguments
     parser = argparse.ArgumentParser(description="Active learning parser")
-    parser.add_argument("-c", "--class_count", default=2, type=int)
+    parser.add_argument("-c", "--class_count", default=3, type=int)
     parser.add_argument("-aqf", "--acquisition_function", default="max_entropy")
     parser.add_argument("-aqb", "--acquisition_batch_size", default=900, type=int)
-    parser.add_argument("-s", "--step_size", default=1, type=int)
+    parser.add_argument("-s", "--step_size", default=10, type=int)
     parser.add_argument("--seed", default=None, type=int)
     parser.add_argument("--tf_seed", default=None, type=int)
-    parser.add_argument("-e", "--epochs", default=5, type=int)
+    parser.add_argument("-e", "--epochs", default=100, type=int)
     parser.add_argument("-l", "--limit", default=None, type=int)
-    parser.add_argument("-d", "--debug", default=False, type=bool)
-    parser.add_argument("-i", "--initial_size", default=2, type=int)
+    parser.add_argument("-d", "--debug", default=False, action="store_true")
+    parser.add_argument("-i", "--initial_size", default=1, type=int)
     # parser.add_argument("")
     args = parser.parse_args()
 
@@ -142,15 +143,20 @@ if __name__ == "__main__":
     x_train, x_test, y_train, y_test = train_test_split(mnist.inputs, mnist.targets)
 
     # Setup active learning specifics
-    acquisition = AcquisitionFunction(acq_function_name, batch_size=acq_batch_size)
+    acquisition = AcquisitionFunction(acq_function_name, batch_size=acq_batch_size, verbose=True)
     labeled_pool = LabeledPool(x_train)
     unlabeled_pool = UnlabeledPool(x_train)
-    init_pools(unlabeled_pool, labeled_pool, y_train, num_init_per_target=args.step_size)
+    init_pools(unlabeled_pool, labeled_pool, y_train, num_init_per_target=args.initial_size)
 
     # Setup the Model
     setup_growth()
+    loss = "binary_crossentropy" if num_classes == 2 else "sparse_categorical_crossentropy"
+    metrics = "binary_accuracy" if num_classes == 2 else "accuracy"
     config = TrainConfig(
-        batch_size=step_size
+        batch_size=900,
+        optimizer="adadelta",
+        loss=loss,
+        metrics=[metrics]
     )
 
     # model, metrics = select_model(model_name, base_model, is_binary=(num_classes == 2))
@@ -162,6 +168,7 @@ if __name__ == "__main__":
     acl_history = []
     it = 0
     for i in iterator:
+        loop_start = time.time()
 
         tf.keras.backend.clear_session()
         if not (limit is None) and it > limit:
@@ -169,40 +176,59 @@ if __name__ == "__main__":
             break
         
         # Create base model and fit the base model
-        base_model = BayesModel(default_model(), config)
+        base_model = BayesModel(default_model(output_classes=num_classes), config)
         if not save_state_exists:
             base_model.save_weights()
         else:
             base_model.load_weights()
-        base_model.compile(optimizer=config["optimizer"], loss=config["loss"], metrics=["binary_accuracy"])
+        base_model.compile(optimizer=config["optimizer"], loss=config["loss"], metrics=config["metrics"])
 
 
         logger.info("---------")
         # Fit the base model
+        start = time.time()
+        logger.info("(Start) Train")
         lab_inputs, lab_targets = labeled_pool[:]
-        history = base_model.fit(lab_inputs, lab_targets, batch_size=config["batch_size"], epochs=epochs, verbose=False)
-        logger.info("Training: {}".format(history.history))
+        history = base_model.fit(lab_inputs, lab_targets, batch_size=10, epochs=epochs, verbose=False)
+        end = time.time()
+        logger.info("Metrics: {}".format(history.history))
+        logger.info("(Finish) Train (%.2fs)" % (end-start))
 
         # Create MP model
-        model = MomentPropagation(base_model.get_model(), is_binary=(num_classes==2))
+        model = MomentPropagation(base_model.get_model(), is_binary=(num_classes==2), verbose=False)
         model.compile(optimizer=config["optimizer"], loss=config["loss"], metrics=["binary_accuracy"])
 
         # Selected datapoints and labels
+        logger.info("(Start) Acqusition")
+        start = time.time()
         indices, _pred = acquisition(model, unlabeled_pool, num=step_size)
         labels = y_train[indices]
+        end = time.time()
+        logger.info("(Finish) Acquisition (%.2fs)" % (end-start))
         
         # Update pools
+        logger.info("(Start) Update pool")
+        start = time.time()
         lab_pool_size = len(labeled_pool)
         unlabeled_pool.update(indices)
         labeled_indices = unlabeled_pool.get_labeled_indices()
         labeled_pool[indices] = labels
+        end = time.time()
+        logger.info("(Finish) Update pool (%.2fs)" % (end-start))
 
         # Evaluate model
+        logger.info("(Start) Evaluate")
+        start = time.time()
         eval_result = model.evaluate(x_test, y_test, batch_size=config["batch_size"], verbose=False)
         eval_metrics = model.map_eval_values(eval_result)
+        logger.info("(Finish) Evaluate (%.2fs)" % (end-start))
+
+
+        loop_end = time.time()
         acl_history.append(keys_to_dict(
             iteration=it,
             labeled_size=lab_pool_size,
+            time=(loop_end-loop_start),
             **eval_metrics
         ))
 
@@ -212,7 +238,7 @@ if __name__ == "__main__":
         it += 1
 
     METRICS_PATH = os.path.join(BASE_PATH, "metrics")
-    metrics = Metrics(METRICS_PATH, keys=["iteration", "labeled_size", "loss", "accuracy"])
+    metrics = Metrics(METRICS_PATH, keys=["iteration", "labeled_size", "loss", "time", "accuracy"])
     model_name = str(model.get_model_type()).split(".")[1].lower() 
     metrics.write("moment_propagation" + "_" + acq_function_name, acl_history)
 
