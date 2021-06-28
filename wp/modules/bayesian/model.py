@@ -22,7 +22,8 @@ class ModelType(Enum):
         Different bayesian model types.
     """
     MC_DROPOUT=1,
-    MOMENT_PROPAGATION=2
+    MOMENT_PROPAGATION=2,
+    SWAG=3
 
 
 class BayesModel:
