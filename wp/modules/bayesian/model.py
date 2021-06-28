@@ -64,6 +64,10 @@ class BayesModel:
         else:
             self.__is_binary = is_binary
     
+
+    def reset(self):
+        self.load_weights()
+
     
     def __call__(self, *args, **kwargs):
         return self._model(inputs, training=self.in_mode(Mode.TRAIN))

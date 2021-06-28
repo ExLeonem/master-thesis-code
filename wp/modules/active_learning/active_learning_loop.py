@@ -1,5 +1,4 @@
 import time
-
 from . import AcquisitionFunction
 from . import LabeledPool, UnlabeledPool
 
@@ -9,6 +8,19 @@ class ActiveLearningLoop:
     """
         Creates an active learning loop. The loop accumulates metrics during training in a dictionary
         that is returned.
+
+
+        To use with tqdm:
+            for i in tqdm(my_iterable):
+                do_something()
+
+        use a "with" close instead, as:
+
+            with tqdm(total=len(my_iterable)) as progress_bar:
+                for i in my_iterable:
+                    do_something()
+                    progress_bar.update(1) # update progress
+
 
         Parameters:
             model (BayesianModel): A model wrapped into a BayesianModel type object.
@@ -32,6 +44,7 @@ class ActiveLearningLoop:
         dataset,
         query_fn,
         config=None,
+        limit=None,
         **kwargs
     ):
 
@@ -41,6 +54,10 @@ class ActiveLearningLoop:
         self.targets = targets
         self.labeled_pool = LabeledPool(inputs)
         self.unlabeled_pool = UnlabeledPool(inputs)
+
+        # Loop parameters
+        self.limit = limit
+        self.max = len(inputs)
 
         self.model = model
         self.query_fn = query_fn
@@ -56,6 +73,11 @@ class ActiveLearningLoop:
             Iterate over dataset and query for labels.
         """
 
+        # Limit reached?
+        if (self.limit is not None) and not (self.limit < self.max):
+            raise StopIteration
+
+        # All data labeled?
         if not (self.i < len(self.inputs)):
             raise StopIteration
 
@@ -70,7 +92,8 @@ class ActiveLearningLoop:
         e_metrics = self.model.evaluate()
 
         # Update pools
-        indices, _pred = self.query_fn()
+        indices, _pred = self.query_fn(self.model, self.unlabeled_pool, step_size=self.step_size, )
+        
 
         # 
 
