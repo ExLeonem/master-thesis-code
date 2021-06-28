@@ -24,7 +24,7 @@ class ActiveLearningLoop:
 
         Parameters:
             model (BayesianModel): A model wrapped into a BayesianModel type object.
-            dataset (tuple(numpy.ndarray, numpy.ndarray)): The dataset to use (inputs, targets)
+            dataset (ActiveLearningDataset): The dataset to use (inputs, targets)
             query_fn (list(AcquisitionFunction)): The query function to use.
 
         
@@ -45,13 +45,13 @@ class ActiveLearningLoop:
         query_fn,
         config=None,
         limit=None,
+        pseudo=True,
         **kwargs
     ):
 
         # Data and pools (labeled, unlabeled)
-        inputs, targets = data
-        self.inputs = inputs
-        self.targets = targets
+        self.x_train, self.y_train = dataset.get_train_split()
+
         self.labeled_pool = LabeledPool(inputs)
         self.unlabeled_pool = UnlabeledPool(inputs)
 
@@ -59,7 +59,10 @@ class ActiveLearningLoop:
         self.limit = limit
         self.max = len(inputs)
 
+        # Active learning components
         self.model = model
+        self.oracle = oracle
+        # self.model_kwargs = model.get_config()
         self.query_fn = query_fn
 
     
@@ -92,8 +95,8 @@ class ActiveLearningLoop:
         e_metrics = self.model.evaluate()
 
         # Update pools
-        indices, _pred = self.query_fn(self.model, self.unlabeled_pool, step_size=self.step_size, )
-        
+        indices, _pred = self.query_fn(self.model, self.unlabeled_pool, step_size=self.step_size)
+        labels = self.oracle.anotate()
 
         # 
 
