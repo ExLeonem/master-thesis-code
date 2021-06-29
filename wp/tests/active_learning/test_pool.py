@@ -47,8 +47,8 @@ class TestPool:
         assert  np.all(values == true_values)
         
     
-    def test_get_num_unlabeled_empty(self):
-        test_inputs = np.random.randn(50, 28)
+    def test_get_num_unlabeled(self):
+        test_inputs = np.random.randn(50)
         new_pool = Pool(test_inputs)
         assert new_pool.get_num_labeled() == 0
 
@@ -57,6 +57,39 @@ class TestPool:
 
         new_pool[[2, 5]] = [1, 0]
         assert new_pool.get_num_labeled() == 3
+
+    
+    def test_get_num_labeled(self):
+        test_inputs = np.random.randn(50)
+        new_pool = Pool(test_inputs)
+        assert new_pool.get_num_unlabeled() == len(test_inputs)
+
+        new_pool[0] = 1
+        assert new_pool.get_num_unlabeled() != len(test_inputs)
+
+
+    def test_get_labeld_data(self):
+        test_inputs = np.random.randn(50)
+        new_pool = Pool(test_inputs)
+        inputs, targets = new_pool.get_labeled_data()
+        assert len(targets) == 0
+
+        value = np.array([1])
+        new_pool[0] = value
+        inputs, targets = new_pool.get_labeled_data()
+        assert targets == value
+
+
+    def test_get_unlabeled_data(self):
+        test_inputs = np.random.randn(50)
+        new_pool = Pool(test_inputs)
+        inputs, indices = new_pool.get_unlabeled_data()
+        assert len(indices) == len(test_inputs)
+
+        new_pool[0] = 1
+        inputs, indices = new_pool.get_unlabeled_data()
+        assert len(indices) != len(test_inputs)
+
 
 
 

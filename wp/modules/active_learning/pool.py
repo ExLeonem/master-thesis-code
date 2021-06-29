@@ -1,10 +1,5 @@
 import numpy as np
 
-"""
-TODO:
-    - [ ] Save using indices and np.zeros()
-"""
-
 
 class Pool:
     """
@@ -101,7 +96,7 @@ class Pool:
         return np.sum(self.__indices == -1)
 
     
-    def get_num_unlabeld(self):
+    def get_num_unlabeled(self):
         """
             Get the number of unlabeld inputs.
 
@@ -136,8 +131,6 @@ class Pool:
         indices = self.__indices[selector]
         return inputs, indices
         
-
-
 
 
 class DataPool:
