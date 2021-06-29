@@ -19,15 +19,11 @@ A simple workspace template for deep-/machine-learning projects using python/ana
 3. [Contribution](#Contribution)
 
 
-
 ## Prerequisite
 
-The following dependencies need to be installed to 
-
-- [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
-- (optional) Anaconda/Python 3.7
-- ()
-- [sphinx](https://www.sphinx-doc.org/en/master/usage/quickstart.html)
+- [Docker](https://www.docker.com/) (optional) 
+- [Docker Compose](https://docs.docker.com/compose/) (optional)
+- [Anaconda](https://www.anaconda.com/)
 
 
 ## Setup
@@ -38,47 +34,60 @@ The following dependencies need to be installed to
 git clone https://github.com/ExLeonem/ai-workspace-template
 ```
 
-2. Run the setup scripts
-3. Configure the workspace depending your needs.
+2. Run the setup script to create non-existent directories.
 
-
-### Multi Cuda Setup
-
-- cuda-toolkit-11.0 (for tensorflow 2.4.1)
-- cuda-toolkit-10.2 (for pytorch)
-
-```
-    $ sudo apt-get install cuda-toolkit-11-0
-```
-
-sudo apt-key adv --refresh-keys --keyserver keyserver.ubuntu.com
-
-https://medium.com/@peterjussi/multicuda-multiple-versions-of-cuda-on-one-machine-4b6ccda6faae
-
-
-### Performing Moment-Propagation
-
-Create new environment Anaconda environment with python version 3.8
-Moment Propagation file works with tensorflow(-gpu)==2.2.0 and 2.3.1. 
-Higher versions throw error.
-
-
-```
-    $ conda create -n <environment_name> python==3.7.0 ipython
+```shell
+$ python ./config/setup.py
 ```
 
 
-Install pip for anaconda 
+3. Configure the workspace depending your needs. (optional)
+
+4. Import or create the conda environment. </br> To import the conda environment use one of following commands, depending your OS.
 
 ```
-    $ conda install pip
+$ conda env import ./config/env_linux.yml 
+```
+
+```
+$ conda env import ./config/env_win.yml
 ```
 
 
 
-Install packages of `requirements.txt` 
+### Manual Environment Setup
+
+If the automated creation of the environment fails following packages are needed to be installed manually to get a working workspace.
+
+| Package | Tested version
+| --- | ---
+| tensorflow | 2.2.0
+| tensorflow-gpu | 2.2.0
+| tensorflow-probability | 0.7
+| numpy | 1.18.5
+| tqdm | 4.59.0
+| pytest | 6.2.4
+| pytest-cov | 2.12.1
+| sphinx | 3.2.1
+
+</br>
+Additional packages to be installed when executing jupyter notebooks:
+
+| Package | Tested version
+| --- | ---
+| pandas | 0.25.3
+| matplotlib | 3.3.4
+| seaborn | 0.11.1
 
 
+
+## Datasets
+
+Following datasets are needed to perform defined pre-defined experiments:
+
+1. MNIST
+2. FashionMNIST
+3. caltech_ucsd_birds200
 
 
 ## Contribution
