@@ -6,6 +6,140 @@ TODO:
 """
 
 
+class Pool:
+    """
+        Pool that holds information about labeled and unlabeld inputs.
+        The attribute 'indices' holds information about the labeled inputs.
+        
+        Each index of self.indices can take the following values:
+        (-1) Corresponding input is labeld
+        (index) Corresponding input is not labeled 
+
+        Parameters:
+            inputs (numpy.ndarray): Inputs to the network.
+    """
+
+    def __init__(self, inputs):
+        self.__indices = np.linspace(0, len(inputs)-1, len(inputs), dtype=int)
+        self.__inputs = inputs
+        self.__targets = np.zeros(len(inputs))
+
+
+    def get_by(self, indices):
+        """
+            Get inputs by indices.
+
+            Parameters:
+                indices (numpy.ndarray): The indices at which to access the data.
+
+            Returns:
+                (numpy.ndarray) the data at given indices.
+        """
+        return self.__inputs[indices]
+
+
+    def __setitem__(self, indices, targets):
+        """
+            Shortcut to annotate function.
+
+            Parameters:
+                indices (numpy.ndarray): For which indices to set values.
+                targets (numpy.ndarray): The targets to set.
+        """
+        self.annotate(indices, targets)
+
+    
+    def annotate(self, indices, targets):
+        """
+            Annotate inputs of given indices with given targets.
+
+            Parameters:
+                indices (numpy.ndarray): The indices to annotate.
+                targets (numpy.ndarray): The labels to set for the given annotations.
+        """
+        self.__indices[indices] = -1
+        self.__targets[indices] = targets
+
+
+    # ---------
+    # Utilities
+    # -------------------
+
+    def has_unlabeled(self):
+        """
+            Has pool any unlabeled inputs?
+
+            Returns:
+                (bool) true or false depending whether unlabeled data exists.
+        """
+        selector = np.logical_not(self.__indices == -1)
+        return np.any(selector)
+
+
+    def has_labeled(self):
+        """
+            Has pool labeled inputs?
+
+            Returns:
+                (bool) true or false depending whether or not there are labeled inputs.
+        """
+        selector = self.__indices == -1
+        return np.any(selector)
+
+    
+    # ---------
+    # Setter/Getter
+    # -------------------
+
+    def get_num_labeled(self):
+        """
+            Get the number of labeled inputs.
+
+            Returns:
+                (int) The number of labeled inputs.
+        """
+        return np.sum(self.__indices == -1)
+
+    
+    def get_num_unlabeld(self):
+        """
+            Get the number of unlabeld inputs.
+
+            Returns:
+                (int) the number of unlabeled inputs
+        """
+        return np.sum(np.logical_not(self.__indices == -1))   
+
+
+    def get_labeled_data(self):
+        """
+            Get inputs, target pairs of already labeled inputs.
+
+            Returns:
+                (tuple(numpy.ndarray, numpy.ndarray)) inputs and corresponding targets.
+        """
+        selector = self.__indices == -1
+        inputs = self.__inputs[selector]
+        targets = self.__targets[selector]
+        return inputs, targets
+
+    
+    def get_unlabeled_data(self):
+        """
+            Get inputs whire are not already labeled with their indices.
+
+            Returns:
+                (tuple(numpy.ndarray, numpy.ndarray)) The inputs and their indices in the pool
+        """
+        selector = np.logical_not(self.__indices == -1)
+        inputs = self.__inputs[selector]
+        indices = self.__indices[selector]
+        return inputs, indices
+        
+
+
+
+
 class DataPool:
     """
         Manage a pool of data.

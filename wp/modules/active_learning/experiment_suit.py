@@ -41,7 +41,7 @@ class ExperimentSuit:
             # Iterate over query functions to evaluate
             metrics = None
             for query_fn in query_functions:
-                
+                pass                
                 
 
 
@@ -49,7 +49,6 @@ class ExperimentSuit:
         active_learning_loop = ActiveLearningLoop(model, self.dataset, query_fn)
 
         while active_learning_loop.has_next():
-            
             result = next()
 
 

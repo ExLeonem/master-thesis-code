@@ -61,8 +61,6 @@ class ActiveLearningDataset:
         if val_size is None:
             self.x_test = x_test
             self.y_test = y_test
-    
-        else:
 
 
     def __init_splits(self, inputs, targets, train_size, test_size, val_size):
@@ -81,7 +79,7 @@ class ActiveLearningDataset:
         if isinstance(train_size, float):
             self.x_train, x_test, self.y_train, y_test = train_test_split(inputs, targets, test_size=1-train_size)
 
-        if isinstance(train_size, int)
+        if isinstance(train_size, int):
             self.x_train, x_test, self.y_train, y_test = train_test_split(inputs, targets, train_size=train_size)
 
 
