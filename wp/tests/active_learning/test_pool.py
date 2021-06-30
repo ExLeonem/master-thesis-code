@@ -200,6 +200,20 @@ class TestUnlabeledPool:
         num_datapoints = 10
         data = np.random.randn(num_datapoints, 28, 28)
 
+    
+    def test_pool_init(self):
+        test_inputs = np.random.randn(10)
+        test_targets = np.random.choice([0, 1, 2], 10)
+        pool = Pool(test_inputs, test_targets)
+
+        pool.init(5)
+        all_indices = pool.get_indices()
+        labeled_indices = all_indices == -1
+
+        inputs, targets = pool.get_labeled_data()
+        assert np.all(targets == test_targets[labeled_indices])
+
+
 
 
 class TestLabeledPool:

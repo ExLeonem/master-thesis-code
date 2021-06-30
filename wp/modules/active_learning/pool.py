@@ -22,13 +22,13 @@ class Pool:
         self.__targets = np.zeros(len(inputs))
 
 
-    def init(self, size, labels=None):
+    def init(self, size):
         """
             Initialize the pool with specific number of labels.
             Only applicable when pool in pseudo mode.
 
             Parameters:
-                size (): number of targets to initialize the pool with.
+                size (int): number of targets to initialize the pool with.
         """
         
         if not self.is_pseudo():
@@ -37,7 +37,7 @@ class Pool:
         if size < 1:
             raise ValueError("Error in Pool.init(). Can't initialize pool with {} targets. Use a positive integer > 1.".format(size))
 
-        if len(self.__indices):
+        if len(self.__indices) < size:
             raise ValueError("Error in Pool.init(). Can't initialize pool, not enough targets. {} targets required, {} are available.".format(size, len(self.__indices)))
 
 
@@ -55,15 +55,23 @@ class Pool:
             # Select 
             for target in unique_targets:
 
-                selector = (self.__true_targets == u_label)
-                indices = self.__indices[selector]
-                targets = self.__true_targets[selector]
+                unlabeled_indices = self.get_unlabeled_indices()
+                true_targets = self.__true_targets[unlabeled_indices]
+                selector = (true_targets == target)
+
+                indices = unlabeled_indices[selector]
+                targets = true_targets[selector]
+
+                # Move to next target, when none available of this type
+                if len(indices) == 0:
+                    continue
                 
-                num_to_select = self.__adapt_num_to_select(targets, num_to_select)
-                selected_indices = np.random.choice(indices, num_to_select, replace=False)
+                adapted_num_to_select = self.__adapt_num_to_select(targets, num_to_select)
+                selected_indices = np.random.choice(indices, adapted_num_to_select, replace=False)
                 
                 # Update pool
-                self.annotate(selected_indices, targets[selected_indices])
+                selected_targets = self.__true_targets[selected_indices]
+                self.annotate(selected_indices, selected_targets)
                 size -= num_to_select
 
                 if size < 1:
