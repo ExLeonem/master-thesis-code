@@ -31,6 +31,7 @@ class Oracle:
     #     # Select target/input pairs of given initial size.
     #     if dataset.has_targets():
     #         pass
+    
     #         return
 
 
