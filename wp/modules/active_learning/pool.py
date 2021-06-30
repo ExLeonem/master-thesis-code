@@ -6,21 +6,29 @@ class Pool:
         Pool that holds information about labeled and unlabeld inputs.
         The attribute 'indices' holds information about the labeled inputs.
         
-        Each index of self.indices can take the following values:
-        (-1) Corresponding input is labeld
-        (index) Corresponding input is not labeled 
+        Each value of self.indices can take the following states:
+        (value==-1) Corresponding input is labeld
+        (value!=-1) Corresponding input is not labeled 
 
         Parameters:
             inputs (numpy.ndarray): Inputs to the network.
     """
 
-    def __init__(self, inputs):
-        self.__indices = np.linspace(0, len(inputs)-1, len(inputs), dtype=int)
+    def __init__(self, inputs, targets=None):
         self.__inputs = inputs
+        self.__true_targets = targets
+        self.__indices = np.linspace(0, len(inputs)-1, len(inputs), dtype=int)
         self.__targets = np.zeros(len(inputs))
 
 
-    def get_by(self, indices):
+    def init(self, inputs, targets=None, size=10, oracle=None):
+        """
+            Initialize the pool of data.
+        """
+        pass
+
+
+    def get_inputs_by(self, indices):
         """
             Get inputs by indices.
 
@@ -31,6 +39,13 @@ class Pool:
                 (numpy.ndarray) the data at given indices.
         """
         return self.__inputs[indices]
+
+
+    def get_targets_by(self, indices):
+        """
+
+        """
+        return self.__targets[indices]
 
 
     def __setitem__(self, indices, targets):
@@ -44,7 +59,7 @@ class Pool:
         self.annotate(indices, targets)
 
     
-    def annotate(self, indices, targets):
+    def annotate(self, indices, targets=None):
         """
             Annotate inputs of given indices with given targets.
 
@@ -52,6 +67,15 @@ class Pool:
                 indices (numpy.ndarray): The indices to annotate.
                 targets (numpy.ndarray): The labels to set for the given annotations.
         """
+
+        if targets is None:
+            if self.__targets is None:
+                raise ValueError("Error in Pool.annotate(). Can't annotate inputs, targets is None.")
+
+            targets = self.__true_targets[indices]
+            
+
+        # Create annotation
         self.__indices[indices] = -1
         self.__targets[indices] = targets
 
@@ -81,7 +105,18 @@ class Pool:
         selector = self.__indices == -1
         return np.any(selector)
 
-    
+
+    def is_pseudo(self):
+        """
+            Is the pool in pseudo mode?
+            Meaning, true target labels are already known?
+
+            Returns:
+                (bool) indicating whether or not true labels are existent.
+        """
+        return self.__true_targets is not None
+
+
     # ---------
     # Setter/Getter
     # -------------------

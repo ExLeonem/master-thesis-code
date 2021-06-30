@@ -3,7 +3,6 @@ import numpy as np
 from modules.active_learning import Pool, DataPool, UnlabeledPool, LabeledPool
     
 
-
 class TestPool:
 
     def test_has_unlabeled(self):
@@ -18,7 +17,7 @@ class TestPool:
         new_pool.annotate([0], 1)
         inputs, targets = new_pool.get_labeled_data()
         assert new_pool.has_labeled() and targets == np.array([1])    
-        
+    
 
     def test_annotate(self):
         test_inputs = np.random.randn(50, 28, 28, 1)
@@ -27,6 +26,17 @@ class TestPool:
         new_pool.annotate(indices, [1, 0, 1, 1])
         inputs, targets = new_pool.get_labeled_data()
         assert len(inputs) == len(indices)
+
+    def test_annotate_pseudo(self):
+        test_inputs = np.random.randn(50)
+        test_targets = np.random.choice([0, 1, 2], 50)
+        new_pool = Pool(test_inputs,test_targets)
+
+        indices = np.array([0, 2, 5, 12])
+        new_pool.annotate(indices)
+        inputs, targets = new_pool.get_labeled_data()
+        assert np.all(test_targets[indices] == targets)
+
 
     def test_annotate_shortcut(self):
         test_inputs = np.random.randn(50)
@@ -42,10 +52,10 @@ class TestPool:
         test_inputs = np.array([0, 2, 5, 12])
         new_pool = Pool(test_inputs)
         indices = [0, 1]
-        values = new_pool.get_by(indices)
+        values = new_pool.get_inputs_by(indices)
         true_values = test_inputs[np.array(indices)]
         assert  np.all(values == true_values)
-        
+    
     
     def test_get_num_unlabeled(self):
         test_inputs = np.random.randn(50)

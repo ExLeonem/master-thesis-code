@@ -1,61 +1,59 @@
 from enum import Enum
 
 
-
 class LabelType(Enum):
     CLASS_LABEL=1,
     ONE_HOT_VECTOR=2,
     VALUE=3
 
+class OracleMode(Enum):
+    PSEUDO=1,
+    ANNOTATE=2
 
 
 class Oracle:
     """
-        Gateway to labeling of inputs.
+        Oracle handles the labeling process for input values.
 
         Parameters:
-            label_type (LabelType): Which kinds of labels to request.
+            display (AnnotationDisplay): Which kinds of labels to request.
+            pseudo_mode (bool): Active learning environment in pseudo mode?
     """
 
 
-    def __init__(self, label_type=LabelType.CLASS_LABEL):
-        self.label_type = label_type
-    
-
-    def init_pool(self, dataset, labeled_pool, unlabeled_pool, init_size):
-
-        # Select target/input pairs of given initial size.
-        if dataset.has_targets():
-            pass
-            return
+    def __init__(self, callback=None, pseudo_mode=False):
+        self.__annotation_callback = callback
+        self.pseudo_mode = pseudo_mode
 
 
-    def annotate(self, dataset, unlabeled_pool, indices):
+    # def init_pool(self, dataset, labeled_pool, unlabeled_pool, init_size):
+
+    #     # Select target/input pairs of given initial size.
+    #     if dataset.has_targets():
+    #         pass
+    #         return
+
+
+    def annotate(self, pool, indices, pseudo_mode=None):
         """
-            Annotates
-        """
-
-        unlabeled_inputs = dataset.get_train_inputs()[indices]
-
-        # Use already existing labels
-        if dataset.has_targets():
-            
-            
-            return 
-
-
-        return self.ask()
-
-
-
-    def ask(self, inputs):
-        """
-            Request user input as to label inputs.
+            Create annotations for given indices and update the pool.
 
             Parameters:
-                inputs (numpy.ndarray): The inputs to label
+                pool (Pool): The pool holding information about already annotated inputs.
+                indices (numpy.ndarray|list(int)): Indices indicating which inputs to annotate.
         """
-        pass
+        
+        # Pseudo mode, use already known labels
+        oracle_in_psuedo_mode = pseudo_mode if pseudo_mode is not None and isinstance(pseudo_mode, bool) else self.pseudo_mode
+        if pool.is_pseudo() and oracle_in_psuedo_mode:
+            pool.annotate(indices)
+            return 
+
+        if self.__annotation_callback is None:
+            raise ValueError("Error in Oracle.annotate(). Oracle not in pseudo-mode and callback is None.")
+
+        self.__annotation_callback(pool, indices)
+
     
 
         

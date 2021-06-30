@@ -24,8 +24,8 @@ class ActiveLearningLoop:
 
         Parameters:
             model (BayesianModel): A model wrapped into a BayesianModel type object.
-            dataset (ActiveLearningDataset): The dataset to use (inputs, targets)
-            query_fn (list(AcquisitionFunction)): The query function to use.
+            dataset (PooledDataset): The dataset to use (inputs, targets)
+            query_fn (list(AcquisitionFunction)|AcquisitionFunction): The query function to use.
 
         
         **kwargs:
@@ -50,10 +50,7 @@ class ActiveLearningLoop:
     ):
 
         # Data and pools (labeled, unlabeled)
-        self.x_train, self.y_train = dataset.get_train_split()
-
-        self.labeled_pool = LabeledPool(inputs)
-        self.unlabeled_pool = UnlabeledPool(inputs)
+        self.dataset = dataset.get_train_split()
 
         # Loop parameters
         self.limit = limit
@@ -66,6 +63,10 @@ class ActiveLearningLoop:
         self.query_fn = query_fn
 
     
+    # ---------
+    # Iterator Protocol
+    # -----------------
+
     def __iter__(self):
         self.i = 0
         return self
@@ -76,13 +77,16 @@ class ActiveLearningLoop:
             Iterate over dataset and query for labels.
         """
 
-        # Limit reached?
-        if (self.limit is not None) and not (self.limit < self.max):
+        if not self.has_next():
             raise StopIteration
 
-        # All data labeled?
-        if not (self.i < len(self.inputs)):
-            raise StopIteration
+        # # Limit reached?
+        # if (self.limit is not None) and not (self.limit < self.max):
+        #     raise StopIteration
+
+        # # All data labeled?
+        # if not (self.i < len(self.inputs)):
+        #     raise StopIteration
 
         # Load previous checkpoints/recreate model
         self.model.reset()
@@ -100,6 +104,36 @@ class ActiveLearningLoop:
 
         # 
 
+
+    # -------
+    # Functions for diverse grades of control
+    # ---------------------------------
+
+    def run(self):
+        """
+            Runs the active learning loop till the end.
+        """
+        pass
+
+
+    def step(self):
+        """
+            Perform a step of the active learning loop.
+        """
+        pass
+
     
     def has_next(self):
-        return False
+        """
+            Can another step of the active learning loop be performed?
+        """
+
+        # Limit reached?
+        if (self.limit is not None) and not (self.limit < self.max):
+            return False
+
+        # All data labeled?
+        if not (self.i < len(self.inputs)):
+            return False
+
+        return True
