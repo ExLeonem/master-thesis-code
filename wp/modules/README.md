@@ -11,6 +11,7 @@ https://github.com/tensorflow/tensorflow/issues/31842
     - [ ] Check if model builds multiple different graphs
     - [ ] Try custom fitting loop?
 
+- [ ] Pool initialization and annotation using different targets (regression, one-hot vectors, ...)
 
 
 # How to add a new model type
@@ -46,7 +47,7 @@ To create a high level learning loop use the `ActiveLearnigLoop` class.
 
 ```python
 
-from active_learning import AcquistionFunction, PooledDataset, ActiveLearningLoop
+from active_learning import AcquistionFunction, Dataset, ActiveLearningLoop
 from bayesian import McDropout
 import tensorflow as tf
 from tensorflow.keras import Sequential

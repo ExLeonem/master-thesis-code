@@ -1,3 +1,4 @@
+import math
 import numpy as np
 
 
@@ -21,11 +22,71 @@ class Pool:
         self.__targets = np.zeros(len(inputs))
 
 
-    def init(self, inputs, targets=None, size=10, oracle=None):
+    def init(self, size, labels=None):
         """
-            Initialize the pool of data.
+            Initialize the pool with specific number of labels.
+            Only applicable when pool in pseudo mode.
+
+            Parameters:
+                size (): number of targets to initialize the pool with.
         """
-        pass
+        
+        if not self.is_pseudo():
+            raise ValueError("Error in Pool.init(). Can't initialize pool using init(size) when not in pseudo mode.")
+
+        if size < 1:
+            raise ValueError("Error in Pool.init(). Can't initialize pool with {} targets. Use a positive integer > 1.".format(size))
+
+        if len(self.__indices):
+            raise ValueError("Error in Pool.init(). Can't initialize pool, not enough targets. {} targets required, {} are available.".format(size, len(self.__indices)))
+
+
+        # WARNING: Will only work for categorical targets
+        unique_targets = np.unique(self.__true_targets)
+
+        num_to_select = 1
+        num_unique_targets = len(unique_targets)
+        if num_unique_targets < size:
+            num_to_select = math.floor(size/num_unique_targets)    
+        
+        # Annotate samples in round robin like schme
+        while size > 0:
+            
+            # Select 
+            for target in unique_targets:
+
+                selector = (self.__true_targets == u_label)
+                indices = self.__indices[selector]
+                targets = self.__true_targets[selector]
+                
+                num_to_select = self.__adapt_num_to_select(targets, num_to_select)
+                selected_indices = np.random.choice(indices, num_to_select, replace=False)
+                
+                # Update pool
+                self.annotate(selected_indices, targets[selected_indices])
+                size -= num_to_select
+
+                if size < 1:
+                    break
+    
+    
+    def __adapt_num_to_select(self, available, num_to_select):
+        """
+            Adapts the number of elements to select next.
+
+            Parameters:
+                available (numpy.ndarray): The available elements.
+                num_to_select (int): The number of elements to select.
+
+            Returns:
+                (int) the adapted number of elements selectable.
+        """
+
+        num_available = len(available)
+        if num_available < num_to_select:
+            return num_available
+
+        return num_to_select
 
 
     def get_inputs_by(self, indices):
@@ -120,6 +181,21 @@ class Pool:
     # ---------
     # Setter/Getter
     # -------------------
+
+    def get_indices(self):
+        return self.__indices
+
+
+    def get_unlabeled_indices(self):
+        """
+            Get all unlabeled indices for this pool.
+
+            Returns:
+                (numpy.ndarray) an array of indices.
+        """
+        selector = self.__indices != -1
+        return self.__indices[selector]
+
 
     def get_num_labeled(self):
         """

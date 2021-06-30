@@ -1,4 +1,5 @@
 from enum import Enum
+import numpy as np
 
 
 class LabelType(Enum):
@@ -16,22 +17,38 @@ class Oracle:
         Oracle handles the labeling process for input values.
 
         Parameters:
-            display (AnnotationDisplay): Which kinds of labels to request.
+            callback (Callback): Function to call for user input for input values. Function receives (pool, indices)
             pseudo_mode (bool): Active learning environment in pseudo mode?
     """
-
 
     def __init__(self, callback=None, pseudo_mode=False):
         self.__annotation_callback = callback
         self.pseudo_mode = pseudo_mode
 
 
-    # def init_pool(self, dataset, labeled_pool, unlabeled_pool, init_size):
+    def init(self, pool, size, pseudo_mode=None):
+        """
+            Initialize pool with given number of samples.
 
-    #     # Select target/input pairs of given initial size.
-    #     if dataset.has_targets():
-    #         pass
-    #         return
+            Parameters:
+                pool (Pool): holding information about already labeled targets.
+                size (int): number of elements to initialize the pool with.
+                pseudo_mode (bool): Whether or not pseudo labeling of inputs. (Only applicable when pool initialized with targets)
+        """
+
+        oracle_in_pseudo_mode = self.is_pseudo(pseudo_mode) 
+
+        if self.is_pseudo(pseudo_mode) and pool.is_pseudo():
+            pool.init(size)
+            return
+        
+
+        if self.__annotation_callback is None:
+            raise ValueError("Error in Oracle.init(). Can't initialize pool because no callback function was set.")
+
+        unlabeled_indices = pool.get_unlabeled_indices()
+        indices = np.random.choice(unlabeled_indices, size, replace=False)
+        self.__annotation_callback(pool, indices)
 
 
     def annotate(self, pool, indices, pseudo_mode=None):
@@ -44,8 +61,7 @@ class Oracle:
         """
         
         # Pseudo mode, use already known labels
-        oracle_in_psuedo_mode = pseudo_mode if pseudo_mode is not None and isinstance(pseudo_mode, bool) else self.pseudo_mode
-        if pool.is_pseudo() and oracle_in_psuedo_mode:
+        if pool.is_pseudo() and self.is_pseudo(pseudo_mode): 
             pool.annotate(indices)
             return 
 
@@ -55,7 +71,20 @@ class Oracle:
         self.__annotation_callback(pool, indices)
 
     
+    def is_pseudo(self, mode=None):
+        """
+            Is the oracle put into pseudo labeling mode?
+            Meaning: when pool is also in pseudo mode, labels will automatically be set by using known labels.
+        """
 
+        if mode is not None:
+            if not isinstance(mode, bool):
+                raise ValueError("Error in Oracle. Value of pseudo_mode is not boolean.")
+
+            return mode
+            
+        else:
+            return self.pseudo_mode
         
 
 

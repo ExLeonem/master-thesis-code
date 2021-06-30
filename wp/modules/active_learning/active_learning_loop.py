@@ -24,7 +24,7 @@ class ActiveLearningLoop:
 
         Parameters:
             model (BayesianModel): A model wrapped into a BayesianModel type object.
-            dataset (PooledDataset): The dataset to use (inputs, targets)
+            dataset (Dataset): The dataset to use (inputs, targets)
             query_fn (list(AcquisitionFunction)|AcquisitionFunction): The query function to use.
 
         

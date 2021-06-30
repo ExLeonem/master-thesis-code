@@ -1,10 +1,10 @@
 
 
 import numpy as np
-from modules.active_learning import PooledDataset
+from modules.active_learning import Dataset
 
 
-class TestPooledDataset:
+class TestDataset:
 
     def test_flags_only_inputs(self):
         """
@@ -12,7 +12,7 @@ class TestPooledDataset:
         """
 
         inputs = np.random.randn(10, 100)
-        dataset = PooledDataset(inputs)
+        dataset = Dataset(inputs)
         assert not dataset.has_targets()
 
     
@@ -23,11 +23,11 @@ class TestPooledDataset:
         inputs = np.random.randn(10, 100)
         targets = np.random.randn(10)
 
-        dataset = PooledDataset(inputs, targets)
+        dataset = Dataset(inputs, targets)
         assert dataset.has_targets()
 
     
-    def test_split(self):
+    def test_train_test_split(self):
         pass
 
 

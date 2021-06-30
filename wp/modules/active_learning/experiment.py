@@ -18,7 +18,7 @@ class Experiment:
             Runs the experiment.
 
             Parameters:
-                dataset (PooledDataset): The dataset on which to perform active learning.
+                dataset (Dataset): The dataset on which to perform active learning.
 
             
             Returns:
