@@ -88,7 +88,7 @@ if __name__ == "__main__":
     # wd = lambda: 1e-1 * schedule(step)
     # optimizer = tfa.optimizers.AdamW(weight_decay=wd)
     
-    model.compile(optimizer="adadelta", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+    model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     model.save_weights()
 
     # Active learning loop
