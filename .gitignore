@@ -14,6 +14,7 @@
 # Exclude generated files and directories
 /.env
 **__pycache__
+**.coverage
 
 # Exclude documentation build
 /wp/docs/_build

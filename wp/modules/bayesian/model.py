@@ -22,7 +22,8 @@ class ModelType(Enum):
         Different bayesian model types.
     """
     MC_DROPOUT=1,
-    MOMENT_PROPAGATION=2
+    MOMENT_PROPAGATION=2,
+    SWAG=3
 
 
 class BayesModel:
@@ -63,6 +64,10 @@ class BayesModel:
         else:
             self.__is_binary = is_binary
     
+
+    def reset(self):
+        self.load_weights()
+
     
     def __call__(self, *args, **kwargs):
         return self._model(inputs, training=self.in_mode(Mode.TRAIN))
