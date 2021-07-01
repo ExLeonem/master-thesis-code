@@ -11,7 +11,7 @@ class Dataset:
         Parameters:
             inputs (numpy.ndarray): The model inputs.
             targets (numpy.ndarray): The targets, labels or values.
-            init_size (numpy.ndarray): The initial size of the LabeledPool
+            init_size (int): The initial size of labeled inputs in the pool.
             train_size (float|int): Size of the train split.
             test_size (float|int): Size of the test split.
             val_size (float|int): Size of the validation split.
@@ -21,76 +21,56 @@ class Dataset:
     def __init__(
         self, 
         inputs,
-        targets=None,
+        targets,
         init_size=0,
         train_size=.75, 
-        test_size=.25, 
+        test_size=None, 
         val_size=None
     ):
 
-        # Dataset splits
-        self.x_test = None
-        self.y_test = None
-        self.x_val = None
-        self.y_val = None
-
+        self.pseudo = True
         self.init_size = init_size
 
-        # Targets passed to the dataset?
-        self.pseudo = True
-        if targets is None:
-            self.pseudo = False
-            self.pool = self.__init_pool(inputs, targets, init_size)
+        if len(inputs) != len(targets):
+            raise ValueError("Error in Dataset.__init__(). Can't initialize dataset. Length of inputs and targets are not equal.")
+
+        if train_size == 1 and test_size is None and val_size is None:
+            self.x_train = inputs
+            self.y_train = targets
+
+        self.x_train, x_test, self.y_train, y_test = train_test_split(inputs, targets, train_size=train_size)
+
+        if test_size is not None:
+            self.x_test, self.x_val, self.y_test, self.y_val = train_test_split(x_test, y_test, train_size=test_size)
+
+        if val_size is not None:
+            self.x_test, self.x_val, self.y_test, self.y_val = train_test_split(x_test, y_test, test_size=val_size)
 
 
-        # Allow splitting of dataset?
-        if self.pseudo:
-            self.train_size = train_size
-            self.test_size = test_size
-            self.val_size = val_size
-        
+        # else:
+            
+        #     max_num_datapoints = len(inputs)
+        #     true_test_size = self.__adapt_test_size(max_num_datapoints, train_size, test_size)
+        #     self.pseudo = True # Experimentl active learning run?
+        #     self.init_size = init_size
+        #     self.train_split, (x_temp, y_temp) = self.__split(inputs, targets, train_size, test_size) 
 
-    
-    def __init_pool(self, inputs, init_size, targets=None, pseudo=False):
-        return Pool(inputs)
-
-
-
-    def __split_only_inputs(self, inputs, train_size, test_size, val_size):
-        """
-            Splits only input values into train, test and validation sets.
-
-            Parameters:
-                inputs (numpy.ndarray): The input values to the network.
-                train_size (float|int): Size of the training set.
-                test_size (float|int): Size of the test set.
-                val_size (float|int): Size of the validation set.
-        """
-
-        x_test = None
-        if isinstance(train_size, float):
-            self.x_train, x_test = train_test_split(inputs, test_size=1-train_size)
-        
-        if isinstance(train_size, int):
-            self.x_train, x_test = train_test_split(inputs, train_size=train_size)
-
-        if val_size is None:
-            self.x_test = x_test
-
+        #     true_val_size = self.__adapt_val_size(test_size, true_test_size, val_size)
+        #     self.test_split, self.val_split = self.__split(x_temp, y_temp, true_test_size) 
 
 
     # ----------
     # Utilities
     # -------------------
 
-    def has_targets(self):
+    def is_pseudo(self):
         return self.pseudo
 
-    
-    def get_unlabeled(self):
-        pass
+    def has_test_set(self):
+        return (self.x_test is not None) and (self.y_test is not None)
 
-
+    def has_val_set(self):
+        return (self.x_val is not None) and (self.y_val is not None)
 
     # -------------
     # Setter/-Getter
@@ -108,20 +88,9 @@ class Dataset:
     def get_train_targets(self):
         return self.y_train
 
+
     def get_test_split(self):
         return (self.x_test, self.y_test)
 
-    def get_test_inputs(self):
-        return self.x_test
-
-    def get_test_targets(self):
-        return self.y_test
-
     def get_val_split(self):
         return (self.x_val, self.y_val)
-
-    def get_val_inputs(self):
-        return self.x_val
-
-    def get_val_targets(self):
-        return self.y_val

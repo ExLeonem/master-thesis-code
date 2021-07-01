@@ -50,8 +50,12 @@ class ActiveLearningLoop:
     ):
 
         # Data and pools (labeled, unlabeled)
-        self.dataset = dataset.get_train_split()
-
+        x_train, y_train = dataset.get_train_split()
+        initial_pool_size  = dataset.get_init_size()
+        self.pool = Pool(x_train, y_train)
+        if dataset.is_pseudo() and initial_pool_size > 0:
+            self.pool.init(initial_pool_size)
+        
         # Loop parameters
         self.limit = limit
         self.max = len(inputs)
@@ -92,15 +96,16 @@ class ActiveLearningLoop:
         self.model.reset()
 
         # Fit model
-        labeled_indices = self.labeled_pool.get_indices()
-        h = self.model.fit(self.inputs[labeled_indices], self.targets[labeled_indices])
+        (inputs, targets) = self.pool.get_labeled_data()
+        h = self.model.fit(inputs, targets)
 
         # Evaluate model
-        e_metrics = self.model.evaluate()
+        if self.dataset.has_test_set():
+            e_metrics = self.model.evaluate()
 
         # Update pools
-        indices, _pred = self.query_fn(self.model, self.unlabeled_pool, step_size=self.step_size)
-        labels = self.oracle.anotate()
+        indices, _pred = self.query_fn(self.model, self.pool, step_size=self.step_size)
+        labels = self.oracle.anotate(self.pool, indices)
 
         # 
 
