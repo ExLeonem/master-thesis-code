@@ -220,13 +220,13 @@ class McDropout(BayesModel):
         """
         # Create predictions
         predictions = self.__call__(data, sample_size=sample_size)
-        posterior = self.expectation(predictions)
+        expectation = self.expectation(predictions)
         
         # Absolute value to prevent nan values and + 0.001 to prevent infinity values
-        log_post = np.log(np.abs(posterior) + .001)
+        log_post = np.log(np.abs(expectation) + .001)
 
         # Calculate max-entropy
-        return -np.sum(posterior*log_post, axis=1)
+        return -np.sum(expectation*log_post, axis=1)
 
 
     def __bald(self, data, sample_size=10, **kwargs):
@@ -245,7 +245,12 @@ class McDropout(BayesModel):
 
         # Missing dimension in binary case?
         predictions = self.extend_binary_predictions(predictions)
-        second_term = np.sum(np.mean(predictions*np.log(np.abs(predictions) + .001), axis=1), axis=1)
+        
+
+        inner_sum = np.sum(predictions*np.log(np.abs(predictions) + .001), axis=1)
+        self.logger.info("_bald/inner-shape: {}".format(inner_sum.shape))
+
+        second_term = np.sum(inner_sum, axis=1)/predictions.shape[1]
 
         self.logger.info("_bald/first-term-shape: {}".format(first_term.shape))
         self.logger.info("_bald/second-term-shape: {}".format(second_term.shape))

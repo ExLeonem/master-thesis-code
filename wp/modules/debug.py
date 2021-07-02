@@ -130,7 +130,10 @@ if __name__ == "__main__":
     model, metrics = select_model(model_name, base_model, is_binary=(num_classes == 2))
     # model = McDropout(base_model, is_binary=(num_classes == 2))
     model.compile(optimizer=config["optimizer"], loss=config["loss"], metrics=["accuracy"])
-    model.save_weights()
+    
+    if not model.has_save_state():
+        logger.warn("Creating initial save state.")
+        model.save_weights()
 
     # Active learning loop
     iterator = tqdm(range(0, len(unlabeled_pool), step_size), leave=True)

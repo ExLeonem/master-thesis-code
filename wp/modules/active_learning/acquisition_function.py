@@ -67,8 +67,9 @@ class AcquisitionFunction:
         """
             
             Parameter:
-                model (BayesModel): 
-                pool (Pool): 
+                model (BayesModel): The model to use for the computation of acquistion functions.
+                pool (Pool): The pool of unlabeled data.
+                num (int): Number of datapoints to collect.
 
             Returns:
                 (numpy.ndarray) Indices
@@ -85,7 +86,7 @@ class AcquisitionFunction:
         # Select values randomly? 
         # No need for batch processing
         if self.name == "random":
-            return self.fn(indices, pool.data, **kwargs)            
+            return self.fn(indices, pool.data, num=num, **kwargs)            
 
         # Iterate throug batches of data
         results = None
@@ -173,6 +174,8 @@ class AcquisitionFunction:
         num = self._adapt_selection_num(len(available_indices), num)
         indices = np.random.choice(available_indices, num, replace=False).astype(int)
 
+        self.logger.info("Indices selected: {}".format(indices))
+
         return indices, data[indices]
 
 
@@ -189,7 +192,11 @@ class AcquisitionFunction:
         
         self.logger.info("__select_first/start-sort")
         sorted_keys = np.argsort(predictions)
+        # n_biggest_keys = sorted_keys[-n:]
         n_biggest_keys = sorted_keys[-n:]
+        # other_keys = sorted_keys[:10]
+        # self.logger.info("Other values: {}".format(predictions[other_keys]))
+        # self.logger.info("Values: {}".format(predictions[n_biggest_keys]))
 
         self.logger.info("__select_first/finish_sort")
         return indices[n_biggest_keys], predictions[n_biggest_keys]

@@ -195,7 +195,7 @@ class BayesModel:
         log_path = os.path.join(dir_name, "..", "logs", "model.log")
 
         fh = logging.FileHandler(log_path)
-        fh.setLevel(logging.DEBUG)
+        fh.setLevel(log_level)
         fh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
         logger.addHandler(fh)
         self.logger = logger
@@ -253,13 +253,13 @@ class BayesModel:
         self._model.load_weights(path)
         
 
-    def empty_weights(self):
+    def has_save_state(self):
         try:
             self.load_weights()
-            return False
+            return True
 
         except:
-            return True
+            return False
 
 
     # ---------------
