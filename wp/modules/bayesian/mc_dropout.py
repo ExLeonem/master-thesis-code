@@ -271,7 +271,7 @@ class McDropout(BayesModel):
         posterior = self.expectation(predictions)
 
         # Calcualte max variation rations
-        return 1 + posterior.max(axis=1)
+        return 1 - posterior.max(axis=1)
 
 
     def __std_mean(self, data, sample_size=10,  **kwargs):

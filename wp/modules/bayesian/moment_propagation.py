@@ -206,7 +206,7 @@ class MomentPropagation(BayesModel):
 
         col_max_indices = np.argmax(expectation, axis=1)        
         row_indices = np.arange(len(data))
-        max_var_ratio = 1-expectation[row_indices, col_max_indices]
+        max_var_ratio = 1- expectation[row_indices, col_max_indices]
         return max_var_ratio
 
     
