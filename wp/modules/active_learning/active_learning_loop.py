@@ -1,5 +1,5 @@
 import time
-from . import AcquisitionFunction, Pool, Oracle
+from . import AcquisitionFunction, Pool, UnlabeledPool, Oracle
 
 
 class ActiveLearningLoop:
@@ -108,7 +108,7 @@ class ActiveLearningLoop:
 
         # Update pools
         indices, _pred = self.query_fn(self.model, self.pool, step_size=self.step_size)
-        labels = self.oracle.anotate(self.pool, indices)
+        labels = self.oracle.annotate(self.pool, indices)
 
 
 

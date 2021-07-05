@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from sklearn.model_selection import train_test_split
 
-from active_learning import TrainConfig, Config, Metrics, LabeledPool, UnlabeledPool, AcquisitionFunction
+from active_learning import TrainConfig, Config, Metrics, Pool, AcquisitionFunction
 from bayesian import McDropout, MomentPropagation, BayesModel
 from data import BenchmarkData, DataSetType
 from models import default_model, setup_growth
@@ -45,43 +45,6 @@ def select_model(model_name, base_model, **kwargs):
 def keys_to_dict(**kwargs):
     return kwargs
 
-
-def init_pools(unlabeled_pool, labeled_pool, targets, num_init_per_target=10):
-    """
-        Initialize the pool with randomly selected values.
-
-        Paramters:
-            unlabeled_pool (UnlabeldPool): Pool that holds information about unlabeld datapoints.
-            labeled_pool (LabeledPool): Pool that holds information about labeled datapoints.
-            targest (numpy.ndarray): The labels of input values.
-            num_init_per_target (int): The initial labels used per target. 
-
-        Todo:
-            - Make it work for labels with additional dimensions (e.g. bag-of-words, one-hot vectors)
-    """
-
-    # unlabeled_pool.update(indices)
-    # labeled_pool[indices] = labels
-
-    # Use initial target values?
-    if num_init_per_target <= 0:
-        return
-
-    # Select 'num_init_per_target' per unique label 
-    unique_targets = np.unique(targets)
-    for idx in range(len(unique_targets)):
-
-        # Select indices of labels for unique label[idx]
-        with_unique_value = targets == unique_targets[idx]
-        indices_of_label = np.argwhere(with_unique_value)
-
-        # Set randomly selected labels
-        selected_indices = np.random.choice(indices_of_label.flatten(), num_init_per_target, replace=True)
-
-        # WILL NOT WORK FOR LABELS with more than 1 dimension
-        unlabeled_pool.update(selected_indices)
-        new_labels = np.full(len(selected_indices), unique_targets[idx])
-        labeled_pool[selected_indices] = new_labels
 
 
 if __name__ == "__main__":
@@ -144,9 +107,8 @@ if __name__ == "__main__":
 
     # Setup active learning specifics
     acquisition = AcquisitionFunction(acq_function_name, batch_size=acq_batch_size, verbose=True)
-    labeled_pool = LabeledPool(x_train)
-    unlabeled_pool = UnlabeledPool(x_train)
-    init_pools(unlabeled_pool, labeled_pool, y_train, num_init_per_target=args.initial_size)
+    pool = Pool(x_train, y_train)
+    pool.init(args.initial_size)
 
     # Setup the Model
     setup_growth()
@@ -164,7 +126,7 @@ if __name__ == "__main__":
 
     # Active learning loop
     save_state_exists = False
-    iterator = tqdm(range(0, len(unlabeled_pool), step_size), leave=True)
+    iterator = tqdm(range(0, pool.get_length_unlabeled()), step_size), leave=True)
     acl_history = []
     it = 0
     for i in iterator:
@@ -188,7 +150,7 @@ if __name__ == "__main__":
         # Fit the base model
         start = time.time()
         logger.info("(Start) Train")
-        lab_inputs, lab_targets = labeled_pool[:]
+        lab_inputs, lab_targets = pool.get_labeled_data()
         history = base_model.fit(lab_inputs, lab_targets, batch_size=10, epochs=epochs, verbose=False)
         end = time.time()
         logger.info("Metrics: {}".format(history.history))
@@ -201,18 +163,15 @@ if __name__ == "__main__":
         # Selected datapoints and labels
         logger.info("(Start) Acqusition")
         start = time.time()
-        indices, _pred = acquisition(model, unlabeled_pool, num=step_size)
-        labels = y_train[indices]
+        indices, _pred = acquisition(model, pool, num=step_size)
         end = time.time()
         logger.info("(Finish) Acquisition (%.2fs)" % (end-start))
         
         # Update pools
         logger.info("(Start) Update pool")
         start = time.time()
-        lab_pool_size = len(labeled_pool)
-        unlabeled_pool.update(indices)
-        labeled_indices = unlabeled_pool.get_labeled_indices()
-        labeled_pool[indices] = labels
+        pool.annotate(indices)
+        lab_pool_size = pool.get_length_labeled()
         end = time.time()
         logger.info("(Finish) Update pool (%.2fs)" % (end-start))
 
@@ -234,7 +193,7 @@ if __name__ == "__main__":
 
         logger.info("Iteration {}".format(i))
         logger.info("Metrics: {}".format(str(eval_metrics)))
-        logger.info("Labeled_size: {}".format(len(labeled_pool)))
+        logger.info("Labeled_size: {}".format(lab_pool_size))
         it += 1
 
     METRICS_PATH = os.path.join(BASE_PATH, "metrics")

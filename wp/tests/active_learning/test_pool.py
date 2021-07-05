@@ -57,25 +57,25 @@ class TestPool:
         assert  np.all(values == true_values)
     
     
-    def test_get_num_unlabeled(self):
+    def test_get_length_unlabeled(self):
         test_inputs = np.random.randn(50)
         new_pool = Pool(test_inputs)
-        assert new_pool.get_num_labeled() == 0
+        assert new_pool.get_length_labeled() == 0
 
         new_pool[1] = 0
-        assert new_pool.get_num_labeled() == 1
+        assert new_pool.get_length_labeled() == 1
 
         new_pool[[2, 5]] = [1, 0]
-        assert new_pool.get_num_labeled() == 3
+        assert new_pool.get_length_labeled() == 3
 
     
-    def test_get_num_labeled(self):
+    def test_get_length_labeled(self):
         test_inputs = np.random.randn(50)
         new_pool = Pool(test_inputs)
-        assert new_pool.get_num_unlabeled() == len(test_inputs)
+        assert new_pool.get_length_unlabeled() == len(test_inputs)
 
         new_pool[0] = 1
-        assert new_pool.get_num_unlabeled() != len(test_inputs)
+        assert new_pool.get_length_unlabeled() != len(test_inputs)
 
 
     def test_get_labeld_data(self):

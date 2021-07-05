@@ -32,7 +32,7 @@ class Pool:
         """
         
         if not self.is_pseudo():
-            raise ValueError("Error in Pool.init(). Can't initialize pool using init(size) when not in pseudo mode.")
+            raise ValueError("Error in Pool.init(). Can't initialize pool using init(size) when not in pseudo mode. Initialize pool with targets, to put Pool in pseudo mode.")
 
         if size < 1:
             raise ValueError("Error in Pool.init(). Can't initialize pool with {} targets. Use a positive integer > 1.".format(size))
@@ -205,7 +205,7 @@ class Pool:
         return self.__indices[selector]
 
 
-    def get_num_labeled(self):
+    def get_length_labeled(self):
         """
             Get the number of labeled inputs.
 
@@ -215,7 +215,7 @@ class Pool:
         return np.sum(self.__indices == -1)
 
     
-    def get_num_unlabeled(self):
+    def get_length_unlabeled(self):
         """
             Get the number of unlabeld inputs.
 
@@ -245,7 +245,7 @@ class Pool:
             Returns:
                 (tuple(numpy.ndarray, numpy.ndarray)) The inputs and their indices in the pool
         """
-        selector = np.logical_not(self.__indices == -1)
+        selector = self.__indices != -1
         inputs = self.__inputs[selector]
         indices = self.__indices[selector]
         return inputs, indices

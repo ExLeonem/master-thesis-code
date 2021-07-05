@@ -80,13 +80,14 @@ class AcquisitionFunction:
         if self.fn is None:
             self.fn = self._set_fn(model)
 
-        data = pool.get_data()
-        indices = pool.get_indices()
+        data, indices = pool.get_unlabeled_data()
+        # data = pool.get_data()
+        # indices = pool.get_indices()
 
         # Select values randomly? 
         # No need for batch processing
         if self.name == "random":
-            return self.fn(indices, pool.data, num=num, **kwargs)            
+            return self.fn(indices, data, num=num, **kwargs)            
 
         # Iterate throug batches of data
         results = None
@@ -103,7 +104,7 @@ class AcquisitionFunction:
         if self.batch_size is None:
             self.batch_size = len(data)
 
-        num_batches = num_datapoints/self.batch_size        
+        num_batches = num_datapoints/self.batch_size
         batches = np.array_split(data, num_batches, axis=0)
         results = []
         for batch in batches:
@@ -157,7 +158,7 @@ class AcquisitionFunction:
         self.fn = fn
 
 
-    def _random(self, available_indices, data, num=5, **kwargs):
+    def _random(self, indices, data, num=5, **kwargs):
         """
             Randomly select a number of datapoints from the dataset.
             Baseline for comparison purposes.
@@ -171,12 +172,12 @@ class AcquisitionFunction:
                 (numpy.ndarray): Randomly selected indices for next training.
         """
 
+        available_indices = np.linspace(0, len(data)-1, len(data), dtype=int)
         num = self._adapt_selection_num(len(available_indices), num)
-        indices = np.random.choice(available_indices, num, replace=False).astype(int)
+        selected = np.random.choice(available_indices, num, replace=False).astype(int)
 
-        self.logger.info("Indices selected: {}".format(indices))
-
-        return indices, data[indices]
+        self.logger.info("Indices selected: {}".format(selected))
+        return indices[selected], data[selected]
 
 
     def __select_first(self, predictions, indices, n):

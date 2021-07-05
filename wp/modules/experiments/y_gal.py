@@ -85,10 +85,9 @@ if __name__ == "__main__":
     mnist = BenchmarkData(DataSetType.MNIST, os.path.join(DATASET_PATH, "mnist"), dtype=np.float32)
     x_train, x_test, y_train, y_test = train_test_split(mnist.inputs, mnist.targets, test_size=test_set_size)
     x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=val_set_size)
-    labeled_pool = LabeledPool(x_train)
-    unlabeled_pool = UnlabeledPool(x_train)
-    init_pools(unlabeled_pool, labeled_pool, y_train, initial_pool_size)
-    logger.info("Initial Labeled Pool size: {}".format(len(labeled_pool)))
+    pool = Pool(x_train, y_train)
+    poo.init(initial_pool_size)
+    logger.info("Initial Labeled Pool size: {}".format(pool.get_length_labeled()))
 
     # Setup model
     setup_growth()
@@ -107,7 +106,7 @@ if __name__ == "__main__":
         logger.warn("Creating initial save state.")
         model.save_weights()
 
-    logger.info("Unlabeled Pool size: {}".format(len(unlabeled_pool)))
+    logger.info("Unlabeled Pool size: {}".format(pool.get_length_unlabeled()))
 
     # Active learning loop
     num_iterations = 20
@@ -127,7 +126,7 @@ if __name__ == "__main__":
         # Fit model
         logger.info("(Start) Train Model")
         start = time.time()
-        lab_inputs, lab_targets = labeled_pool[:]
+        lab_inputs, lab_targets = pool.get_labeled_data()
         h = model.fit(
             lab_inputs, lab_targets, 
             batch_size=batch_size, epochs=args.epochs, verbose=verbose
@@ -141,16 +140,13 @@ if __name__ == "__main__":
 
         # Acquisition process
         start = time.time()
-        indices, _pred = acquisition(model, unlabeled_pool, num=step_size, sample_size=sample_size)
-        labels = y_train[indices]
+        indices, _pred = acquisition(model, pool, num=step_size, sample_size=sample_size)
         end = time.time()
         logger.info("--(Finish) Acquisiton (%.1fs)" % (end-start))
 
-        # Update ppols
-        lab_pool_size = len(labeled_pool)
-        unlabeled_pool.update(indices)
-        labeled_indices = unlabeled_pool.get_labeled_indices()
-        labeled_pool[indices] = labels
+        # Update pool
+        pool.annotate(indices)
+        lab_pool_size = pool.get_length_labeled()
         
 
         # Evaluate
