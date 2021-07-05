@@ -1,4 +1,5 @@
 import time
+from copy import copy, deepcopy
 from tqdm import tqdm
 from . import AcquisitionFunction, Pool, UnlabeledPool, Oracle
 
@@ -42,7 +43,6 @@ class ActiveLearningLoop:
         dataset,
         query_fn,
         step_size=1,
-        config=None,
         limit=None,
         pseudo=True,
         **kwargs
@@ -66,7 +66,6 @@ class ActiveLearningLoop:
         # Active learning components
         self.model = model
         self.oracle = Oracle(pseudo_mode=pseudo)
-        # self.model_kwargs = model.get_config()
         self.query_fn = self.__init_acquisition_fn(query_fn)
 
 
@@ -87,7 +86,19 @@ class ActiveLearningLoop:
         
         return times
 
-    
+
+    # def __deepcopy__(self, memo):
+    #     """
+    #         Creates a deep copy of this active learning loop.
+    #     """
+
+    #     dataset = deepcopy(self.dataset)
+    #     query_fn = deepcopy(self.query_fn)
+        
+
+    #     return result
+
+
     # ---------
     # Iterator Protocol
     # -----------------

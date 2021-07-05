@@ -423,6 +423,6 @@ class BayesModel:
         return other == self._model_type
 
 
-    def __str__(self, other):
-        return ""    
+    def __str__(self):
+        return self.get_model_name()
 

@@ -1,5 +1,12 @@
+import os, sys, select
+from . import ActiveLearningLoop, AcquisitionFunction
 
-from . import ActiveLearningLoop
+dir_path = os.path.dirname(os.path.realpath(__file__))
+MODULE_PATH = os.path.join(dir_path, "..")
+sys.path.append(MODULE_PATH)
+
+from bayesian import BayesModel
+from models import setup_growth
 
 
 class ExperimentSuit:
@@ -9,51 +16,152 @@ class ExperimentSuit:
 
     Parameters:
         models (list(BayesianModel)): The models to iterate over.
-        query_fns (list(str)): A list of query functions to use
-        dataset (tuple(numpy.ndarray, numpy.ndarray)): A dataset consisting of (inputs, targets).
-
-    
-    Returns:
+        query_fns (list(str)|list(AcquisitionFunction)|str|AcquisitionFunction): A list of query functions to use
+        dataset (Dataset): A dataset for experiment execution.
         
+        limit (int): iteration limit per experiment.
+        acceptance_timeout (int): Timeout in seconds in which experiment can be proceeded or aborted, after successfull (model,query function) iteration. Setting None will automatically proceed. (default: None)
+
     """
 
     def __init__(
         self, 
-        models, 
+        models,
         query_fns,
         dataset,
-        config=None,
-        **kwargs
+        step_size=1,
+        limit=None,
+        acceptance_timeout=None,
+        verbose=False
     ):
-        self.models = models
-        self.query_functions = query_fns
+
         self.dataset = dataset
+        self.limit = limit
+        self.step_size = step_size
+        self.acceptance_timeout = acceptance_timeout
+
+        self.models = self.__init_models(models)
+        self.query_functions = self.__init_query_fns(query_fns)
 
 
-    def run(self):
+    def start(self):
         """
-        Run different experiment iterativly
+            Starts the experiment suit.
         """
+        setup_growth()
 
         # Iterate over models
-        for model in models:
+        exit_loop = False
+        for model in self.models:
 
             # Iterate over query functions to evaluate
             metrics = None
-            for query_fn in query_functions:
-                pass                
+            for query_fn in self.query_functions:
+                print("Running experiment Model: {} | Query-Function: {}".format(model, query_fn))
+                self.run_experiment(model, query_fn)
+                to_proceed = self.__await_proceed()
+                if not to_proceed:
+                    exit_loop = True
+                    break
+
+            
+            if exit_loop:
+                break
+
+
+    def run_experiment(self, model, query_fn):
+        """
+            Run different experiment iterativly
+        """
+
+        active_learning_loop = ActiveLearningLoop(
+            model, 
+            self.dataset, 
+            query_fn, 
+            step_size=self.step_size,
+            limit=self.limit,
+            pseudo=True
+        )
+
+        active_learning_loop.run()
+
+
+    def __await_proceed(self):
+        """
+            Waiting for 
+        """
+
+        if self.acceptance_timeout is not None and isinstance(self.acceptance_timeout, int):
+            print("Proceed with next experiment? (y/n) ")
+            while True:
+                i, o, e = select.select([sys.stdin], [], [], 2)
+
+                if i: 
+                    value = sys.stdin.readline().strip().lower()
+                    if value == "y" or value == "yes":
+                        return True
+                    elif value == "n" or value == "no":
+                        return False
+                    else:
+                        print("Unknown value passed. Either input yes or no.")
+                        continue
+
+                else:
+                    return True
+            
+        return True
+
+
+
+    # ------------
+    # Utilities
+    # ---------------
+
+    def __init_models(self, models):
+        """
+            Iterate through passed models,
+            raising an error when one of the models can't be processed.
+        """
+
+        if isinstance(models, BayesModel):
+            return [models]
+
+        verified_models = []
+        if isinstance(models, list):
+            for model in models:
                 
+                # Passed model can be used in context of ActiveLearningLoop?
+                if not isinstance(model, BayesModel):
+                    raise ValueError("Error in ExperimentSuit.__init__(). One of the passed models is no sub-class of BayesModel.")
+
+        else:
+            raise ValueError("Error in ExperimentSuit.__init__(). Can't parse models of type {}. Expected list of or single BayesModel.".format(type(models)))
+
+        return models
 
 
-    def __active_learning_loop(self, model, query_fn):
-        active_learning_loop = ActiveLearningLoop(model, self.dataset, query_fn)
+    def __init_query_fns(self, query_fns):
+        """
+            Create AcquisitionFunction
+        """
 
-        while active_learning_loop.has_next():
-            result = next()
+        if isinstance(query_fns, str) or isinstance(query_fns, AcquisitionFunction):
+            return [query_fns]
 
+        fns = []
+        if isinstance(query_fns, list):
+            for query_fn in query_fns:
 
+                if isinstance(query_fn, str):
+                    fns.append(AcquisitionFunction(query_fn))
 
+                elif isinstance(query_fn, AcquisitionFunction):
+                    fns.append(query_fn)
+                
+                else:
+                    raise ValueError("Error in ExperimentSuit.__init__(). Can't initialize one of the given AcquisitionFunctions")
+        
+        else:
+            raise ValueError("Error in ExperimentSuit.__init__(). Got type {} for qury_fns. Expected a list of strings, AcqusitionFunctions, singel strings or a single AcquisitionFunction.".format(type(query_fns)))
 
-
-    def __build_queue(self):
-        pass
+        return fns

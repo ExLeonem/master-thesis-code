@@ -1,4 +1,4 @@
-
+from copy import deepcopy
 import argparse
 import os, sys, importlib
 import numpy as np
@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from sklearn.model_selection import train_test_split
 
-from active_learning import TrainConfig, Config, Metrics, Pool, AcquisitionFunction, Dataset, ActiveLearningLoop
+from active_learning import TrainConfig, Config, Metrics, Pool, AcquisitionFunction, Dataset, ActiveLearningLoop, ExperimentSuit
 from bayesian import McDropout, MomentPropagation, BayesModel
 from data import BenchmarkData, DataSetType
 from models import default_model, setup_growth
@@ -35,21 +35,26 @@ if __name__ == "__main__":
     setup_growth()
 
     dataset = Dataset(mnist.inputs, mnist.targets, init_size=10)
-    query_fn = AcquisitionFunction("random")
-
     base_model = default_model(output_shape=num_classes)
     model_config = Config(
         fit={"epochs": 10, "batch_size": 10},
     )
-    mc_model = McDropout(base_model, model_config, verbose=True)
+
+    # Create Models
+    mc_model = McDropout(base_model, model_config)
     mc_model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+
+    # mp_model = MomentPropagation(base_model, model_config)
 
     logger.info("Dataset size: {}".format(len(dataset.x_train)))
 
-    acl = ActiveLearningLoop(mc_model, dataset, "random", step_size=50, limit=10)
-    acl.run()
-    
-    
-    
+    models = [mc_model]
+    query_fns = ["random", "max_entropy"]
+    experiments = ExperimentSuit(models, query_fns, dataset, step_size=50, limit=5)
+    experiments.start()
+
+    # acl = ActiveLearningLoop(mc_model, dataset, "random", step_size=50, limit=10)
+    # acl.run()
+    # o_loop = deepcopy(acl)
 
     

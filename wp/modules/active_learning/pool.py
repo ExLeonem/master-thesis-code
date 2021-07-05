@@ -1,4 +1,5 @@
 import math
+from copy import deepcopy
 import numpy as np
 
 
@@ -185,6 +186,9 @@ class Pool:
         """
         return self.__true_targets is not None
 
+
+    def __deepcopy__(self, memo):
+        return Pool(self.__inputs, self.__true_targets)
 
     # ---------
     # Setter/Getter

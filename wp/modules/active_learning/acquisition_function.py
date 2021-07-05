@@ -202,3 +202,6 @@ class AcquisitionFunction:
         self.logger.info("__select_first/finish_sort")
         return indices[n_biggest_keys], predictions[n_biggest_keys]
 
+
+    def __str__(self):
+        return self.name
