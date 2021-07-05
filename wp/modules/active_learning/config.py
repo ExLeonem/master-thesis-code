@@ -52,6 +52,10 @@ class Config:
         return self.kwargs[key]
 
 
+    def __contains__(self, key):
+        return key in self.kwargs
+
+
 
 class TrainConfig(Config):
     """

@@ -1,4 +1,5 @@
 import time
+from tqdm import tqdm
 from . import AcquisitionFunction, Pool, UnlabeledPool, Oracle
 
 
@@ -59,15 +60,32 @@ class ActiveLearningLoop:
         # Loop parameters
         self.step_size = step_size
         self.iteration_user_limit = limit
-        self.iteration_max = len(x_train)
+        self.iteration_max = self.pool.get_length_unlabeled()
         self.i = 0
-        
 
         # Active learning components
         self.model = model
         self.oracle = Oracle(pseudo_mode=pseudo)
         # self.model_kwargs = model.get_config()
         self.query_fn = self.__init_acquisition_fn(query_fn)
+
+
+    def __len__(self):
+        """
+            How many iterations until the active learning loop exits.
+
+            Returns:
+                (int) The number of iterations.
+        """
+
+        times, rest = divmod(self.iteration_max, self.step_size)
+        if rest != 0:
+            times += 1
+
+        if self.iteration_user_limit is not None and self.iteration_user_limit < times:
+            return self.iteration_user_limit
+        
+        return times
 
     
     # ---------
@@ -82,52 +100,114 @@ class ActiveLearningLoop:
     def __next__(self):
         """
             Iterate over dataset and query for labels.
+
+            Returns:
+                (dict) Accumulated information during avtive learning iterations.
         """
 
         if not self.has_next():
             raise StopIteration
 
-        # # Limit reached?
-        # if (self.limit is not None) and not (self.limit < self.max):
-        #     raise StopIteration
-
-        # # All data labeled?
-        # if not (self.i < len(self.inputs)):
-        #     raise StopIteration
-
         # Load previous checkpoints/recreate model
         self.model.reset()
 
-        # Fit model
-        (inputs, targets) = self.pool.get_labeled_data()
-        h = self.model.fit(inputs, targets)
+        # Optimiize model params
+        optim_metrics, optim_time = self.__optim_model_params()
 
-        # Evaluate model
-        if self.dataset.has_test_set():
-            e_metrics = self.model.evaluate()
+        # Fit model
+        train_metrics, train_time = self.__fit_model()
 
         # Update pools
         indices, _pred = self.query_fn(self.model, self.pool, step_size=self.step_size)
-        labels = self.oracle.annotate(self.pool, indices)
+        self.oracle.annotate(self.pool, indices)
 
+        # Evaluate model
+        eval_metrics, eval_time = self.__eval_model()
+
+        self.i += 1
+
+        return {
+            "train": train_metrics,
+            "train_time": train_time,
+            "optim": optim_metrics,
+            "optim_time": optim_time,
+            "eval": eval_metrics,
+            "eval_time": eval_time
+        }
+
+
+    def __optim_model_params(self):
+        """
+            Perform parameter optimization using on a validation set.
+        """
+
+        metrics = None
+        duration = None
+        if hasattr(self.model, "optimize") and self.dataset.has_eval_set():
+            e_inputs, e_targets = self.dataset.get_eval_split()
+            start = time.time()
+            metrics = self.model.optimize(e_inputs, e_target)
+            duration = time.time() - start
+
+        return metrics, duration
+
+    
+    def __fit_model(self):
+        """
+            Fit model to the labeled data.
+
+            Returns:
+                (tuple(dict(), float)) metrics and the time needed to fit the model.
+        """
+        history = None
+        duration = None
+        if self.pool.get_length_labeled() > 0:
+            inputs, targets = self.pool.get_labeled_data()
+            start = time.time()
+            h = self.model.fit(inputs, targets, verbose=False)
+            duration = time.time() - start
+            history = h.history
+
+        return history, duration
+
+
+    def __eval_model(self):
+        """
+            Performan an evaluation of the model.
+
+            Returns:
+                (tuple(dict(), float)) metrics and the time needed to evaluate the model.
+        """
+        metrics = None
+        duration = None
+        if self.dataset.has_test_set():
+            x_test, y_test = self.dataset.get_test_split()
+            start = time.time()
+            metrics = self.model.evaluate(x_test, y_test)
+            duration = time.time() - start
+        
+        return metrics, duration
 
 
     # -------
     # Functions for diverse grades of control
     # ---------------------------------
 
-    def run(self):
+    def run(self, verbose=True):
         """
             Runs the active learning loop till the end.
         """
-        pass
+        
+        with tqdm(total=self.__len__()) as pbar:
+            for i in self:
+                pbar.update(1)
 
 
     def step(self):
         """
             Perform a step of the active learning loop.
         """
-        pass
+        return next(self)
 
     
     def has_next(self):
@@ -149,7 +229,6 @@ class ActiveLearningLoop:
         return True
 
 
-    
     # ----------
     # Setups
     # ---------------------------
@@ -172,20 +251,9 @@ class ActiveLearningLoop:
         if isinstance(functions, AcquisitionFunction):
             return functions
 
-        # Potentially list of acquisition functions
-        if isinstance(functions, list):
-            
-            acq_functions = []
-            for function in functions:
-
-                if isinstance(function, str):
-                    acq_functions.append(AcquisitionFunction(function))
-
-                elif isinstance(function, AcquisitionFunction):
-                    acq_functions.append(function)
-
-                else:
-                    raise ValueException(
-                        "Error in ActiveLearningLoop.__init_acquisition_fn(). Can't initialize one of given acquisition functions. \
-                        Expected value of type str or AcquisitionFunction. Received {}".format(type(function))
-                    )
+         else:
+            raise ValueException(
+                "Error in ActiveLearningLoop.__init_acquisition_fn(). Can't initialize one of given acquisition functions. \
+                Expected value of type str or AcquisitionFunction. Received {}".format(type(function))
+            )
+               

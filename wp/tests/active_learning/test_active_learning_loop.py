@@ -41,7 +41,7 @@ class TestActiveLearningLoopIteration:
         loop = ActiveLearningLoop(mock_model, dataset, "random")
 
         for i in loop:
-            pass
+            print(i)
 
         assert True
 

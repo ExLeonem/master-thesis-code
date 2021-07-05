@@ -69,7 +69,7 @@ class Dataset:
     def has_test_set(self):
         return hasattr(self, 'x_test') and hasattr(self, 'y_test')
 
-    def has_val_set(self):
+    def has_eval_set(self):
         return hasattr(self, 'x_val') and hasattr(self, 'y_val')
 
     # -------------
@@ -92,5 +92,5 @@ class Dataset:
     def get_test_split(self):
         return (self.x_test, self.y_test)
 
-    def get_val_split(self):
+    def get_eval_split(self):
         return (self.x_val, self.y_val)

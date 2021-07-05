@@ -66,12 +66,8 @@ class BayesModel:
             self.__is_binary = False
         else:
             self.__is_binary = is_binary
-    
 
-    def reset(self):
-        self.load_weights()
 
-    
     def __call__(self, *args, **kwargs):
         return self._model(inputs, training=self.in_mode(Mode.TRAIN))
 
@@ -113,6 +109,11 @@ class BayesModel:
             Returns:
 
         """
+
+        if self._config is not None and "fit" in self.config:
+            fit_params = dict.get(self.config, "fit", None)
+            kwargs.update(fit_params) if fit_params is not None else 
+
         return self._model.fit(*args, **kwargs)
 
 
@@ -170,6 +171,25 @@ class BayesModel:
 
     def clear_session(self):
         tf.keras.backend.clear_session()
+
+
+    # ------
+    # Model runtime configurations
+    # -----------------------------
+
+    def reset(self):
+        """
+            Use to reset states, weights and other stuff during each active learning loop iteration.
+        """
+        self.load_weights()
+
+
+    def optimize(self, inputs, targets):
+        """
+        Use to optimize parameters during active learning loop        
+        """
+        pass
+
 
 
     # ----------------------
