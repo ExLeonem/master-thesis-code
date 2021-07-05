@@ -67,10 +67,10 @@ class Dataset:
         return self.pseudo
 
     def has_test_set(self):
-        return (self.x_test is not None) and (self.y_test is not None)
+        return hasattr(self, 'x_test') and hasattr(self, 'y_test')
 
     def has_val_set(self):
-        return (self.x_val is not None) and (self.y_val is not None)
+        return hasattr(self, 'x_val') and hasattr(self, 'y_val')
 
     # -------------
     # Setter/-Getter

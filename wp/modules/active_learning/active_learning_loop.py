@@ -1,7 +1,5 @@
 import time
-from . import AcquisitionFunction
-from . import LabeledPool, UnlabeledPool
-
+from . import AcquisitionFunction, Pool, Oracle
 
 
 class ActiveLearningLoop:
@@ -25,7 +23,7 @@ class ActiveLearningLoop:
         Parameters:
             model (BayesianModel): A model wrapped into a BayesianModel type object.
             dataset (Dataset): The dataset to use (inputs, targets)
-            query_fn (list(AcquisitionFunction)|AcquisitionFunction): The query function to use.
+            query_fn (list(str)|str): The query function to use.
 
         
         **kwargs:
@@ -42,28 +40,34 @@ class ActiveLearningLoop:
         model,
         dataset,
         query_fn,
+        step_size=1,
         config=None,
         limit=None,
         pseudo=True,
         **kwargs
     ):
         
-        # Data and pools (labeled, unlabeled)
+        # Data and pools
+        self.dataset = dataset
         x_train, y_train = dataset.get_train_split()
         initial_pool_size  = dataset.get_init_size()
+
         self.pool = Pool(x_train, y_train)
         if dataset.is_pseudo() and initial_pool_size > 0:
             self.pool.init(initial_pool_size)
         
         # Loop parameters
-        self.limit = limit
-        self.max = len(inputs)
+        self.step_size = step_size
+        self.iteration_user_limit = limit
+        self.iteration_max = len(x_train)
+        self.i = 0
+        
 
         # Active learning components
         self.model = model
-        self.oracle = oracle
+        self.oracle = Oracle(pseudo_mode=pseudo)
         # self.model_kwargs = model.get_config()
-        self.query_fn = query_fn
+        self.query_fn = self.__init_acquisition_fn(query_fn)
 
     
     # ---------
@@ -106,7 +110,6 @@ class ActiveLearningLoop:
         indices, _pred = self.query_fn(self.model, self.pool, step_size=self.step_size)
         labels = self.oracle.anotate(self.pool, indices)
 
-        # 
 
 
     # -------
@@ -133,11 +136,56 @@ class ActiveLearningLoop:
         """
 
         # Limit reached?
-        if (self.limit is not None) and not (self.limit < self.max):
+        if (self.iteration_user_limit is not None) and not (self.i < self.iteration_user_limit):
             return False
 
-        # All data labeled?
-        if not (self.i < len(self.inputs)):
+        if self.i >= self.iteration_max:
+            return False
+
+        # Any unlabeled data left?
+        if not self.pool.has_unlabeled():
             return False
 
         return True
+
+
+    
+    # ----------
+    # Setups
+    # ---------------------------
+
+    def setup_metrics_writer(self, path, metrics):
+        pass
+
+    
+    # -----------
+    # Initializers
+    # --------------------
+
+    def __init_acquisition_fn(self, functions):
+
+        # Single acquisition function?
+        if isinstance(functions, str):
+            return AcquisitionFunction(functions)
+
+        # Already acquisition function
+        if isinstance(functions, AcquisitionFunction):
+            return functions
+
+        # Potentially list of acquisition functions
+        if isinstance(functions, list):
+            
+            acq_functions = []
+            for function in functions:
+
+                if isinstance(function, str):
+                    acq_functions.append(AcquisitionFunction(function))
+
+                elif isinstance(function, AcquisitionFunction):
+                    acq_functions.append(function)
+
+                else:
+                    raise ValueException(
+                        "Error in ActiveLearningLoop.__init_acquisition_fn(). Can't initialize one of given acquisition functions. \
+                        Expected value of type str or AcquisitionFunction. Received {}".format(type(function))
+                    )

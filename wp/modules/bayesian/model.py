@@ -39,14 +39,17 @@ class BayesModel:
     """
 
     def __init__(
-        self, model, config, 
+        self, 
+        model, 
+        config=None, 
         mode=Mode.TRAIN, 
         name=None,
         model_type=None, 
         classification=True, 
         is_binary=False,
         verbose=False,
-        **kwargs):
+        **kwargs
+    ):
 
         self.setup_logger(verbose)
         self._model = model
