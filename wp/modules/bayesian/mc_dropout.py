@@ -22,7 +22,7 @@ class McDropout(BayesModel):
     """
 
     def __init__(self, model, config=None, **kwargs):
-        super().__init__(model, config, model_type=ModelType.MC_DROPOUT, **kwargs)
+        super().__init__(model, config=config, model_type=ModelType.MC_DROPOUT, **kwargs)
 
         # disable batch norm
         # super().disable_batch_norm()

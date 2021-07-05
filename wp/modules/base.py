@@ -38,7 +38,10 @@ if __name__ == "__main__":
     query_fn = AcquisitionFunction("random")
 
     base_model = default_model(output_shape=num_classes)
-    mc_model = McDropout(base_model)
+    model_config = Config(
+        fit={"epochs": 10, "batch_size": 10},
+    )
+    mc_model = McDropout(base_model, model_config, verbose=True)
     mc_model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
 
     logger.info("Dataset size: {}".format(len(dataset.x_train)))

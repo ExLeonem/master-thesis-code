@@ -251,7 +251,7 @@ class ActiveLearningLoop:
         if isinstance(functions, AcquisitionFunction):
             return functions
 
-         else:
+        else:
             raise ValueException(
                 "Error in ActiveLearningLoop.__init_acquisition_fn(). Can't initialize one of given acquisition functions. \
                 Expected value of type str or AcquisitionFunction. Received {}".format(type(function))

@@ -110,9 +110,9 @@ class BayesModel:
 
         """
 
-        if self._config is not None and "fit" in self.config:
-            fit_params = dict.get(self.config, "fit", None)
-            kwargs.update(fit_params) if fit_params is not None else 
+        if self._config is not None and "fit" in self._config and isinstance(self._config["fit"], dict):
+            fit_params = self._config["fit"]
+            kwargs.update(fit_params)
 
         return self._model.fit(*args, **kwargs)
 
