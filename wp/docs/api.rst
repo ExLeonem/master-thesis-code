@@ -11,6 +11,17 @@ Active Learning
     :members:
 
 
+Active Learning Loop
+----------------------
+.. autoclass:: active_learning.ActiveLearningLoop
+   :members:
+
+
+Experiment Suit
+----------------------
+.. autoclass:: active_learning.ExperimentSuit
+   :members:
+
 
 Acquisition Function
 ---------------------

@@ -12,7 +12,10 @@ https://github.com/tensorflow/tensorflow/issues/31842
     - [ ] Try custom fitting loop?
 
 - [ ] Pool initialization and annotation using different targets (regression, one-hot vectors, ...)
-
+- [ ] Adding experiment suit for multiple expirement execution
+    - [ ] Adding running metrics writer
+    - [ ] Adding confirmation to proceed with experiments with timeout
+    - [ ] Adding seed switch
 
 # How to add a new model type
 

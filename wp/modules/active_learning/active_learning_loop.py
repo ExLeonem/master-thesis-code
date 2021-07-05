@@ -37,7 +37,6 @@ class ActiveLearningLoop:
             (dict()) containing accumulated metrics.
     """
 
-
     def __init__(
         self,
         model,
@@ -48,7 +47,7 @@ class ActiveLearningLoop:
         pseudo=True,
         **kwargs
     ):
-
+        
         # Data and pools (labeled, unlabeled)
         x_train, y_train = dataset.get_train_split()
         initial_pool_size  = dataset.get_init_size()
