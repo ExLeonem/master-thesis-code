@@ -74,8 +74,8 @@ class ExperimentSuit:
                 print("Running experiment Model: {} | Query-Function: {}".format(model, query_fn))
                 self.run_experiment(model, query_fn)
 
-                if j != (len(self.query_functions)-1) 
-                and i != (len(self.models)-1) 
+                if j != (len(self.query_functions)-1) \
+                and i != (len(self.models)-1) \
                 and not self.__await_proceed():
 
                     exit_loop = True

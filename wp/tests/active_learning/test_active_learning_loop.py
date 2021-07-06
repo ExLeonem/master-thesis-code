@@ -10,6 +10,10 @@ from modules.data import BenchmarkData, DataSetType
 from models import setup_growth
 
 
+class MockFitResult(object):
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 
 class MockModel:
 
@@ -24,7 +28,7 @@ class MockModel:
         return np.random.randn(self.output_shape)
 
     def fit(self, x_inputs, y_inputs, **kwargs):
-        return {}
+        return MockFitResult(history={})
 
     def load_weights(self, path):
         pass

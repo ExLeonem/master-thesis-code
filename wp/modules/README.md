@@ -17,8 +17,6 @@ https://github.com/tensorflow/tensorflow/issues/31842
     - [ ] Adding confirmation to proceed with experiments with timeout
     - [ ] Adding seed switch
 
-# How to add a new model type
-
 
 # Index
 
@@ -41,7 +39,38 @@ used to create custom active learning loops.
 ## Model Wrapper
 
 
+### MC Dropout
+
+```python
+from bayesian import McDropout
+import tensorflow as tf
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense, Softmax
+```
+
+### Moment Propagation
+
+```python
+
+```
+
+
 ## Custom Model Wrapper
+
+To create a custom Model wrapper define a new class and inherit from BayesModel.
+
+```python
+
+from bayesian import BayesModel
+
+
+class NewModel(BayesModel):
+
+    def __init__(self, model):
+        super(NewModel, self).__init__(model, ...)
+
+
+```
 
 
 ## Generic Active Learning loop
