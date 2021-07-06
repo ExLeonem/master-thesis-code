@@ -173,6 +173,7 @@ class BayesModel:
         tf.keras.backend.clear_session()
 
 
+
     # ------
     # Model runtime configurations
     # -----------------------------
@@ -189,7 +190,6 @@ class BayesModel:
         Use to optimize parameters during active learning loop        
         """
         pass
-
 
 
     # ----------------------

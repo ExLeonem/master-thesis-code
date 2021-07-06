@@ -32,7 +32,8 @@ class ExperimentSuit:
         step_size=1,
         limit=None,
         acceptance_timeout=None,
-        verbose=False
+        verbose=False,
+        metrics_handler=None
     ):
 
         self.dataset = dataset
@@ -42,25 +43,41 @@ class ExperimentSuit:
 
         self.models = self.__init_models(models)
         self.query_functions = self.__init_query_fns(query_fns)
+        self.metrics_handler = metrics_handler
 
 
     def start(self):
         """
-            Starts the experiment suit.
+            Starts the experiment suit. 
+            Runs an experiment for each acquisition function and model combination.
+
+            TODO:
+                [x] Last iteration even when no other experiments to run, prompts proceeding request.
         """
         setup_growth()
 
-        # Iterate over models
+        # Perform experiment for each model & query function combination
         exit_loop = False
-        for model in self.models:
+        number_of_models = range(len(self.models))
+        number_of_query_fns = range(len(self.query_functions))
+        for i in number_of_models:
+            model = self.models[i]
+            
+            # Group experiment output per model in terminal
+            if i != 0:
+                print("#"*10)
 
-            # Iterate over query functions to evaluate
             metrics = None
-            for query_fn in self.query_functions:
+            for j in number_of_query_fns:
+                query_fn = self.query_functions[j]
+
                 print("Running experiment Model: {} | Query-Function: {}".format(model, query_fn))
                 self.run_experiment(model, query_fn)
-                to_proceed = self.__await_proceed()
-                if not to_proceed:
+
+                if j != (len(self.query_functions)-1) 
+                and i != (len(self.models)-1) 
+                and not self.__await_proceed():
+
                     exit_loop = True
                     break
 
@@ -88,7 +105,10 @@ class ExperimentSuit:
 
     def __await_proceed(self):
         """
-            Waiting for 
+            Waiting for user input to proceed or abort experiments.
+
+            TOOD:
+                [ ] Restart user input when failed input
         """
 
         if self.acceptance_timeout is not None and isinstance(self.acceptance_timeout, int):

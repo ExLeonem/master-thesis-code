@@ -12,21 +12,31 @@ import bayesian
 importlib.reload(bayesian)
 import bayesian.utils as butils
 
+# from utils import setup_logger
+
 
 
 class AcquisitionFunction:
     """
         Query a model for next datapoints that should be labeled.
-        
-        Valid acquisition functions include:
-            - Max Entropy
-            - Bald
-            - Variation Ratios
-            - Mean standard deviation
-            - Randomized selection (baseline)
+        Already implemented bayesian models implement the following acquisition
+        functions:
+
+        - Max Entropy (\"max_entropy\")
+        - Bald (\"bald\")
+        - Variation Ratios (\"max_var_ratio\")
+        - Mean standard deviation (\"mean_std\")
+        - Randomized selection (\"random\")
 
         Parameters:
-            fn_name (str): The acquisition function to apply
+            fn_name (str): The name of the acquisition function to use.
+            batch_size (int): The number of batches to split the data into for processing. (default=None)
+            verbose (bool): Apply debugging? (default=False)
+
+        Attributes:
+            name (str): The name of the acquisition function to apply.
+            fn (function): The acquisition function to execute.
+            batch_size (int): to configure the processing in batches (default=None)
     """
 
     def __init__(self, fn_name, batch_size=None, verbose=False):

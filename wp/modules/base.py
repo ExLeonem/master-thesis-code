@@ -18,6 +18,10 @@ import logging
 
 if __name__ == "__main__":
 
+    # https://stackoverflow.com/questions/35911252/disable-tensorflow-debugging-information
+    # Disable tensorflow loggin
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+
     dir_path = os.path.dirname(os.path.realpath(__file__))
     BASE_PATH = os.path.join(dir_path, "..")
     DATASET_PATH = os.path.join(BASE_PATH, "datasets")
@@ -46,11 +50,10 @@ if __name__ == "__main__":
 
     # mp_model = MomentPropagation(base_model, model_config)
 
-    logger.info("Dataset size: {}".format(len(dataset.x_train)))
-
+    
     models = [mc_model]
-    query_fns = ["random", "max_entropy"]
-    experiments = ExperimentSuit(models, query_fns, dataset, step_size=50, limit=5)
+    query_fns = ["random", AcquisitionFunction("max_entropy", batch_size=900)]
+    experiments = ExperimentSuit(models, query_fns, dataset, step_size=50, limit=5, acceptance_timeout=2)
     experiments.start()
 
     # acl = ActiveLearningLoop(mc_model, dataset, "random", step_size=50, limit=10)

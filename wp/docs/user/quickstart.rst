@@ -8,7 +8,7 @@ Quickstart
 
    
 Generic active learning loops
----------------
+------------------------------
 
 How to create an :ref:`link to a different section<Active Learning Loop>`
 
