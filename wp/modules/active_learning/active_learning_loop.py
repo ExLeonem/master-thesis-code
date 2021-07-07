@@ -129,6 +129,7 @@ class ActiveLearningLoop:
         train_metrics, train_time = self.__fit_model()
 
         # Update pools
+        query_config = self.model.get_query_config()
         indices, _pred = self.query_fn(self.model, self.pool, step_size=self.step_size)
         self.oracle.annotate(self.pool, indices)
 

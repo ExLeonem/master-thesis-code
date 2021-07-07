@@ -2,6 +2,7 @@ import os, sys, csv
 
 class Metrics:
     """
+        Uses the given path to create 
         Prepares and writes metrics into a csv file.
 
         Parameters:
@@ -20,32 +21,15 @@ class Metrics:
         self.quoting = csv.QUOTE_MINIMAL
 
 
-    def collect(self, values, keys=None):
-        """
-            Collect metric values from a dictionary of values.
+    def write_line(self, filename, values):
+        file_path = os.path.join(self.BASE_PATH, filename+"."+self.EXT)
+        with open(file_path, "wa", newline="") as csv_file:
 
-            Parameter:
-                values (dict): A collection of values collected during training
-
-            Returns:
-                (dict) A subset of metrics extracted from the values. 
-        """
-        # Set default keys to use
-        if keys is None:
-            keys = self.metric_keys
-
-        return {key: self.__prepare_value(value) for key, value in values.items() if key in self.metric_keys}
-
+            file_writer = csv.DictWriter(
+                csv_file, delimiter = self.delimiter,
+                quotechar=self.
+            )
     
-    def __prepare_value(self, value):
-        """
-            Prevent's saving list of single values.
-        """
-        if isinstance(value, list) and len(value) == 1:
-            return value[0]
-        
-        return value
-
 
     def write(self, filename, values):
         """
@@ -99,6 +83,37 @@ class Metrics:
 
 
     # -------------
+    # Utilities
+    # ------------------
+
+    def collect(self, values, keys=None):
+        """
+            Collect metric values from a dictionary of values.
+
+            Parameter:
+                values (dict): A collection of values collected during training
+
+            Returns:
+                (dict) A subset of metrics extracted from the values. 
+        """
+        # Set default keys to use
+        if keys is None:
+            keys = self.metric_keys
+
+        return {key: self.__prepare_value(value) for key, value in values.items() if key in keys}
+
+
+    def __prepare_value(self, value):
+        """
+            Prevent's saving list of single values.
+        """
+        if isinstance(value, list) and len(value) == 1:
+            return value[0]
+        
+        return value
+
+
+    # -------------
     # Setter/-Getter
     # ------------------
 
@@ -115,7 +130,7 @@ def save_history(history, path, filename):
     metrics.write(history, filename)
 
 
-def write_history(path, filename):
+def read_history(path, filename):
     """
         Reads values from the saved history.
     """

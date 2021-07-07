@@ -324,6 +324,24 @@ class BayesModel:
         return np.sum(-(predictions*np.log2(predictions+1e-10)), axis=-1)
 
 
+    # -----------
+    # Access Configuration
+    # ----------------------------
+
+    def get_fit_config(self):
+        if (self._config is not None) and hasattr(self._config, "fit"):
+            return self._config["fit"]
+        
+        return {}
+
+
+    def get_query_config(self):
+        if (self._config is not None) and hasattr(self._config, "query"):
+            return self._config["query"]
+
+        return {}
+
+
     # --------------
     # Access important flags for predictions
     # -----------------------------
