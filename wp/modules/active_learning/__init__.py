@@ -8,3 +8,4 @@ from .metrics import Metrics, aggregates_per_key, save_history
 from .dataset import Dataset
 from .active_learning_loop import ActiveLearningLoop
 from .experiment_suit import ExperimentSuit
+from .experiment_metrics import ExperimentSuitMetrics

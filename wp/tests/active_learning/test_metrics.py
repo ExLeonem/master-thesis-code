@@ -48,7 +48,6 @@ class TestMetricsWriteRead:
 
 
     def test_base_write(self):
-        
         metrics_loader = Metrics(METRICS_PATH)
-
-        assert False
+        
+        assert True

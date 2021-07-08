@@ -23,12 +23,8 @@ class Metrics:
 
     def write_line(self, filename, values):
         file_path = os.path.join(self.BASE_PATH, filename+"."+self.EXT)
-        with open(file_path, "wa", newline="") as csv_file:
-
-            file_writer = csv.DictWriter(
-                csv_file, delimiter = self.delimiter,
-                quotechar=self.
-            )
+        with open(file_path, "a", newline="") as csv_file:
+            pass
     
 
     def write(self, filename, values):
@@ -74,7 +70,12 @@ class Metrics:
         file_path = os.path.join(self.BASE_PATH, filename)
         with open(file_path, "r") as csv_file:
 
-            reader = csv.DictReader(filter(lambda row: row[0] != "#", csv_file), delimiter=self.delimiter, quotechar=self.quotechar)
+            reader = csv.DictReader(
+                filter(lambda row: row[0] != "#", csv_file), 
+                delimiter=self.delimiter, 
+                quotechar=self.quotechar
+            )
+
             for row in reader:
                 values.append(row)
 

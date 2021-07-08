@@ -21,7 +21,6 @@ class ExperimentSuit:
         
         limit (int): iteration limit per experiment.
         acceptance_timeout (int): Timeout in seconds in which experiment can be proceeded or aborted, after successfull (model,query function) iteration. Setting None will automatically proceed. (default: None)
-
     """
 
     def __init__(
