@@ -43,6 +43,7 @@ class ExperimentSuit:
         self.models = self.__init_models(models)
         self.query_functions = self.__init_query_fns(query_fns)
         self.metrics_handler = metrics_handler
+        # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' # To disable tensorflow output
 
 
     def start(self):

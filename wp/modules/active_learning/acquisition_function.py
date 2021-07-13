@@ -85,7 +85,6 @@ class AcquisitionFunction:
                 (numpy.ndarray) Indices
         """
 
-
         # Set initial acquistion function
         if self.fn is None:
             self.fn = self._set_fn(model)
