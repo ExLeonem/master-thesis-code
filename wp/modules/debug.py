@@ -206,4 +206,3 @@ if __name__ == "__main__":
     # Check length of pool and initial data
     print("Initial data: {}".format(len(x_train)))
     print("Labeled data: {}".format(pool.get_length_labeled()))
-

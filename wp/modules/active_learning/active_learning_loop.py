@@ -1,7 +1,7 @@
 import time
 from copy import copy, deepcopy
 from tqdm import tqdm
-from . import AcquisitionFunction, Pool, UnlabeledPool, Oracle
+from . import AcquisitionFunction, Pool, UnlabeledPool, Oracle, ExperimentSuitMetrics
 
 
 class ActiveLearningLoop:
@@ -51,7 +51,7 @@ class ActiveLearningLoop:
         # Data and pools
         self.dataset = dataset
         x_train, y_train = dataset.get_train_split()
-        initial_pool_size  = dataset.get_init_size()
+        self.initial_size = initial_pool_size  = dataset.get_init_size()
 
         self.pool = Pool(x_train, y_train)
         if dataset.is_pseudo() and initial_pool_size > 0:
@@ -95,7 +95,6 @@ class ActiveLearningLoop:
     #     dataset = deepcopy(self.dataset)
     #     query_fn = deepcopy(self.query_fn)
         
-
     #     return result
 
 
@@ -205,14 +204,37 @@ class ActiveLearningLoop:
     # Functions for diverse grades of control
     # ---------------------------------
 
-    def run(self, verbose=True):
+    def run(self, experiment_name=None, metrics_handler=None):
         """
             Runs the active learning loop till the end.
+
+            Parameters:
+                experiment_name (str): The name of the file to write to
+                metrics_handler (ExperimentSuitMetrics): Metrics handler for write/read operations.
         """
-        
+
+        if experiment_name is None:
+            experiment_name = self.get_experiment_name()
+
+        # Write meta information
+        if metrics_handler is not None \
+        and isinstance(metrics_handler, ExperimentSuitMetrics):
+            model_name = self.get_model_name()
+            query_fn = self.get_query_fn_name()
+            params = self.collect_meta_params()
+            metrics_handler.add_experiment_meta(experiment_name, model_name, query_fn, params)
+
         with tqdm(total=self.__len__()) as pbar:
-            for i in self:
+            for metrics in self:
                 pbar.update(1)
+
+                print(metrics)
+
+                # Write metrics to file
+                if metrics_handler is not None \
+                and isinstance(metrics_handler, ExperimentSuitMetrics):
+                    experiment_name = self.get_experiment_name()
+                    metrics_handler.write_line(experiment_name, metrics)
 
 
     def step(self):
@@ -242,11 +264,38 @@ class ActiveLearningLoop:
 
 
     # ----------
-    # Setups
-    # ---------------------------
+    # Utils
+    # ----------------
 
-    def setup_metrics_writer(self, path, metrics):
-        pass
+    def is_done(self):
+        """
+            The active learning has executed and is done.
+
+            Returns:
+                (bool) whether or not the loop has executed.
+        """
+        return not self.has_next()
+
+
+    def collect_meta_params(self):
+        """
+            Collect meta information about experiment to be written into .meta.json.
+
+            Returns:
+                (dict) with all meta information.
+        """
+
+        iterations = self.iteration_max
+        if self.iteration_user_limit is not None and self.iteration_user_limit < self.iteration_max:
+            iterations = self.iteration_user_limit
+
+        # fitting_params = model.get_compile_params()
+
+        return {
+            "iterations": iterations,
+            "step_size": self.step_size,
+            "initial_size": self.initial_size
+        }
 
     
     # -----------
@@ -268,4 +317,17 @@ class ActiveLearningLoop:
                 "Error in ActiveLearningLoop.__init_acquisition_fn(). Can't initialize one of given acquisition functions. \
                 Expected value of type str or AcquisitionFunction. Received {}".format(type(function))
             )
-               
+    
+
+    # --------
+    # Getters-/Setter
+    # ------------------
+    
+    def get_experiment_name(self):
+        return self.get_model_name() + "_" + self.get_query_fn_name()
+
+    def get_model_name(self):
+        return self.model.get_model_name().lower()
+    
+    def get_query_fn_name(self):
+        return self.query_fn.get_name()

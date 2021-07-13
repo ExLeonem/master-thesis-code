@@ -15,7 +15,6 @@ import bayesian.utils as butils
 # from utils import setup_logger
 
 
-
 class AcquisitionFunction:
     """
         Query a model for next datapoints that should be labeled.
@@ -161,11 +160,7 @@ class AcquisitionFunction:
 
         else:
             return query_fn
-            
-
-    def set_fn(self, fn):
-        self.fn = fn
-
+    
 
     def _random(self, indices, data, num=5, **kwargs):
         """
@@ -212,5 +207,20 @@ class AcquisitionFunction:
         return indices[n_biggest_keys], predictions[n_biggest_keys]
 
 
+    # ----------
+    # Dunder
+    # ------------------
+
     def __str__(self):
+        return self.name
+
+
+    # ----------
+    # Getter-/Setter
+    # ------------------
+    
+    def set_fn(self, fn):
+        self.fn = fn
+
+    def get_name(self):
         return self.name

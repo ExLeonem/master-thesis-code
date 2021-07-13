@@ -1,13 +1,12 @@
 import os, sys, select
-from . import ActiveLearningLoop, AcquisitionFunction
+from . import ActiveLearningLoop, AcquisitionFunction, ExperimentSuitMetrics
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 MODULE_PATH = os.path.join(dir_path, "..")
 sys.path.append(MODULE_PATH)
 
 from bayesian import BayesModel
-from models import setup_growth
-
+from utils import setup_logger
 
 class ExperimentSuit:
     """
@@ -18,9 +17,10 @@ class ExperimentSuit:
         models (list(BayesianModel)): The models to iterate over.
         query_fns (list(str)|list(AcquisitionFunction)|str|AcquisitionFunction): A list of query functions to use
         dataset (Dataset): A dataset for experiment execution.
-        
         limit (int): iteration limit per experiment.
         acceptance_timeout (int): Timeout in seconds in which experiment can be proceeded or aborted, after successfull (model,query function) iteration. Setting None will automatically proceed. (default: None)
+        metrics_handler (ExperimentSuitMetrics): A configured metrics handler to use.
+        verbose (bool): Printing log messages?
     """
 
     def __init__(
@@ -31,10 +31,11 @@ class ExperimentSuit:
         step_size=1,
         limit=None,
         acceptance_timeout=None,
-        verbose=False,
-        metrics_handler=None
+        metrics_handler=None,
+        verbose=False
     ):
 
+        self.logger = setup_logger(verbose, name="ExperimentSuit")
         self.dataset = dataset
         self.limit = limit
         self.step_size = step_size
@@ -54,8 +55,7 @@ class ExperimentSuit:
             TODO:
                 [x] Last iteration even when no other experiments to run, prompts proceeding request.
         """
-        setup_growth()
-
+        
         # Perform experiment for each model & query function combination
         exit_loop = False
         number_of_models = range(len(self.models))
@@ -74,8 +74,7 @@ class ExperimentSuit:
                 print("Running experiment Model: {} | Query-Function: {}".format(model, query_fn))
                 self.run_experiment(model, query_fn)
 
-                if j != (len(self.query_functions)-1) \
-                and i != (len(self.models)-1) \
+                if (j != (len(self.query_functions)-1) or i != (len(self.models)-1)) \
                 and not self.__await_proceed():
 
                     exit_loop = True
@@ -88,7 +87,7 @@ class ExperimentSuit:
 
     def run_experiment(self, model, query_fn):
         """
-            Run different experiment iterativly
+            Run a single experiment.
         """
 
         active_learning_loop = ActiveLearningLoop(
@@ -100,7 +99,7 @@ class ExperimentSuit:
             pseudo=True
         )
 
-        active_learning_loop.run()
+        active_learning_loop.run(metrics_handler=self.metrics_handler)
 
 
     def __await_proceed(self):
@@ -127,6 +126,7 @@ class ExperimentSuit:
                         continue
 
                 else:
+                    print("\033[F Time-out. Auto-proceed with experiments.")
                     return True
             
         return True

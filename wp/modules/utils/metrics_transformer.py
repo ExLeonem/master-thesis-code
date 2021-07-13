@@ -8,7 +8,7 @@ dir_path = os.path.abspath(os.path.realpath(__file__))
 MODULES_PATH = os.path.join(dir_path, "..")
 sys.path.append(MODULES_PATH)
 
-from active_learning import Metrics
+# from active_learning import Metrics
 
 
 

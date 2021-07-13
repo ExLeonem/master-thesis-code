@@ -27,6 +27,9 @@ https://github.com/tensorflow/tensorflow/issues/31842
     4. [Custom Active Learning loop](#Custom-Active-Learning-loop)
     2. [Experiment Suit](#Experiment-Suit)
 2. [Scripts](#Scripts)
+    1. [Documentation](Create-documentation)
+    2. [Unit Tests](#Run-tests)
+    3. [Clear Logs](#Clear-log-files)
 
 
 # Guide
@@ -147,7 +150,6 @@ To generate additional coverage reports run.
 ```shell
 $ pytest --cov
 ```
-
 
 
 ## Clear log files

@@ -6,9 +6,6 @@ class TestDataset:
 
     
     def test_flags_with_targets(self):
-        """
-            Test correct flags when inputs and targets.
-        """
         inputs = np.random.randn(10, 100)
         targets = np.random.randn(10)
 
@@ -16,8 +13,13 @@ class TestDataset:
         assert True
 
     
-    def test_train_test_split(self):
-        pass
+    def test_default_data_split(self):
+        inputs = np.random.randn(10)
+        targets = np.random.choice([0, 1, 2, 3], 10)
+
+        dataset = Dataset(inputs, targets, test_size=0.25)
+        assert dataset.has_test_set()
+
 
 
 

@@ -5,7 +5,7 @@ from modules.active_learning import Metrics
 
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-METRICS_PATH = os.path.join(dir_path, "metrics")
+METRICS_PATH = os.path.join(dir_path, "test_metrics")
 
 
 class TestMetricsProcessing:
@@ -25,8 +25,6 @@ class TestMetricsProcessing:
 
 
     
-
-
 class TestMetricsWriteRead:
 
     def setup_method(self):
@@ -49,5 +47,4 @@ class TestMetricsWriteRead:
 
     def test_base_write(self):
         metrics_loader = Metrics(METRICS_PATH)
-        
         assert True

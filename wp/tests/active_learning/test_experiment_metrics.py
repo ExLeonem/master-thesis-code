@@ -3,14 +3,7 @@ import pytest
 from modules.active_learning import ExperimentSuitMetrics
 
 
-class TestUtilities:
-
-    def test_base(self):
-        pass
-
-
-
-METRICS_PATH = os.path.join(os.getcwd(), "metrics")
+METRICS_PATH = os.path.join(os.getcwd(), "test_metrics")
 
 
 class TestExperimentMetricsReadWrite:

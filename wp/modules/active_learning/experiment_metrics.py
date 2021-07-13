@@ -59,7 +59,7 @@ class ExperimentSuitMetrics:
     """
 
     def __init__(self, base_path, verbose=False):
-        self.logger = setup_logger(verbose, stream_level=logging.WARN)
+        self.logger = setup_logger(verbose, name="ExperimentSuitMetrics", stream_level=logging.WARN)
 
         self.BASE_PATH = base_path
         self.META_FILE_PATH = os.path.join(base_path, ".meta.json")
@@ -132,9 +132,9 @@ class ExperimentSuitMetrics:
         experiments = meta["experiments"]
 
         experiments.append({
+            "experiment_name": experiment_name,
             "model": model_name,
             "query_fn": query_fn,
-            "experiment_name": experiment_name,
             "params": params
         })
 
@@ -155,7 +155,7 @@ class ExperimentSuitMetrics:
         """
 
         with open(self.META_FILE_PATH, "w") as json_file:
-            json_file.write(json.dumps(content))
+            json_file.write(json.dumps(content, indent=4))
 
 
     def read_meta(self):
