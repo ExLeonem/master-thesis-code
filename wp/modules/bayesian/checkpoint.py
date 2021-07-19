@@ -12,7 +12,8 @@ TODO:
     - Compress data when weights bigger than x
 """
 
-DEFAULT_PATH = "/home/exleonem/Desktop/workspace/thesis/wp/models/checkpoints"
+# DEFAULT_PATH = "/home/exleonem/Desktop/workspace/thesis/wp/models/checkpoints"
+DEFAULT_PATH = os.path.join(dir_path, "..", "..", "models", "checkpoints")
 
 class Checkpoint:
     """

@@ -13,10 +13,10 @@ MODULES_PATH = os.path.join(BASE_PATH, "..")
 sys.path.append(MODULES_PATH)
 
 
-from active_learning import TrainConfig, LabeledPool, UnlabeledPool, Metrics, AcquisitionFunction
-from bayesian import McDropout
+from active_learning import Config, Dataset, ExperimentSuitMetrics, ExperimentSuit, AcquisitionFunction
+from bayesian import McDropout, MomentPropagation
 from data import BenchmarkData, DataSetType
-from models import fchollet_cnn, setup_growth
+from models import fchollet_cnn, setup_growth, disable_tf_logs
 from utils import setup_logger, init_pools
 
 
@@ -70,108 +70,73 @@ if __name__ == "__main__":
     #     np.random.seed(seed)
     #     tf.random.set_seed(seed)
 
-    # Parameter
-    initial_pool_size = 10
+    # Pool/Dataset parameters
     val_set_size = 100
     train_set_size = 40_000
     test_set_size = 10_000
+    initial_pool_size = 10
+
+    # Split data into (x, 10K, 100) = (train/test/valid)
+    mnist = BenchmarkData(DataSetType.MNIST, os.path.join(DATASET_PATH, "mnist"), dtype=np.float32)
+    x_train, x_test, y_train, y_test = train_test_split(mnist.inputs, mnist.targets, test_size=test_set_size)
+    x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=val_set_size)
+
+    dataset = Dataset(
+        x_train, y_train, 
+        val=(x_val, y_val), 
+        test=(x_test, y_test), 
+        init_size=initial_pool_size
+    )
+
+
+    # Active Learning parameters
     step_size = 50
     batch_size = 10
     learning_rate = 0.00125
     verbose = False
     sample_size = 100
 
-    # Split data into (x, 10K, 100) = (train/test/valid)
-    mnist = BenchmarkData(DataSetType.MNIST, os.path.join(DATASET_PATH, "mnist"), dtype=np.float32)
-    x_train, x_test, y_train, y_test = train_test_split(mnist.inputs, mnist.targets, test_size=test_set_size)
-    x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=val_set_size)
-    pool = Pool(x_train, y_train)
-    poo.init(initial_pool_size)
-    logger.info("Initial Labeled Pool size: {}".format(pool.get_length_labeled()))
-
-    # Setup model
+    # Configure Tensorflow
+    disable_tf_logs()
     setup_growth()
-    base_model = fchollet_cnn(output=len(np.unique(mnist.targets)))
-    model = McDropout(base_model, verbose=verbose)
 
-    # step = tf.Variable(0, trainable=False)
-    # schedule = tf.optimizers.schedules.PiecewiseConstantDecay([1407*20, 1407*30], [1e-3, 1e-4, 1e-5])
-    # wd = lambda: 1e-1 * schedule(step)
-    # optimizer = tfa.optimizers.AdamW(weight_decay=wd)
-    
-    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
-    model.compile(optimizer=optimizer, loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+    # Define Models
+    num_classes = len(np.unique(mnist.targets))
+    base_model = fchollet_cnn(output=num_classes)
 
-    if not model.has_save_state():
-        logger.warn("Creating initial save state.")
-        model.save_weights()
+    # MC Dropout Model
+    config = Config(
+        fit={"epochs": 200, "batch_size": batch_size},
+        eval={"batch_size": 900, "sample_size": sample_size}
+    )
+    mc_model = McDropout(base_model, config, verbose=verbose)
+    mc_model.compile(optimizer="adam", loss="sparse_categorical_crossentropy")
 
-    logger.info("Unlabeled Pool size: {}".format(pool.get_length_unlabeled()))
+    # Moment Propagation
 
-    # Active learning loop
-    num_iterations = 20
-    acquisition = AcquisitionFunction(args.acquisition, batch_size=1000, verbose=verbose)
-    iterator = tqdm(range(num_iterations), leave=True)
-    acl_history = []
-    it = 0
-    logger.info("Start loop")
-    for i in iterator:
-        logger.info("----------")
-        loop_start = time.time()
 
-        # Reset
-        tf.keras.backend.clear_session()
-        model.load_weights()
+    # Setup metrics handler
+    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "y_gal")
+    metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
-        # Fit model
-        logger.info("(Start) Train Model")
-        start = time.time()
-        lab_inputs, lab_targets = pool.get_labeled_data()
-        h = model.fit(
-            lab_inputs, lab_targets, 
-            batch_size=batch_size, epochs=args.epochs, verbose=verbose
-        )
-        end = time.time()
-        logger.info("History: {}".format(h.history))
-        logger.info("--(Finish) Train Model (%.1fs)" % (end-start))
+    # Setup experiment Suit
+    models = [mc_model]
+    query_fns = [
+        AcquisitionFunction("random", batch_size=900),
+        AcquisitionFunction("max_entropy", batch_size=900),
+        AcquisitionFunction("bald", batch_size=900),
+        AcquisitionFunction("max_var_ratio", batch_size=900),
+        AcquisitionFunction("std_mean", batch_size=900)
+    ]
 
-        # Last iteration? No need for new acquisition
-        logger.info("(Start) Acquisiton")
-
-        # Acquisition process
-        start = time.time()
-        indices, _pred = acquisition(model, pool, num=step_size, sample_size=sample_size)
-        end = time.time()
-        logger.info("--(Finish) Acquisiton (%.1fs)" % (end-start))
-
-        # Update pool
-        pool.annotate(indices)
-        lab_pool_size = pool.get_length_labeled()
-        
-
-        # Evaluate
-        logger.info("(Start) Eval")
-        start = time.time()
-        eval_result = model.evaluate(x_test, y_test, sample_size=sample_size, batch_size=900)
-        eval_metrics = model.map_eval_values(eval_result)
-        end = time.time()
-        logger.info("Metrics: {}".format(eval_metrics))
-        logger.info("--(End) Eval (%.1fs)" % (end-start))
-        logger.info("Labeled-Size: {}".format(len(labeled_pool)))
-
-        loop_end = time.time()
-        acl_history.append(
-            keys_to_dict(
-                iteration=it,
-                time=(loop_end-loop_start),
-                labeled_size=lab_pool_size,
-                **eval_metrics
-            )
-        )
-        it += 1
-    
-    # Write metrics
-    METRICS_PATH = os.path.join(BASE_PATH, "metrics")
-    metrics = Metrics(METRICS_PATH, keys=["iteration", "time", "labeled_size"] + model.get_metric_names())
-    model_name = str(model.get_model_type()).split(".")[1].lower() 
-    metrics.write(model_name + "_" + args.acquisition , acl_history)
+    # 
+    experiments = ExperimentSuit(
+        models,
+        query_fns,
+        dataset,
+        step_size=step_size,
+        limit=10,
+        metrics_handler=metrics_handler,
+        verbose=True
+    )
+    experiments.start()

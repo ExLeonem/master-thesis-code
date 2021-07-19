@@ -33,9 +33,10 @@ class ExperimentSuit:
         acceptance_timeout=None,
         metrics_handler=None,
         verbose=False
-    ):
-
+    ): 
+        
         self.logger = setup_logger(verbose, name="ExperimentSuit")
+
         self.dataset = dataset
         self.limit = limit
         self.step_size = step_size

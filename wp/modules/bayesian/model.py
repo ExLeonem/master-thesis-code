@@ -47,6 +47,7 @@ class BayesModel:
         model_type=None, 
         classification=True, 
         is_binary=False,
+        checkpoint=None,
         verbose=False,
         **kwargs
     ):
@@ -58,7 +59,7 @@ class BayesModel:
         self._model_type = model_type
         self._name = name
 
-        self._checkpoints = Checkpoint()
+        self._checkpoints = Checkpoint() if checkpoint is None else checkpoint
 
         self.__classification = classification
         if not self.__classification:
