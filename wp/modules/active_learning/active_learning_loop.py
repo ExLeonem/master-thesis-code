@@ -236,13 +236,12 @@ class ActiveLearningLoop:
 
                 metrics.update({
                     "iteration": iteration,
-                    "labeled": self.pool.get_length_labeled()-self.step_size
+                    "labeled_pool_size": self.pool.get_length_labeled()-self.step_size
                 })
 
                 # Write metrics to file
                 if metrics_handler is not None \
                 and isinstance(metrics_handler, ExperimentSuitMetrics):
-                    experiment_name = self.get_experiment_name()
                     metrics_handler.write_line(experiment_name, metrics)
 
 

@@ -5,13 +5,16 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 import tensorflow as tf
-# import tensorflow_addons as tfa
+import tensorflow_addons as tfa
 
+from tensorflow_addons.optimizers import extend_with_decoupled_weight_decay, AdamW
+from tensorflow.keras.losses import SparseCategoricalCrossentropy, Reduction
+from tensorflow.keras.optimizers import Adam
+# import tensorflow_addons as tfa
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 MODULES_PATH = os.path.join(BASE_PATH, "..")
 sys.path.append(MODULES_PATH)
-
 
 from active_learning import Config, Dataset, ExperimentSuitMetrics, ExperimentSuit, AcquisitionFunction
 from bayesian import McDropout, MomentPropagation
@@ -90,9 +93,9 @@ if __name__ == "__main__":
 
 
     # Active Learning parameters
-    step_size = 50
+    step_size = 10
     batch_size = 10
-    learning_rate = 0.00125
+    learning_rate = 0.001
     verbose = False
     sample_size = 100
 
@@ -109,8 +112,10 @@ if __name__ == "__main__":
         fit={"epochs": 200, "batch_size": batch_size},
         eval={"batch_size": 900, "sample_size": sample_size}
     )
+    optimizer = AdamW(lr=learning_rate, weight_decay=1./100)
+    loss = SparseCategoricalCrossentropy(reduction=Reduction.SUM)
     mc_model = McDropout(base_model, config, verbose=verbose)
-    mc_model.compile(optimizer="adam", loss="sparse_categorical_crossentropy")
+    mc_model.compile(optimizer=optimizer, loss=loss)
 
     # Moment Propagation
 
@@ -123,10 +128,10 @@ if __name__ == "__main__":
     models = [mc_model]
     query_fns = [
         AcquisitionFunction("random", batch_size=900),
-        AcquisitionFunction("max_entropy", batch_size=900),
-        AcquisitionFunction("bald", batch_size=900),
-        AcquisitionFunction("max_var_ratio", batch_size=900),
-        AcquisitionFunction("std_mean", batch_size=900)
+        # AcquisitionFunction("max_entropy", batch_size=900),
+        # AcquisitionFunction("bald", batch_size=900),
+        # AcquisitionFunction("max_var_ratio", batch_size=900),
+        # AcquisitionFunction("std_mean", batch_size=900)
     ]
 
     # 
@@ -136,6 +141,7 @@ if __name__ == "__main__":
         dataset,
         step_size=step_size,
         limit=10,
+        runs=4,
         metrics_handler=metrics_handler,
         verbose=True
     )

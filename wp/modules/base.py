@@ -55,8 +55,23 @@ if __name__ == "__main__":
     # mp_model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     
     models = [mc_model]
-    query_fns = [AcquisitionFunction("random", batch_size=900), AcquisitionFunction("max_entropy", batch_size=900)]
-    experiments = ExperimentSuit(models, query_fns, dataset, step_size=50, limit=5, acceptance_timeout=2, metrics_handler=metrics_handler, verbose=True)
+    query_fns = [
+        AcquisitionFunction("random", batch_size=900), 
+        # AcquisitionFunction("max_entropy", batch_size=900)
+    ]
+
+    experiments = ExperimentSuit(
+        models, 
+        query_fns, 
+        dataset, 
+        step_size=50, 
+        limit=5,
+        runs=4,
+        acceptance_timeout=2, 
+        metrics_handler=metrics_handler, 
+        verbose=True
+    )
+
     experiments.start()
 
     # acl = ActiveLearningLoop(mc_model, dataset, "random", step_size=50, limit=10)

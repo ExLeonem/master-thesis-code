@@ -30,6 +30,7 @@ class ExperimentSuit:
         dataset,
         step_size=1,
         limit=None,
+        runs=1,
         acceptance_timeout=None,
         metrics_handler=None,
         verbose=False
@@ -39,6 +40,7 @@ class ExperimentSuit:
 
         self.dataset = dataset
         self.limit = limit
+        self.runs = runs
         self.step_size = step_size
         self.acceptance_timeout = acceptance_timeout
 
@@ -57,6 +59,13 @@ class ExperimentSuit:
                 [x] Last iteration even when no other experiments to run, prompts proceeding request.
         """
         
+        for run in range(self.runs):
+            self.__iterate_experiments(run)
+
+
+
+    def __iterate_experiments(self, run):
+
         # Perform experiment for each model & query function combination
         exit_loop = False
         number_of_models = range(len(self.models))
@@ -75,8 +84,8 @@ class ExperimentSuit:
             for j in number_of_query_fns:
                 query_fn = self.query_functions[j]
 
-                print("Running experiment Model: {} | Query-Function: {}".format(model, query_fn))
-                self.run_experiment(model, query_fn)
+                print("Running experiment (Run: {} | Model: {} | Query-Function: {})".format(run, model, query_fn))
+                self.__run_experiment(run, model, query_fn)
 
                 if (j != (len(self.query_functions)-1) or i != (len(self.models)-1)) \
                 and not self.__await_proceed():
@@ -88,8 +97,7 @@ class ExperimentSuit:
             if exit_loop:
                 break
 
-
-    def run_experiment(self, model, query_fn):
+    def __run_experiment(self, run, model, query_fn):
         """
             Run a single experiment.
         """
@@ -103,7 +111,8 @@ class ExperimentSuit:
             pseudo=True
         )
 
-        active_learning_loop.run(metrics_handler=self.metrics_handler)
+        experiment_name = str(run) + "_" + active_learning_loop.get_experiment_name()
+        active_learning_loop.run(experiment_name, self.metrics_handler)
 
 
     def __await_proceed(self):
