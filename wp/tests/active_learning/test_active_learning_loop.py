@@ -41,7 +41,7 @@ class TestActiveLearningLoopIteration:
         targets = np.random.choice([0, 1, 2], 10)
 
         mock_model = BayesModel(MockModel(10), None)
-        dataset = Dataset(inputs, targets, init_size=2)
+        dataset = Dataset(inputs, targets)
         loop = ActiveLearningLoop(mock_model, dataset, "random")
 
         for i in loop:

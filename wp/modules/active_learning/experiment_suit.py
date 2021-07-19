@@ -63,6 +63,9 @@ class ExperimentSuit:
         for i in number_of_models:
             model = self.models[i]
             
+            if not model.has_save_state():
+                model.save_weights()
+
             # Group experiment output per model in terminal
             if i != 0:
                 print("#"*10)

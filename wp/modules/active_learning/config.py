@@ -27,7 +27,7 @@ class Config:
                 kwargs (dict): Keyword arguments passed to Config.
 
             Returns:
-                dict: updated keyword arguments.
+                (dict) updated keyword arguments.
         """
 
         # defaults existing?

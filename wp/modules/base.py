@@ -3,6 +3,7 @@ import argparse
 import os, sys, importlib
 import numpy as np
 from tqdm import tqdm
+from sklearn.model_selection import train_test_split
 
 from active_learning import TrainConfig, Config, Metrics, Pool, AcquisitionFunction, Dataset, ActiveLearningLoop, ExperimentSuit, ExperimentSuitMetrics
 from bayesian import McDropout, MomentPropagation, BayesModel
@@ -34,10 +35,13 @@ if __name__ == "__main__":
     # Load and transform mnist dataset
     num_classes = 10
     mnist = BenchmarkData(DataSetType.MNIST, os.path.join(DATASET_PATH, "mnist"), classes=num_classes)
-    dataset = Dataset(mnist.inputs, mnist.targets, init_size=10)
+    x_train, x_test, y_train, y_test = train_test_split(mnist.inputs, mnist.targets)
+
+    dataset = Dataset(x_train, y_train, test=(x_test, y_test), init_size=10)
     base_model = default_model(output_shape=num_classes)
     model_config = Config(
         fit={"epochs": 10, "batch_size": 10},
+        eval={"batch_size": 900}
     )
 
     METRICS_PATH = os.path.join(BASE_PATH, "metrics")
@@ -47,11 +51,11 @@ if __name__ == "__main__":
     mc_model = McDropout(base_model, model_config)
     mc_model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
 
-    mp_model = MomentPropagation(base_model, model_config)
-    mp_model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+    # mp_model = MomentPropagation(base_model, model_config)
+    # mp_model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     
-    models = [mc_model, mp_model]
-    query_fns = ["random", AcquisitionFunction("max_entropy", batch_size=900)]
+    models = [mc_model]
+    query_fns = [AcquisitionFunction("random", batch_size=900), AcquisitionFunction("max_entropy", batch_size=900)]
     experiments = ExperimentSuit(models, query_fns, dataset, step_size=50, limit=5, acceptance_timeout=2, metrics_handler=metrics_handler, verbose=True)
     experiments.start()
 

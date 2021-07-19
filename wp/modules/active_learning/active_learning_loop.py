@@ -191,10 +191,14 @@ class ActiveLearningLoop:
         """
         metrics = None
         duration = None
+        config = self.model.get_eval_config()
+
+        # print("Config: {}".format(self.model.get_config()))
+
         if self.dataset.has_test_set():
             x_test, y_test = self.dataset.get_test_split()
             start = time.time()
-            metrics = self.model.evaluate(x_test, y_test)
+            metrics = self.model.evaluate(x_test, y_test, **config)
             duration = time.time() - start
         
         return metrics, duration
@@ -224,11 +228,16 @@ class ActiveLearningLoop:
             params = self.collect_meta_params()
             metrics_handler.add_experiment_meta(experiment_name, model_name, query_fn, params)
 
+        iteration = 0
         with tqdm(total=self.__len__()) as pbar:
             for metrics in self:
+                iteration += 1
                 pbar.update(1)
 
-                print(metrics)
+                metrics.update({
+                    "iteration": iteration,
+                    "labeled": self.pool.get_length_labeled()-self.step_size
+                })
 
                 # Write metrics to file
                 if metrics_handler is not None \

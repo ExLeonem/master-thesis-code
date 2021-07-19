@@ -72,13 +72,13 @@ class AcquisitionFunction:
         self.logger = logger
 
 
-    def __call__(self, model, pool, num=20, **kwargs):
+    def __call__(self, model, pool, step_size=20, **kwargs):
         """
             
             Parameter:
                 model (BayesModel): The model to use for the computation of acquistion functions.
                 pool (Pool): The pool of unlabeled data.
-                num (int): Number of datapoints to collect.
+                step_size (int): Number of datapoints to collect for next active learning iteration.
 
             Returns:
                 (numpy.ndarray) Indices
@@ -95,7 +95,7 @@ class AcquisitionFunction:
         # Select values randomly? 
         # No need for batch processing
         if self.name == "random":
-            return self.fn(indices, data, num=num, **kwargs)            
+            return self.fn(indices, data, step_size=step_size, **kwargs)            
 
         # Iterate throug batches of data
         results = None
@@ -123,7 +123,7 @@ class AcquisitionFunction:
 
         stacked = np.hstack(results)
         self.logger.info("Stacked shaped: {}".format(stacked.shape))
-        num_of_elements_to_select = self._adapt_selection_num(len(stacked), num)
+        num_of_elements_to_select = self._adapt_selection_num(len(stacked), step_size)
         return self.__select_first(stacked, indices, num_of_elements_to_select)
 
 
@@ -162,7 +162,7 @@ class AcquisitionFunction:
             return query_fn
     
 
-    def _random(self, indices, data, num=5, **kwargs):
+    def _random(self, indices, data, step_size=5, **kwargs):
         """
             Randomly select a number of datapoints from the dataset.
             Baseline for comparison purposes.
@@ -177,8 +177,8 @@ class AcquisitionFunction:
         """
 
         available_indices = np.linspace(0, len(data)-1, len(data), dtype=int)
-        num = self._adapt_selection_num(len(available_indices), num)
-        selected = np.random.choice(available_indices, num, replace=False).astype(int)
+        step_size = self._adapt_selection_num(len(available_indices), step_size)
+        selected = np.random.choice(available_indices, step_size, replace=False).astype(int)
 
         self.logger.info("Indices selected: {}".format(selected))
         return indices[selected], data[selected]

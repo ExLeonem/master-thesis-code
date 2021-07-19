@@ -342,6 +342,18 @@ class BayesModel:
         return {}
 
 
+    def get_eval_config(self):
+        if (self._config is not None) and "eval":
+            return self._config["eval"]
+        
+        return {}
+
+
+    def get_config(self):
+        return self._config.kwargs
+
+
+
     # --------------
     # Access important flags for predictions
     # -----------------------------
