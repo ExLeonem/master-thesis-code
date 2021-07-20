@@ -109,7 +109,7 @@ if __name__ == "__main__":
 
     # MC Dropout Model
     config = Config(
-        fit={"epochs": 20, "batch_size": batch_size},
+        fit={"epochs": 100, "batch_size": batch_size},
         eval={"batch_size": 900}
     )
     # optimizer = AdamW(lr=learning_rate, weight_decay=1./100)
@@ -141,7 +141,7 @@ if __name__ == "__main__":
         query_fns,
         dataset,
         step_size=step_size,
-        limit=3,
+        limit=100,
         metrics_handler=metrics_handler,
         verbose=verbose
     )
