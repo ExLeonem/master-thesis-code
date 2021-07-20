@@ -5,12 +5,13 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 import tensorflow as tf
-import tensorflow_addons as tfa
+# import tensorflow_addons as tfa
+import tensorflow.keras as keras
 
-from tensorflow_addons.optimizers import extend_with_decoupled_weight_decay, AdamW
+# from tensorflow_addons.optimizers import extend_with_decoupled_weight_decay, AdamW
 from tensorflow.keras.losses import SparseCategoricalCrossentropy, Reduction
 from tensorflow.keras.optimizers import Adam
-# import tensorflow_addons as tfa
+
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 MODULES_PATH = os.path.join(BASE_PATH, "..")
@@ -91,13 +92,12 @@ if __name__ == "__main__":
         init_size=initial_pool_size
     )
 
-
     # Active Learning parameters
     step_size = 10
     batch_size = 10
     learning_rate = 0.001
     verbose = False
-    sample_size = 100
+    sample_size = 5
 
     # Configure Tensorflow
     disable_tf_logs()
@@ -109,29 +109,30 @@ if __name__ == "__main__":
 
     # MC Dropout Model
     config = Config(
-        fit={"epochs": 200, "batch_size": batch_size},
-        eval={"batch_size": 900, "sample_size": sample_size}
+        fit={"epochs": 20, "batch_size": batch_size},
+        eval={"batch_size": 900}
     )
-    optimizer = AdamW(lr=learning_rate, weight_decay=1./100)
+    # optimizer = AdamW(lr=learning_rate, weight_decay=1./100)
     loss = SparseCategoricalCrossentropy(reduction=Reduction.SUM)
-    mc_model = McDropout(base_model, config, verbose=verbose)
-    mc_model.compile(optimizer=optimizer, loss=loss)
+    # mc_model = McDropout(base_model, config, verbose=verbose)
+    # mc_model.compile(optimizer=optimizer, loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
     # Moment Propagation
-
+    mp_model = MomentPropagation(base_model, config, verbose=verbose)
+    mp_model.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
     # Setup metrics handler
     METRICS_PATH = os.path.join(BASE_PATH, "metrics", "y_gal")
     metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
     # Setup experiment Suit
-    models = [mc_model]
+    models = [mp_model]
     query_fns = [
-        AcquisitionFunction("random", batch_size=900),
-        # AcquisitionFunction("max_entropy", batch_size=900),
-        # AcquisitionFunction("bald", batch_size=900),
-        # AcquisitionFunction("max_var_ratio", batch_size=900),
-        # AcquisitionFunction("std_mean", batch_size=900)
+        AcquisitionFunction("random", batch_size=900, verbose=verbose),
+        AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
+        # AcquisitionFunction("bald", batch_size=900, verbose=verbose),
+        AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
+        AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
     ]
 
     # 
@@ -140,9 +141,8 @@ if __name__ == "__main__":
         query_fns,
         dataset,
         step_size=step_size,
-        limit=10,
-        runs=4,
+        limit=3,
         metrics_handler=metrics_handler,
-        verbose=True
+        verbose=verbose
     )
     experiments.start()
