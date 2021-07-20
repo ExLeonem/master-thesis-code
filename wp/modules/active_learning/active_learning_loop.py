@@ -45,9 +45,12 @@ class ActiveLearningLoop:
         step_size=1,
         limit=None,
         pseudo=True,
+        verbose=False,
         **kwargs
     ):
         
+        self.verbose = verbose
+
         # Data and pools
         self.dataset = dataset
         x_train, y_train = dataset.get_train_split()
@@ -129,7 +132,9 @@ class ActiveLearningLoop:
 
         # Update pools
         query_config = self.model.get_query_config()
+        acq_start = time.time()
         indices, _pred = self.query_fn(self.model, self.pool, step_size=self.step_size)
+        acq_time = time.time() - acq_start
         self.oracle.annotate(self.pool, indices)
 
         # Evaluate model
@@ -140,6 +145,7 @@ class ActiveLearningLoop:
         return {
             "train": train_metrics,
             "train_time": train_time,
+            "query_time": acq_time,
             "optim": optim_metrics,
             "optim_time": optim_time,
             "eval": eval_metrics,
@@ -175,7 +181,7 @@ class ActiveLearningLoop:
         if self.pool.get_length_labeled() > 0:
             inputs, targets = self.pool.get_labeled_data()
             start = time.time()
-            h = self.model.fit(inputs, targets, verbose=False)
+            h = self.model.fit(inputs, targets, verbose=self.verbose)
             duration = time.time() - start
             history = h.history
 

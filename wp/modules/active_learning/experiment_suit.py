@@ -36,6 +36,7 @@ class ExperimentSuit:
         verbose=False
     ): 
         
+        self.verbose = verbose
         self.logger = setup_logger(verbose, name="ExperimentSuit")
 
         self.dataset = dataset
@@ -108,7 +109,8 @@ class ExperimentSuit:
             query_fn, 
             step_size=self.step_size,
             limit=self.limit,
-            pseudo=True
+            pseudo=True,
+            verbose=self.verbose
         )
 
         experiment_name = str(run) + "_" + active_learning_loop.get_experiment_name()

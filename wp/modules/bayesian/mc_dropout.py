@@ -219,6 +219,8 @@ class McDropout(BayesModel):
                 model (tf.Model) The tensorflow model to use for selection of datapoints
                 unlabeled_pool (UnlabeledPool) The pool of unlabeled data to select
         """
+        self.logger.info("----------Max-Entropy-------------")
+        
         # Create predictions
         predictions = self.__call__(data, sample_size=sample_size)
         expectation = self.expectation(predictions)
@@ -265,6 +267,7 @@ class McDropout(BayesModel):
             # (batch, predictions, classes) reduce to (batch, predictions (max-class))
             # 1 - (count of most common class / num predictions)
         """
+        self.logger.info("----------Max-Var-Ratio--------------")
 
         # (batch, sample, num classses)
         # (batch, num_classes)
@@ -284,6 +287,8 @@ class McDropout(BayesModel):
            Todo:
             Implement distinction for different model types.
         """
+        self.logger.info("----------Std-Mean-------------")
+
         # TODO: generalize for n-classes For binary classes
         predictions = self.__call__(data, sample_size=sample_size)
 

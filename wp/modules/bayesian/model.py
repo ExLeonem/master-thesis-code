@@ -108,7 +108,7 @@ class BayesModel:
                 batch_size (int): The size of each individual batch
 
             Returns:
-
+                () a record of the trianing procedure
         """
 
         if self._config is not None and "fit" in self._config and isinstance(self._config["fit"], dict):

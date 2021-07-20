@@ -1,4 +1,5 @@
 import os, sys
+import json
 import re
 import pandas as pd
 
@@ -83,9 +84,71 @@ class MetricsTransformer:
             if not (model_name in file):
                 continue
 
-        
         return None
 
+    @staticmethod
+    def seconds_to_minutes(dataframe, columns, ndigits):
+        """
+            Transform column(s) of time measures from seconds to minutes.
+
+            Parameters:
+                dataframe (pandas.DataFrame): The dataframe of which columns to be transformed.
+                columns (str|list(str)): A list of column names or a single column name.
+
+            Returns:
+                (pandas.DataFrame) the dataframe with transformed columns.
+        """
+        if isinstance(columns, list):
+            
+            for column in columns:
+                dataframe[column] = dataframe[column]/60
+
+
+        elif isinstance(columns, str):
+            dataframe[columns] = dataframe[columns]/60
+
+        return dataframe
+
+
+    @staticmethod
+    def list_to_series(dataframe, column):
+        """
+            Transforms a column of a dataframe into pandas.Series.
+
+            Parameters:
+                dataframe (pandas.DataFrame): The dataframe for which to transform a columns.
+                column (str): The column name of the column to transform.
+
+            Returns:
+                (pandas.DataFrame) the list values as a dataframe.
+        """
+
+        list_data = {}
+        for idx, row in dataframe.iterrows():    
+            cell_list = json.loads(row[column])
+            list_data[idx] = cell_list  
+
+        return pd.DataFrame(list_data)
+
     
+    @staticmethod
+    def merge_and_exclude(dataframes, to_exclude=[]):
+        """
+
+            Parameters:
+                dataframes (list(pd.DataFrame)): 
+                to_exclude (list(str)): List of column name to exclude from the dataframes.
+        """
+
+        filtered = []
+        for frame in dataframes:
+            all_columns = list(frame.columns)
+            columns_filtered = list(filter(lambda name: name not in to_exclude, all_columns))
+            filtered.append(frame[columns_filtered])
+
+        return pd.concat(filtered, sort=True)
+
+
+
     def add_column(self, dataframe, column, values):
         pass

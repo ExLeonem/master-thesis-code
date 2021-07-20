@@ -95,6 +95,7 @@ class AcquisitionFunction:
         # Select values randomly? 
         # No need for batch processing
         if self.name == "random":
+            self.logger.info("Random function")
             return self.fn(indices, data, step_size=step_size, **kwargs)            
 
         # Iterate throug batches of data
@@ -175,6 +176,7 @@ class AcquisitionFunction:
             Returns:
                 (numpy.ndarray): Randomly selected indices for next training.
         """
+        self.logger.info("----------Random-------------")
 
         available_indices = np.linspace(0, len(data)-1, len(data), dtype=int)
         step_size = self._adapt_selection_num(len(available_indices), step_size)
