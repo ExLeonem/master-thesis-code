@@ -12,7 +12,6 @@ sys.path.append(MODULES_PATH)
 # from active_learning import Metrics
 
 
-
 class MetricsTransformer:
     """
         Load dataframes directly as a dataframe
@@ -53,6 +52,54 @@ class MetricsTransformer:
             df = df.astype(dtype)
 
         return df
+    
+
+    def load_from_dir(self, metrics_handler, where="", dtype=None):
+        BASE_PATH = metrics_handler.BASE_PATH
+        files = os.listdir(BASE_PATH)
+        frames = []
+        for file in files:
+            
+            if ".csv" in file and where in file:
+                run = file.split("_")[0]        
+                model_name = MetricsTransformer.get_model_name(file)
+                method_name = MetricsTransformer.get_method_name(file)
+                
+                file_path = os.path.join(BASE_PATH, file)
+                
+                new_frame = self.load(file_path, metrics_handler, dtype=dtype)
+                new_frame.insert(0, "method", method_name)
+                new_frame.insert(0, "model", model_name)
+                new_frame.insert(0, "run", run)
+                frames.append(new_frame)
+
+        return pd.concat(frames)
+
+
+    def mean(self, dataframe, columns, dtype={}):
+        """
+
+        """
+        iterations = list(pd.unique(dataframe["iteration"]))
+
+        transformed = []
+        for iteration in iterations:
+
+            sub = dataframe[columns]
+            filter_to_apply = sub["iteration"] == iteration
+
+            meaned_values = dict(sub[filter_to_apply].mean())
+            transformed.append(meaned_values)
+
+        df = pd.DataFrame(transformed)
+
+
+        dtype.update({"iteration": int})
+        df = df.astype(dtype)
+        return df
+
+
+        
 
 
     def aggregate_by_model(self, model_name, metrics_handler, pattern_map=None):
@@ -149,6 +196,35 @@ class MetricsTransformer:
         return pd.concat(filtered, sort=True)
 
 
+    @staticmethod
+    def get_method_name(filename):
 
-    def add_column(self, dataframe, column, values):
-        pass
+        if "random" in filename:
+            return "Random"
+        
+        elif "max_entropy" in filename:
+            return "Max. Entropy"
+
+        elif "std_mean" in filename:
+            return "Std. Mean"
+
+        elif "max_var_ratio" in filename:
+            return "Max. Var. Ratio"
+
+        elif "bald" in filename:
+            return "BALD"
+
+        raise ValueError("Unknown method name")
+
+
+    @staticmethod
+    def get_model_name(filename):
+
+        if "mc_dropout" in filename:
+            return "MC Dropout"
+
+        if "moment_propagation" in filename:
+            return "Moment Propagation"
+
+        
+        raise ValueErro("Unknown model name.")

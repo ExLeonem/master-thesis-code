@@ -108,17 +108,20 @@ if __name__ == "__main__":
     base_model = fchollet_cnn(output=num_classes)
 
     # MC Dropout Model
-    config = Config(
+    mc_config = Config(
+        fit={"epochs": 100, "batch_size": batch_size},
+        eval={"batch_size": 900, "sample_size": sample_size}
+    )
+    loss = SparseCategoricalCrossentropy(reduction=Reduction.SUM)
+    mc_model = McDropout(base_model, config, verbose=verbose)
+    mc_model.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
+
+    # Moment Propagation
+    mp_config = COnfig(
         fit={"epochs": 100, "batch_size": batch_size},
         eval={"batch_size": 900}
     )
-    # optimizer = AdamW(lr=learning_rate, weight_decay=1./100)
-    loss = SparseCategoricalCrossentropy(reduction=Reduction.SUM)
-    # mc_model = McDropout(base_model, config, verbose=verbose)
-    # mc_model.compile(optimizer=optimizer, loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
-
-    # Moment Propagation
-    mp_model = MomentPropagation(base_model, config, verbose=verbose)
+    mp_model = MomentPropagation(base_model, mp_config, verbose=verbose)
     mp_model.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
     # Setup metrics handler
@@ -126,7 +129,7 @@ if __name__ == "__main__":
     metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
     # Setup experiment Suit
-    models = [mp_model]
+    models = [mc_model, mp_model]
     query_fns = [
         AcquisitionFunction("random", batch_size=900, verbose=verbose),
         AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
