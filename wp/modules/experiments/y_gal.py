@@ -97,7 +97,7 @@ if __name__ == "__main__":
     batch_size = 10
     learning_rate = 0.001
     verbose = False
-    sample_size = 5
+    sample_size = 25
 
     # Configure Tensorflow
     disable_tf_logs()
