@@ -1,4 +1,7 @@
 import os, sys, select
+import numpy as np
+import tensorflow as tf
+
 from . import ActiveLearningLoop, AcquisitionFunction, ExperimentSuitMetrics
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -31,11 +34,16 @@ class ExperimentSuit:
         step_size=1,
         limit=None,
         runs=1,
+        seed=None,
         acceptance_timeout=None,
         metrics_handler=None,
         verbose=False
     ): 
         
+        if seed is not None and isinstance(seed, int):
+            np.random.seed(seed)
+            tf.random.set_seed(seed)
+
         self.verbose = verbose
         self.logger = setup_logger(verbose, name="ExperimentSuit")
 

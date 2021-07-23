@@ -1,9 +1,11 @@
+import math
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def loss_in_steps(losses, step_size, num_plots, figsize=(22, 10), num_columns=5, from_epoch=None, to_epoch=None):
-     """
+def plot_in_steps(losses, step_size, num_plots, figsize=(22, 10), num_columns=5, from_epoch=None, to_epoch=None):
+
+    """
         Plots the losses of a training procedure.
 
         Parameters:
@@ -48,3 +50,6 @@ def loss_in_steps(losses, step_size, num_plots, figsize=(22, 10), num_columns=5,
         if column_idx % num_columns == 0:
             row_idx += 1
             column_idx = 0
+
+
+

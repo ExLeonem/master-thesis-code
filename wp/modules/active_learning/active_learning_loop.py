@@ -122,7 +122,7 @@ class ActiveLearningLoop:
             raise StopIteration
 
         # Load previous checkpoints/recreate model
-        self.model.reset()
+        self.model.reset(self.pool, self.dataset)
 
         # Optimiize model params
         optim_metrics, optim_time = self.__optim_model_params()
@@ -178,10 +178,18 @@ class ActiveLearningLoop:
         """
         history = None
         duration = None
+
         if self.pool.get_length_labeled() > 0:
             inputs, targets = self.pool.get_labeled_data()
             start = time.time()
-            h = self.model.fit(inputs, targets, verbose=self.verbose)
+
+            h = None
+            if self.dataset.has_eval_set():
+                x_eval, y_eval = self.dataset.get_eval_split()
+                h = self.model.fit(inputs, targets, verbose=self.verbose, validation_data=(x_eval, y_eval))
+            else:
+                h = self.model.fit(inputs, targets, verbose=self.verbose)
+
             duration = time.time() - start
             history = h.history
 

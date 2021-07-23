@@ -179,7 +179,7 @@ class BayesModel:
     # Model runtime configurations
     # -----------------------------
 
-    def reset(self):
+    def reset(self, pool, dataset):
         """
             Use to reset states, weights and other stuff during each active learning loop iteration.
         """
@@ -419,7 +419,7 @@ class BayesModel:
         # 
         if not (self._name is None): 
             if not (model_type is None) and prefix:
-                return model_type + "_" + sel._name
+                return model_type + "_" + self._name
 
             return self._name
 

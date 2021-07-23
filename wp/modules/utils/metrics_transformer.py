@@ -18,10 +18,6 @@ class MetricsTransformer:
     """
 
 
-    def __init__(self, verbose=False):
-        self.logger = self.__setup_logger(verbose)
-
-
     def __setup_logger(self, verbose):
         """
             Setup a logger.
@@ -35,7 +31,8 @@ class MetricsTransformer:
         return setup_logger(verbose, path=log_path, file="metrics_df.log")
 
     
-    def load(self, filename, metrics_handler, dtype=None):
+    @staticmethod
+    def load(filename, metrics_handler, dtype=None):
         """
             Loads a single metrics file into 
 
@@ -54,7 +51,13 @@ class MetricsTransformer:
         return df
     
 
-    def load_from_dir(self, metrics_handler, where="", dtype=None):
+    @staticmethod
+    def load_from_dir(metrics_handler, where="", dtype=None):
+        """
+
+            Parameters:
+                metrics_handler (ExperimentSuitMetrics): A metrics hanlder to read the metrics.
+        """
         BASE_PATH = metrics_handler.BASE_PATH
         files = os.listdir(BASE_PATH)
         frames = []
@@ -67,7 +70,7 @@ class MetricsTransformer:
                 
                 file_path = os.path.join(BASE_PATH, file)
                 
-                new_frame = self.load(file_path, metrics_handler, dtype=dtype)
+                new_frame = MetricsTransformer.load(file_path, metrics_handler, dtype=dtype)
                 new_frame.insert(0, "method", method_name)
                 new_frame.insert(0, "model", model_name)
                 new_frame.insert(0, "run", run)
@@ -76,7 +79,8 @@ class MetricsTransformer:
         return pd.concat(frames)
 
 
-    def mean(self, dataframe, columns, dtype={}):
+    @staticmethod
+    def mean(dataframe, columns, dtype={}):
         """
 
         """
@@ -99,10 +103,8 @@ class MetricsTransformer:
         return df
 
 
-        
-
-
-    def aggregate_by_model(self, model_name, metrics_handler, pattern_map=None):
+    @staticmethod
+    def aggregate_by_model(model_name, metrics_handler, pattern_map=None):
         """
             TODO: write implementation
             Loads and aggregates metrisc by model name.
@@ -132,6 +134,7 @@ class MetricsTransformer:
                 continue
 
         return None
+
 
     @staticmethod
     def seconds_to_minutes(dataframe, columns, ndigits):

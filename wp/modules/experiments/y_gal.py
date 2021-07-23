@@ -20,7 +20,7 @@ sys.path.append(MODULES_PATH)
 from active_learning import Config, Dataset, ExperimentSuitMetrics, ExperimentSuit, AcquisitionFunction
 from bayesian import McDropout, MomentPropagation
 from data import BenchmarkData, DataSetType
-from models import fchollet_cnn, setup_growth, disable_tf_logs
+from models import fchollet_cnn, ygal_cnn, setup_growth, disable_tf_logs
 from utils import setup_logger, init_pools
 
 
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     val_set_size = 100
     train_set_size = 40_000
     test_set_size = 10_000
-    initial_pool_size = 10
+    initial_pool_size = 20
 
     # Split data into (x, 10K, 100) = (train/test/valid)
     mnist = BenchmarkData(DataSetType.MNIST, os.path.join(DATASET_PATH, "mnist"), dtype=np.float32)
@@ -105,37 +105,77 @@ if __name__ == "__main__":
 
     # Define Models
     num_classes = len(np.unique(mnist.targets))
-    base_model = fchollet_cnn(output=num_classes)
+    # base_model = fchollet_cnn(output=num_classes)
+    base_model = ygal_cnn(initial_pool_size, output=num_classes)
 
-    # MC Dropout Model
-    mc_config = Config(
-        fit={"epochs": 100, "batch_size": batch_size},
-        eval={"batch_size": 900, "sample_size": sample_size}
-    )
+
+    def reset_step(self, pool, dataset):
+        """
+            Overwrite reset function after each acquisiton iteration.
+
+            Parameters:
+                pool (Pool): Pool of labeled datapoints.
+                dataset (Dataset): dataset object containing train, test and eval sets.
+        """
+        number_samples = pool.get_length_labeled()
+        self.model = ygal_cnn(number_samples, output=num_classes)
+        self.load_weights()
+
+    # MC Dropout Model    
+    fit_params = {"epochs": 100, "batch_size": batch_size}
     loss = SparseCategoricalCrossentropy(reduction=Reduction.SUM)
-    mc_model = McDropout(base_model, config, verbose=verbose)
+
+    mc_config = Config(
+        fit=fit_params,
+        eval={"batch_size": 900, "sample_size": 25}
+    )
+
+    setattr(McDropout, "reset", reset_step)
+    mc_model = McDropout(base_model, config=mc_config, verbose=verbose)
     mc_model.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
-    # Moment Propagation
-    mp_config = COnfig(
-        fit={"epochs": 100, "batch_size": batch_size},
-        eval={"batch_size": 900}
+    mc_config_2 = Config(
+        fit=fit_params,
+        eval={"batch_size": 900, "sample_size": 5}
     )
-    mp_model = MomentPropagation(base_model, mp_config, verbose=verbose)
-    mp_model.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
+    mc_model_2 = McDropout(base_model, mc_config_2, name="sample_size_5", verbose=verbose)
+    mc_model_2.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
+
+    mc_config_3 = Config(
+        fit=fit_params,
+        eval={"batch_size": 900, "sample_size":15}
+    )
+    mc_model_3 = McDropout(base_model, mc_config_3, name="sample_size_10", verbose=verbose)
+    mc_model_3.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
+
+    mc_config_4 = Config(
+        fit=fit_params,
+        eval={"batch_size": 900, "sample_size": 25}
+    )
+    mc_model_4 = McDropout(base_model, mc_config_4, name="sample_size_25", verbose=verbose)
+    mc_model_4.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
+
+    # Moment Propagation
+    # mp_config = Config(
+    #     fit={"epochs": 100, "batch_size": batch_size},
+    #     eval={"batch_size": 900}
+    # )
+    # mp_model = MomentPropagation(base_model, mp_config, verbose=verbose)
+    # mp_model.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
     # Setup metrics handler
-    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "y_gal")
+    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "2_y_gal_samples")
     metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
     # Setup experiment Suit
-    models = [mc_model, mp_model]
+    # models = [mc_model, mp_model]
+    models = [mc_model]
     query_fns = [
-        AcquisitionFunction("random", batch_size=900, verbose=verbose),
+        # AcquisitionFunction("random", batch_size=900, verbose=verbose),
         AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
         # AcquisitionFunction("bald", batch_size=900, verbose=verbose),
-        AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
-        AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
+        # AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
+        # AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
     ]
 
     # 
