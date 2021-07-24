@@ -208,6 +208,9 @@ class McDropout(BayesModel):
         if name == "std_mean":
             return self.__std_mean
 
+        if name == "margin_sampling":
+            return self.__margin_sampling
+
         return None
 
 
@@ -300,6 +303,35 @@ class McDropout(BayesModel):
         return np.mean(std, axis=-1)
 
 
+    def __margin_sampling(self, data, sample_size=10, **kwargs):
+        """
+            Select sample which minimize distance between two most probable labels.
+            Margin Sampling (MS).
+        """
+
+        self.logger.info("----------Margin-Sampling-------------")
+
+        predictions = self.__call__(data, sample_size=sample_size)
+        expectation = self.expectation(predictions)
+
+        indices = np.argsort(expecation)[:, :-2]
+
+    
+    def __least_confidence(self, dtaa, sample_size=10, **kwargs):
+        """
+            Select sample which minimize distance between two most probable labels.
+            Margin Sampling (MS).
+        """
+
+        self.logger.info("----------Margin-Sampling-------------")
+
+        predictions = self.__call__(data, sample_size=sample_size)
+        expectation = self.expectation(predictions)
+
+        return np.argmin(expecation, axis=1)
+
+
+
     # ----------
     # Loss Function
     # ---------------------
@@ -325,3 +357,5 @@ class McDropout(BayesModel):
         predictions = np.average(predictions, axis=1)
         result = -(predictions * np.log2(predictions+1e-10))
         return np.sum(result, axis=-1)
+
+

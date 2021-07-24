@@ -35,6 +35,7 @@ class ExperimentSuit:
         limit=None,
         runs=1,
         seed=None,
+        no_save_state=False,
         acceptance_timeout=None,
         metrics_handler=None,
         verbose=False
@@ -56,6 +57,7 @@ class ExperimentSuit:
         self.models = self.__init_models(models)
         self.query_functions = self.__init_query_fns(query_fns)
         self.metrics_handler = metrics_handler
+        self.no_save_state = no_save_state
         # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' # To disable tensorflow output
 
 
@@ -82,7 +84,7 @@ class ExperimentSuit:
         for i in number_of_models:
             model = self.models[i]
             
-            if not model.has_save_state():
+            if not self.no_save_state and not model.has_save_state():
                 model.save_weights()
 
             # Group experiment output per model in terminal

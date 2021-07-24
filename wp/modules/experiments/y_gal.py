@@ -51,7 +51,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Gal Experiment")
     parser.add_argument("-n", "--name", default="gal", help="")
     parser.add_argument("-d", "--debug", default=False, action="store_true", help="Activate debug output?")
-    parser.add_argument("-s", "--seed", default=None, type=int, help="Seed for random number generation process.")
+    parser.add_argument("-s", "--seed", default=1, type=int, help="Seed for random number generation process.")
     parser.add_argument("-e", "--epochs", default=20, type=int, help="How many epochs the network to train.")
     parser.add_argument("-p", "--prediction-runs", default=10, type=int, help="How often to sample from posterior distribution.")
     parser.add_argument("-a", "--acquisition", default="max_entropy", help="The aquisition function to use for the experiment")
@@ -70,9 +70,10 @@ if __name__ == "__main__":
     logger.info("------------------------")
 
     # seed = 10
-    # if not (seed is None):
-    #     np.random.seed(seed)
-    #     tf.random.set_seed(seed)
+    # if not (args.seed is None):
+    #     print("Settings seed {}".format(args.seed))
+    #     np.random.seed(args.seed)
+    #     tf.random.set_seed(args.seed)
 
     # Pool/Dataset parameters
     val_set_size = 100
@@ -94,10 +95,10 @@ if __name__ == "__main__":
 
     # Active Learning parameters
     step_size = 10
-    batch_size = 10
+    batch_size = 128
     learning_rate = 0.001
     verbose = False
-    sample_size = 25
+    sample_size = 100
 
     # Configure Tensorflow
     disable_tf_logs()
@@ -107,7 +108,6 @@ if __name__ == "__main__":
     num_classes = len(np.unique(mnist.targets))
     # base_model = fchollet_cnn(output=num_classes)
     base_model = ygal_cnn(initial_pool_size, output=num_classes)
-
 
     def reset_step(self, pool, dataset):
         """
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         """
         number_samples = pool.get_length_labeled()
         self.model = ygal_cnn(number_samples, output=num_classes)
-        self.load_weights()
+        # self.load_weights()
 
     # MC Dropout Model    
     fit_params = {"epochs": 100, "batch_size": batch_size}
@@ -134,48 +134,50 @@ if __name__ == "__main__":
     mc_model = McDropout(base_model, config=mc_config, verbose=verbose)
     mc_model.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
-    mc_config_2 = Config(
-        fit=fit_params,
-        eval={"batch_size": 900, "sample_size": 5}
-    )
-    mc_model_2 = McDropout(base_model, mc_config_2, name="sample_size_5", verbose=verbose)
-    mc_model_2.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
+    # mc_config_2 = Config(
+    #     fit=fit_params,
+    #     eval={"batch_size": 900, "sample_size": 5}
+    # )
+    # mc_model_2 = McDropout(base_model, mc_config_2, name="sample_size_5", verbose=verbose)
+    # mc_model_2.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
-    mc_config_3 = Config(
-        fit=fit_params,
-        eval={"batch_size": 900, "sample_size":15}
-    )
-    mc_model_3 = McDropout(base_model, mc_config_3, name="sample_size_10", verbose=verbose)
-    mc_model_3.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
+    # mc_config_3 = Config(
+    #     fit=fit_params,
+    #     eval={"batch_size": 900, "sample_size":15}
+    # )
+    # mc_model_3 = McDropout(base_model, mc_config_3, name="sample_size_15", verbose=verbose)
+    # mc_model_3.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
-    mc_config_4 = Config(
-        fit=fit_params,
-        eval={"batch_size": 900, "sample_size": 25}
-    )
-    mc_model_4 = McDropout(base_model, mc_config_4, name="sample_size_25", verbose=verbose)
-    mc_model_4.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
+    # mc_config_4 = Config(
+    #     fit=fit_params,
+    #     eval={"batch_size": 900, "sample_size": 25}
+    # )
+    # mc_model_4 = McDropout(base_model, mc_config_4, name="sample_size_25", verbose=verbose)
+    # mc_model_4.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
     # Moment Propagation
-    # mp_config = Config(
-    #     fit={"epochs": 100, "batch_size": batch_size},
-    #     eval={"batch_size": 900}
-    # )
-    # mp_model = MomentPropagation(base_model, mp_config, verbose=verbose)
-    # mp_model.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
+    mp_config = Config(
+        fit={"epochs": 100, "batch_size": batch_size},
+        eval={"batch_size": 900}
+    )
+    setattr(MomentPropagation, "reset", reset_step)
+    mp_model = MomentPropagation(base_model, mp_config, verbose=verbose)
+    mp_model.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
     # Setup metrics handler
-    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "2_y_gal_samples")
+    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "y_gal_detailed")
     metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
     # Setup experiment Suit
     # models = [mc_model, mp_model]
     models = [mc_model]
+    # models = [mc_model, mc_model_2, mc_model_3, mc_model_4]
     query_fns = [
-        # AcquisitionFunction("random", batch_size=900, verbose=verbose),
+        AcquisitionFunction("random", batch_size=900, verbose=verbose),
         AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
-        # AcquisitionFunction("bald", batch_size=900, verbose=verbose),
-        # AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
-        # AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
+        AcquisitionFunction("bald", batch_size=900, verbose=verbose),
+        AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
+        AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
     ]
 
     # 
@@ -185,6 +187,8 @@ if __name__ == "__main__":
         dataset,
         step_size=step_size,
         limit=100,
+        runs=4,
+        no_save_state=True,
         metrics_handler=metrics_handler,
         verbose=verbose
     )

@@ -168,6 +168,8 @@ class AcquisitionFunction:
             Randomly select a number of datapoints from the dataset.
             Baseline for comparison purposes.
 
+            FIX: Random selection is wrong!!!
+
             Parameters:
                 model (BayesianModel): The model to perform active learning on.
                 pool (DataPool): The pool of data to use.
