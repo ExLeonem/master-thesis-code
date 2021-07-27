@@ -1,8 +1,10 @@
-import time
+import os, time
 from copy import copy, deepcopy
 from tqdm import tqdm
 from . import AcquisitionFunction, Pool, UnlabeledPool, Oracle, ExperimentSuitMetrics
 
+DIR_PATH = os.path.dirname(os.path.realpath(__file__))
+MODULE_PATH = os.path.join(DIR_PATH, "..")
 
 class ActiveLearningLoop:
     """
@@ -71,6 +73,9 @@ class ActiveLearningLoop:
         self.oracle = Oracle(pseudo_mode=pseudo)
         self.query_fn = self.__init_acquisition_fn(query_fn)
 
+        self.query_config = self.model.get_query_config()
+        self.query_config.update({"step_size": step_size})
+
 
     def __len__(self):
         """
@@ -131,9 +136,8 @@ class ActiveLearningLoop:
         train_metrics, train_time = self.__fit_model()
 
         # Update pools
-        query_config = self.model.get_query_config()
         acq_start = time.time()
-        indices, _pred = self.query_fn(self.model, self.pool, step_size=self.step_size)
+        indices, _pred = self.query_fn(self.model, self.pool, **self.query_config)
         acq_time = time.time() - acq_start
         self.oracle.annotate(self.pool, indices)
 
@@ -250,7 +254,8 @@ class ActiveLearningLoop:
 
                 metrics.update({
                     "iteration": iteration,
-                    "labeled_pool_size": self.pool.get_length_labeled()-self.step_size
+                    "labeled_pool_size": self.pool.get_length_labeled()-self.step_size,
+                    "unlabeled_pool_size": self.pool.get_length_unlabeled()
                 })
 
                 # Write metrics to file

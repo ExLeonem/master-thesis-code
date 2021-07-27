@@ -97,7 +97,7 @@ if __name__ == "__main__":
     step_size = 10
     batch_size = 128
     learning_rate = 0.001
-    verbose = False
+    verbose = True
     sample_size = 100
 
     # Configure Tensorflow
@@ -127,6 +127,7 @@ if __name__ == "__main__":
 
     mc_config = Config(
         fit=fit_params,
+        query={"sample_size": 25},
         eval={"batch_size": 900, "sample_size": 25}
     )
 
@@ -165,7 +166,7 @@ if __name__ == "__main__":
     mp_model.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
     # Setup metrics handler
-    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "y_gal_detailed")
+    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "1_y_gal_detailed")
     metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
     # Setup experiment Suit
@@ -187,7 +188,7 @@ if __name__ == "__main__":
         dataset,
         step_size=step_size,
         limit=100,
-        runs=4,
+        #runs=4,
         no_save_state=True,
         metrics_handler=metrics_handler,
         verbose=verbose

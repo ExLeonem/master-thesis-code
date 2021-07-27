@@ -330,21 +330,21 @@ class BayesModel:
     # ----------------------------
 
     def get_fit_config(self):
-        if (self._config is not None) and hasattr(self._config, "fit"):
+        if (self._config is not None) and "fit" in self._config:
             return self._config["fit"]
         
         return {}
 
 
     def get_query_config(self):
-        if (self._config is not None) and hasattr(self._config, "query"):
+        if (self._config is not None) and "query" in self._config:
             return self._config["query"]
 
         return {}
 
 
     def get_eval_config(self):
-        if (self._config is not None) and "eval":
+        if (self._config is not None) and "eval" in self._config:
             return self._config["eval"]
         
         return {}

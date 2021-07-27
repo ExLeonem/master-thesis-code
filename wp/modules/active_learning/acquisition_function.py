@@ -84,6 +84,10 @@ class AcquisitionFunction:
                 (numpy.ndarray) Indices
         """
 
+        self.logger.info("Parameters ----")
+        self.logger.info("Step-size: {}".format(step_size))
+        self.logger.info(kwargs)
+
         # Set initial acquistion function
         if self.fn is None:
             self.fn = self._set_fn(model)

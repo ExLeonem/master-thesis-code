@@ -7,7 +7,7 @@ from tensorflow.keras import Sequential, Model
 from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPool2D
 
 from modules.bayesian import BayesModel
-from modules.active_learning import TrainConfig
+from modules.active_learning import Config, TrainConfig
 
 
 def mock_inputs(samples=10):
@@ -61,3 +61,34 @@ class TestModel:
     #         Flatten(),
     #         Dense(3, activation="softmax")
     #     ])
+
+
+    def test_query_config_params_valid(self):
+
+        config = Config(
+            query={"sample_size": 25}
+        )
+        model = BayesModel(MockModel(), config)
+
+        query_config = model.get_query_config()
+        assert query_config != {}
+
+    
+    def test_fit_config_params_valid(self):
+        config = Config(
+            fit={"epochs": 100}
+        )
+        model = BayesModel(MockModel(), config)
+
+        fit_config = model.get_fit_config()
+        assert fit_config != {}
+
+    
+    def test_eval_config_params_valid(self):
+        config = Config(
+            eval={"sample_size": 25}
+        )
+        model = BayesModel(MockModel(), config)
+        eval_config = model.get_eval_config()
+
+        assert eval_config != {} and "sample_size" in eval_config
