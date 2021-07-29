@@ -92,17 +92,14 @@ Metrics
    :members:
 
 
-DataPools
-----------------
+DataPool
+--------------------------------
 
-.. autoclass:: active_learning.DataPool
+.. autoclass:: active_learning.Pool
    :members:
    :undoc-members:
    :show-inheritance:
 
-
-.. autoclass:: active_learning.LabeledPool
-   :members:
 
 
 Config

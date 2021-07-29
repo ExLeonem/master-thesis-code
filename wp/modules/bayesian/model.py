@@ -95,7 +95,8 @@ class BayesModel:
             Returns:
                 (list) A list with two values. [loss, accuracy]  
         """
-        return self._model.evaluate(inputs, targets, **kwargs)
+        loss, accuracy = self._model.evaluate(inputs, targets, **kwargs)
+        return {"loss": loss, "accuracy": accuracy}
 
 
     def fit(self, *args, **kwargs):

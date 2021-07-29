@@ -153,7 +153,8 @@ class ActiveLearningLoop:
             "optim": optim_metrics,
             "optim_time": optim_time,
             "eval": eval_metrics,
-            "eval_time": eval_time
+            "eval_time": eval_time,
+            "indices_selected": indices.tolist()
         }
 
 
@@ -317,11 +318,15 @@ class ActiveLearningLoop:
             iterations = self.iteration_user_limit
 
         # fitting_params = model.get_compile_params()
+        initial_indices = []
+        if self.pool.has_labeled():
+            initial_indices = self.pool.get_labeled_indices().tolist()
 
         return {
             "iterations": iterations,
             "step_size": self.step_size,
-            "initial_size": self.initial_size
+            "initial_size": self.initial_size,
+            "initial_indices": initial_indices
         }
 
     

@@ -18,7 +18,7 @@ MODULES_PATH = os.path.join(BASE_PATH, "..")
 sys.path.append(MODULES_PATH)
 
 from active_learning import Config, Dataset, ExperimentSuitMetrics, ExperimentSuit, AcquisitionFunction
-from bayesian import McDropout, MomentPropagation
+from bayesian import McDropout, MomentPropagation, BayesModel
 from data import BenchmarkData, DataSetType
 from models import fchollet_cnn, ygal_cnn, setup_growth, disable_tf_logs
 from utils import setup_logger, init_pools
@@ -77,7 +77,6 @@ if __name__ == "__main__":
 
     # Pool/Dataset parameters
     val_set_size = 100
-    train_set_size = 40_000
     test_set_size = 10_000
     initial_pool_size = 20
 
@@ -95,9 +94,9 @@ if __name__ == "__main__":
 
     # Active Learning parameters
     step_size = 10
-    batch_size = 128
+    batch_size = 10
     learning_rate = 0.001
-    verbose = True
+    verbose = False
     sample_size = 100
 
     # Configure Tensorflow
@@ -166,7 +165,7 @@ if __name__ == "__main__":
     mp_model.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
     # Setup metrics handler
-    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "1_y_gal_detailed")
+    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "y_gal_sample_baseline")
     metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
     # Setup experiment Suit
@@ -188,7 +187,7 @@ if __name__ == "__main__":
         dataset,
         step_size=step_size,
         limit=100,
-        #runs=4,
+        runs=4,
         no_save_state=True,
         metrics_handler=metrics_handler,
         verbose=verbose
