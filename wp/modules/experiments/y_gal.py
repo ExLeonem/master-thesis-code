@@ -162,10 +162,10 @@ if __name__ == "__main__":
     )
     setattr(MomentPropagation, "reset", reset_step)
     mp_model = MomentPropagation(base_model, mp_config, verbose=verbose)
-    mp_model.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
+    mp_model.compile(optimizer="sgd", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
     # Setup metrics handler
-    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "y_gal_sample_baseline")
+    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "y_gal_sgd_optimizer")
     metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
     # Setup experiment Suit
@@ -187,7 +187,7 @@ if __name__ == "__main__":
         dataset,
         step_size=step_size,
         limit=100,
-        runs=4,
+        # runs=4,
         no_save_state=True,
         metrics_handler=metrics_handler,
         verbose=verbose

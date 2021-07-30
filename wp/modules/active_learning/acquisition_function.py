@@ -1,4 +1,5 @@
 import os, sys, importlib
+import math
 import time
 import logging
 import numpy as np
@@ -117,7 +118,7 @@ class AcquisitionFunction:
         if self.batch_size is None:
             self.batch_size = len(data)
 
-        num_batches = num_datapoints/self.batch_size
+        num_batches = math.ceil(num_datapoints/self.batch_size)
         batches = np.array_split(data, num_batches, axis=0)
         results = []
         for batch in batches:
