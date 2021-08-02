@@ -78,12 +78,12 @@ def reset_step(self, pool, dataset):
 # MC Dropout Model
 batch_size = 20
 
-early_stopping = keras.callbacks.EarlyStoppting(
-    monitor="accuracy",
+early_stopping = keras.callbacks.EarlyStopping(
+    monitor="sparse_categorical_accuracy",
     min_delta=0.01,
     patience=5
 )
-fit_params = {"epochs": 300, "batch_size": batch_size, "callback": [early_stopping]}
+fit_params = {"epochs": 300, "batch_size": batch_size, "callbacks": [early_stopping]}
 
 mc_config = Config(
     fit=fit_params,

@@ -65,7 +65,7 @@ class ActiveLearningLoop:
         # Loop parameters
         self.step_size = step_size
         self.iteration_user_limit = limit
-        self.iteration_max = self.pool.get_length_unlabeled()
+        self.iteration_max = int(self.pool.get_length_unlabeled())
         self.i = 0
 
         # Active learning components
@@ -321,6 +321,7 @@ class ActiveLearningLoop:
         initial_indices = []
         if self.pool.has_labeled():
             initial_indices = self.pool.get_labeled_indices().tolist()
+
 
         return {
             "iterations": iterations,

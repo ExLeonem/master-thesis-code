@@ -78,7 +78,7 @@ if __name__ == "__main__":
     # Pool/Dataset parameters
     val_set_size = 100
     test_set_size = 10_000
-    initial_pool_size = 20
+    initial_pool_size = 1000
 
     # Split data into (x, 10K, 100) = (train/test/valid)
     mnist = BenchmarkData(DataSetType.MNIST, os.path.join(DATASET_PATH, "mnist"), dtype=np.float32)
@@ -93,8 +93,8 @@ if __name__ == "__main__":
     )
 
     # Active Learning parameters
-    step_size = 10
-    batch_size = 10
+    step_size = 1000
+    batch_size = 100
     learning_rate = 0.001
     verbose = False
     sample_size = 100
@@ -105,8 +105,8 @@ if __name__ == "__main__":
 
     # Define Models
     num_classes = len(np.unique(mnist.targets))
-    # base_model = fchollet_cnn(output=num_classes)
-    base_model = ygal_cnn(initial_pool_size, output=num_classes)
+    base_model = fchollet_cnn(output=num_classes)
+    # base_model = ygal_cnn(initial_pool_size, output=num_classes)
 
     def reset_step(self, pool, dataset):
         """
@@ -116,13 +116,19 @@ if __name__ == "__main__":
                 pool (Pool): Pool of labeled datapoints.
                 dataset (Dataset): dataset object containing train, test and eval sets.
         """
-        number_samples = pool.get_length_labeled()
-        self.model = ygal_cnn(number_samples, output=num_classes)
+        return None
+        # number_samples = pool.get_length_labeled()
+        # self.model = ygal_cnn(number_samples, output=num_classes)
         # self.load_weights()
 
     # MC Dropout Model    
-    fit_params = {"epochs": 100, "batch_size": batch_size}
-    loss = SparseCategoricalCrossentropy(reduction=Reduction.SUM)
+    early_stopping = keras.callbacks.EarlyStopping(
+        monitor="sparse_categorical_accuracy",
+        min_delta=0.01,
+        patience=10
+    )
+    fit_params = {"epochs": 300, "batch_size": batch_size, "callbacks": [early_stopping]}
+    # loss = SparseCategoricalCrossentropy(reduction=Reduction.SUM)
 
     mc_config = Config(
         fit=fit_params,
@@ -132,46 +138,24 @@ if __name__ == "__main__":
 
     setattr(McDropout, "reset", reset_step)
     mc_model = McDropout(base_model, config=mc_config, verbose=verbose)
-    mc_model.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
+    mc_model.compile(optimizer="sgd", loss="sparse_categorical_crossentropy", metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
-    # mc_config_2 = Config(
-    #     fit=fit_params,
-    #     eval={"batch_size": 900, "sample_size": 5}
+    # # Moment Propagation
+    # mp_config = Config(
+    #     fit={"epochs": 100, "batch_size": batch_size},
+    #     eval={"batch_size": 900}
     # )
-    # mc_model_2 = McDropout(base_model, mc_config_2, name="sample_size_5", verbose=verbose)
-    # mc_model_2.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
-
-    # mc_config_3 = Config(
-    #     fit=fit_params,
-    #     eval={"batch_size": 900, "sample_size":15}
-    # )
-    # mc_model_3 = McDropout(base_model, mc_config_3, name="sample_size_15", verbose=verbose)
-    # mc_model_3.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
-
-    # mc_config_4 = Config(
-    #     fit=fit_params,
-    #     eval={"batch_size": 900, "sample_size": 25}
-    # )
-    # mc_model_4 = McDropout(base_model, mc_config_4, name="sample_size_25", verbose=verbose)
-    # mc_model_4.compile(optimizer="adam", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
-
-    # Moment Propagation
-    mp_config = Config(
-        fit={"epochs": 100, "batch_size": batch_size},
-        eval={"batch_size": 900}
-    )
-    setattr(MomentPropagation, "reset", reset_step)
-    mp_model = MomentPropagation(base_model, mp_config, verbose=verbose)
-    mp_model.compile(optimizer="sgd", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
+    # setattr(MomentPropagation, "reset", reset_step)
+    # mp_model = MomentPropagation(base_model, mp_config, verbose=verbose)
+    # mp_model.compile(optimizer="sgd", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
     # Setup metrics handler
-    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "y_gal_sgd_optimizer")
+    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "mnist_sgd_early_stopping")
     metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
     # Setup experiment Suit
     # models = [mc_model, mp_model]
     models = [mc_model]
-    # models = [mc_model, mc_model_2, mc_model_3, mc_model_4]
     query_fns = [
         AcquisitionFunction("random", batch_size=900, verbose=verbose),
         AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
@@ -186,8 +170,7 @@ if __name__ == "__main__":
         query_fns,
         dataset,
         step_size=step_size,
-        limit=100,
-        # runs=4,
+        runs=3,
         no_save_state=True,
         metrics_handler=metrics_handler,
         verbose=verbose
