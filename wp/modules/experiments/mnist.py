@@ -93,11 +93,11 @@ if __name__ == "__main__":
     )
 
     # Active Learning parameters
-    step_size = 1000
-    batch_size = 100
+    step_size = 10
+    batch_size = 10
     learning_rate = 0.001
     verbose = False
-    sample_size = 100
+    sample_size = 10
 
     # Configure Tensorflow
     disable_tf_logs()
@@ -171,6 +171,7 @@ if __name__ == "__main__":
         dataset,
         step_size=step_size,
         runs=3,
+        limit=100,
         no_save_state=True,
         metrics_handler=metrics_handler,
         verbose=verbose
