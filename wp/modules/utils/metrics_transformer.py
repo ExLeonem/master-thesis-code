@@ -70,10 +70,14 @@ class MetricsTransformer:
                 
                 file_path = os.path.join(BASE_PATH, file)
                 
-                new_frame = MetricsTransformer.load(file_path, metrics_handler, dtype=dtype)
+                new_frame = MetricsTransformer.load(file_path, metrics_handler)
                 new_frame.insert(0, "method", method_name)
                 new_frame.insert(0, "model", model_name)
                 new_frame.insert(0, "run", run)
+
+                if dtype is not None:
+                    new_frame = new_frame.astype(dtype)
+                    
                 frames.append(new_frame)
 
         return pd.concat(frames)

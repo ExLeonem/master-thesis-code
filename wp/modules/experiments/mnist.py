@@ -95,9 +95,9 @@ if __name__ == "__main__":
     # Active Learning parameters
     step_size = 10
     batch_size = 10
-    learning_rate = 0.001
+    learning_rate = 0.0001
     verbose = False
-    sample_size = 10
+    sample_size = 25
 
     # Configure Tensorflow
     disable_tf_logs()
@@ -108,6 +108,32 @@ if __name__ == "__main__":
     base_model = fchollet_cnn(output=num_classes)
     # base_model = ygal_cnn(initial_pool_size, output=num_classes)
 
+    # MC Dropout Model    
+    early_stopping = keras.callbacks.EarlyStopping(
+        monitor="sparse_categorical_accuracy",
+        min_delta=0.01,
+        patience=10,
+        restore_best_weights=True
+    )
+    fit_params = {"epochs": 300, "batch_size": batch_size, "callbacks": [early_stopping]}
+    # loss = SparseCategoricalCrossentropy(reduction=Reduction.SUM)
+
+    mc_config = Config(
+        fit=fit_params,
+        query={"sample_size": sample_size},
+        eval={"batch_size": 900, "sample_size": sample_size}
+    )
+
+
+    mc_model = McDropout(base_model, config=mc_config, verbose=verbose)
+    optimizer = keras.optimizers.SGD(
+        lr=learning_rate,
+        momentum=0.9
+    )
+    loss = "sparse_categorical_crossentropy"
+    metrics = [keras.metrics.SparseCategoricalAccuracy()]
+    mc_model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
     def reset_step(self, pool, dataset):
         """
             Overwrite reset function after each acquisiton iteration.
@@ -116,29 +142,13 @@ if __name__ == "__main__":
                 pool (Pool): Pool of labeled datapoints.
                 dataset (Dataset): dataset object containing train, test and eval sets.
         """
-        return None
+        self._model = fchollet_cnn(output=num_classes)
+        self._model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+        
         # number_samples = pool.get_length_labeled()
         # self.model = ygal_cnn(number_samples, output=num_classes)
         # self.load_weights()
-
-    # MC Dropout Model    
-    early_stopping = keras.callbacks.EarlyStopping(
-        monitor="sparse_categorical_accuracy",
-        min_delta=0.01,
-        patience=10
-    )
-    fit_params = {"epochs": 300, "batch_size": batch_size, "callbacks": [early_stopping]}
-    # loss = SparseCategoricalCrossentropy(reduction=Reduction.SUM)
-
-    mc_config = Config(
-        fit=fit_params,
-        query={"sample_size": 25},
-        eval={"batch_size": 900, "sample_size": 25}
-    )
-
     setattr(McDropout, "reset", reset_step)
-    mc_model = McDropout(base_model, config=mc_config, verbose=verbose)
-    mc_model.compile(optimizer="sgd", loss="sparse_categorical_crossentropy", metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
     # # Moment Propagation
     # mp_config = Config(
@@ -150,18 +160,18 @@ if __name__ == "__main__":
     # mp_model.compile(optimizer="sgd", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
     # Setup metrics handler
-    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "mnist_sgd_early_stopping")
+    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "temp")
     metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
     # Setup experiment Suit
     # models = [mc_model, mp_model]
     models = [mc_model]
     query_fns = [
-        AcquisitionFunction("random", batch_size=900, verbose=verbose),
+        # AcquisitionFunction("random", batch_size=900, verbose=verbose),
         AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
-        AcquisitionFunction("bald", batch_size=900, verbose=verbose),
-        AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
-        AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
+        # AcquisitionFunction("bald", batch_size=900, verbose=verbose),
+        # AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
+        # AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
     ]
 
     # 
