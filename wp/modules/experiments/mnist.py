@@ -78,7 +78,7 @@ if __name__ == "__main__":
     # Pool/Dataset parameters
     val_set_size = 100
     test_set_size = 10_000
-    initial_pool_size = 1000
+    initial_pool_size = 20
 
     # Split data into (x, 10K, 100) = (train/test/valid)
     mnist = BenchmarkData(DataSetType.MNIST, os.path.join(DATASET_PATH, "mnist"), dtype=np.float32)
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     # Active Learning parameters
     step_size = 10
     batch_size = 10
-    learning_rate = 0.0001
+    learning_rate = 0.001
     verbose = False
     sample_size = 25
 
@@ -167,11 +167,11 @@ if __name__ == "__main__":
     # models = [mc_model, mp_model]
     models = [mc_model]
     query_fns = [
-        # AcquisitionFunction("random", batch_size=900, verbose=verbose),
+        AcquisitionFunction("random", batch_size=900, verbose=verbose),
         AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
-        # AcquisitionFunction("bald", batch_size=900, verbose=verbose),
-        # AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
-        # AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
+        AcquisitionFunction("bald", batch_size=900, verbose=verbose),
+        AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
+        AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
     ]
 
     # 
