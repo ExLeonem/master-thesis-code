@@ -56,7 +56,7 @@ class ActiveLearningLoop:
         # Data and pools
         self.dataset = dataset
         x_train, y_train = dataset.get_train_split()
-        self.initial_size = initial_pool_size  = dataset.get_init_size()
+        self.initial_size = initial_pool_size = dataset.get_init_size()
 
         self.pool = Pool(x_train, y_train)
         if dataset.is_pseudo() and initial_pool_size > 0:

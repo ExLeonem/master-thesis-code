@@ -157,7 +157,7 @@ if __name__ == "__main__":
     # )
     # setattr(MomentPropagation, "reset", reset_step)
     # mp_model = MomentPropagation(base_model, mp_config, verbose=verbose)
-    # mp_model.compile(optimizer="sgd", loss=loss, metrics=[keras.metrics.SparseCategoricalAccuracy()])
+    # mp_model.compile(optimizer="sgd", loss=loss,  metrics=[keras.metrics.SparseCategoricalAccuracy()])
 
     # Setup metrics handler
     METRICS_PATH = os.path.join(BASE_PATH, "metrics", "temp")
@@ -180,8 +180,9 @@ if __name__ == "__main__":
         query_fns,
         dataset,
         step_size=step_size,
-        runs=3,
-        limit=100,
+        # runs=2,
+        limit=4,
+        seed=10,
         no_save_state=True,
         metrics_handler=metrics_handler,
         verbose=verbose

@@ -41,9 +41,9 @@ class ExperimentSuit:
         verbose=False
     ): 
         
-        if seed is not None and isinstance(seed, int):
-            np.random.seed(seed)
-            tf.random.set_seed(seed)
+        # if seed is not None and isinstance(seed, int):
+        #     np.random.seed(seed)
+        #     tf.random.set_seed(seed)
 
         self.verbose = verbose
         self.logger = setup_logger(verbose, name="ExperimentSuit")
@@ -53,6 +53,7 @@ class ExperimentSuit:
         self.runs = runs
         self.step_size = step_size
         self.acceptance_timeout = acceptance_timeout
+        self.seed = seed
 
         self.models = self.__init_models(models)
         self.query_functions = self.__init_query_fns(query_fns)
@@ -68,14 +69,49 @@ class ExperimentSuit:
 
             TODO:
                 [x] Last iteration even when no other experiments to run, prompts proceeding request.
+                [ ] Implement run/seed implementation. Run seeds experiments with seeds n-times.
         """
         
+        if self.runs == 1:
+            self.__iterate_seeds(self.runs-1)
+            return
+
+
         for run in range(self.runs):
             self.__iterate_experiments(run)
 
 
+    def __iterate_seeds(self, run):
+        """
+            Iterate through different seeds when a list of seeds where given.
+        """
 
-    def __iterate_experiments(self, run):
+        if self.seed is not None:
+
+            if isinstance(self.seed, int):
+                self.__iterate_experiments(run, self.seed)
+                return
+
+            if not isinstance(self.seed, list):
+                raise ValueError("Error initializing the active learning loop. Parameter seed of unknown type. Expected list of integers or single integer.")
+            
+            for idx in range(len(self.seed)):
+                seed = self.seed[idx]
+                self.__iterate_experiments(idx, seed)
+
+            return
+        
+        # Run single experiment without seed
+        self.__iterate_experiments(run)
+    
+
+    def __iterate_experiments(self, run, seed=None):
+        """
+            
+            Parameters:
+                run (int): The number of run for acquisition function model and model.
+
+        """
 
         # Perform experiment for each model & query function combination
         exit_loop = False
@@ -96,22 +132,32 @@ class ExperimentSuit:
                 query_fn = self.query_functions[j]
 
                 print("Running experiment (Run: {} | Model: {} | Query-Function: {})".format(run, model, query_fn))
-                self.__run_experiment(run, model, query_fn)
+                self.__run_experiment(run, model, query_fn, seed)
 
                 if (j != (len(self.query_functions)-1) or i != (len(self.models)-1)) \
                 and not self.__await_proceed():
 
                     exit_loop = True
                     break
-
             
             if exit_loop:
                 break
 
-    def __run_experiment(self, run, model, query_fn):
+    def __run_experiment(self, run, model, query_fn, seed):
         """
             Run a single experiment.
+
+            Parameters:
+                run (int): The number of experiment of this type (combination of acquisition funciton and model)
+                model (BayesianModel): A model wrapper.
+                query_ fn (str|AcquisitionFunction): The acquisition function to use.
         """
+
+        # Quick fix, reset random state after each iteration
+        # TODO: Adding outter loop and extend parameter list for seed
+        if seed is not None and isinstance(seed, int):
+            np.random.seed(seed)
+            tf.random.set_seed(seed)
 
         active_learning_loop = ActiveLearningLoop(
             model, 
