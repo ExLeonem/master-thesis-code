@@ -115,7 +115,7 @@ if __name__ == "__main__":
         patience=10,
         restore_best_weights=True
     )
-    fit_params = {"epochs": 300, "batch_size": batch_size, "callbacks": [early_stopping]}
+    fit_params = {"epochs": 200, "batch_size": batch_size}
     # loss = SparseCategoricalCrossentropy(reduction=Reduction.SUM)
 
     mc_config = Config(
@@ -126,10 +126,12 @@ if __name__ == "__main__":
 
 
     mc_model = McDropout(base_model, config=mc_config, verbose=verbose)
-    optimizer = keras.optimizers.SGD(
-        lr=learning_rate,
-        momentum=0.9
-    )
+    # optimizer = keras.optimizers.SGD(
+    #     lr=learning_rate,
+    #     momentum=0.9
+    # )
+
+    optimizer = "adam"
     loss = "sparse_categorical_crossentropy"
     metrics = [keras.metrics.SparseCategoricalAccuracy()]
     mc_model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
@@ -181,7 +183,7 @@ if __name__ == "__main__":
         dataset,
         step_size=step_size,
         # runs=2,
-        limit=4,
+        limit=100,
         seed=10,
         no_save_state=True,
         metrics_handler=metrics_handler,
