@@ -183,7 +183,7 @@ if __name__ == "__main__":
         dataset,
         step_size=step_size,
         # runs=2,
-        limit=100,
+        limit=2,
         seed=10,
         no_save_state=True,
         metrics_handler=metrics_handler,

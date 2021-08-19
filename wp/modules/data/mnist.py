@@ -41,4 +41,4 @@ def load(path):
             data = np.frombuffer(buf, dtype=np.uint8).reshape((num_images, row_count, column_count))
             images.append(data)
 
-    return np.vstack(images), np.hstack(labels)
+    return np.vstack(images)/255, np.hstack(labels)
