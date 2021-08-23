@@ -8,7 +8,7 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 import tensorflow as tf
-import bayesian.utils as butils
+import wrapper.utils as butils
 
 import active_learning
 importlib.reload(active_learning)

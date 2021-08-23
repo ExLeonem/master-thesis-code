@@ -1,7 +1,7 @@
 import os, sys, importlib
 import numpy as np
 
-from . import BayesModel, ModelType, Mode
+from . import Model, ModelType, Mode
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 MODULE_PATH = os.path.join(dir_path, "..")
@@ -12,7 +12,7 @@ import tensorflow as tf
 
 
 
-class MomentPropagation(BayesModel):
+class MomentPropagation(Model):
     """
         Takes a regular MC Dropout model as input, that is used for fitting.
         For evaluation a moment propagation model is created an used 

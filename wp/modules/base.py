@@ -6,7 +6,7 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 from active_learning import TrainConfig, Config, Pool, AcquisitionFunction, Dataset, ExperimentSuit, ExperimentSuitMetrics
-from bayesian import McDropout, MomentPropagation, BayesModel
+from wrapper import McDropout, MomentPropagation, BayesModel
 from data import BenchmarkData, DataSetType
 from models import default_model, setup_growth
 from utils import setup_logger

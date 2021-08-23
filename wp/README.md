@@ -3,6 +3,9 @@
 - etch
 - chisel
 - dissect
+- sieve
+- sift
+
 
 
 # TODO
@@ -15,8 +18,8 @@ https://github.com/tensorflow/tensorflow/issues/31842
     - [ ] Try custom fitting loop?
 
 - [ ] Pool initialization and annotation using different targets (regression, one-hot vectors, ...)
+- [ ] Generalize acquisition function for easier implementation of custom acqf's
 - [ ] Create Abstraction for metric accumulation
-- [ ] Add option to set initial labeled pool indices
 
 - Export of experiment files to share experimental setups. (!IMPORTANT)
     - Seed
@@ -31,7 +34,7 @@ https://github.com/tensorflow/tensorflow/issues/31842
     - [ ] Adding running metrics writer
     - [ ] Adding confirmation to proceed with experiments with timeout
     - [ ] Adding seed switch
-    - [ ] ExperimentSuitMetrics creates when trying to only read old metrics. (FIX)
+    - [ ] ExperimentSuitMetrics creates directory and meta file when trying to non-existent metrics directory. (BUG)
     - [ ] Use initial indices over different experiments
 
 
@@ -62,7 +65,7 @@ used to create custom active learning loops.
 ### MC Dropout
 
 ```python
-from bayesian import McDropout
+from wrapper import McDropout
 import tensorflow as tf
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense, Softmax
@@ -81,7 +84,7 @@ To create a custom Model wrapper define a new class and inherit from BayesModel.
 
 ```python
 
-from bayesian import BayesModel
+from wrapper import Model
 
 
 class NewModel(BayesModel):
@@ -100,7 +103,7 @@ To create a high level learning loop use the `ActiveLearnigLoop` class.
 ```python
 
 from active_learning import AcquistionFunction, Dataset, ActiveLearningLoop
-from bayesian import McDropout
+from wrapper import McDropout
 import tensorflow as tf
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense, Softmax

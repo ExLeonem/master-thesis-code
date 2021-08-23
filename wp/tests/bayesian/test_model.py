@@ -3,10 +3,11 @@ import pytest
 import os
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras import Sequential, Model
+from tensorflow.keras import Sequential
+from tensorflow.keras import Model as TfModel
 from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPool2D
 
-from modules.bayesian import BayesModel
+from modules.wrapper import Model
 from modules.active_learning import Config, TrainConfig
 
 
@@ -26,7 +27,7 @@ def mock_targets(num_targets=10, unique_targets=3):
 # ])
 
 
-class MockModel(Model):
+class MockModel(TfModel):
     """ Mocking a basic model, subclass model """
 
     def __init__(self):
@@ -49,7 +50,7 @@ class TestModel:
 
     def test_tensorflow_subclass_model(self):
         config = TrainConfig()
-        model = BayesModel(MockModel(), config)
+        model = Model(MockModel(), config)
 
         inputs = np.random.randn(10, 28, 28, 1)
         
@@ -68,7 +69,7 @@ class TestModel:
         config = Config(
             query={"sample_size": 25}
         )
-        model = BayesModel(MockModel(), config)
+        model = Model(MockModel(), config)
 
         query_config = model.get_query_config()
         assert query_config != {}
@@ -78,7 +79,7 @@ class TestModel:
         config = Config(
             fit={"epochs": 100}
         )
-        model = BayesModel(MockModel(), config)
+        model = Model(MockModel(), config)
 
         fit_config = model.get_fit_config()
         assert fit_config != {}
@@ -88,7 +89,7 @@ class TestModel:
         config = Config(
             eval={"sample_size": 25}
         )
-        model = BayesModel(MockModel(), config)
+        model = Model(MockModel(), config)
         eval_config = model.get_eval_config()
 
         assert eval_config != {} and "sample_size" in eval_config

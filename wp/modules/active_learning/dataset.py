@@ -24,7 +24,8 @@ class Dataset:
         targets,
         test=None,
         val=None,
-        init_size=0
+        init_size=0,
+        init_indices=None
         # train_size=.75, 
         # test_size=None, 
         # val_size=None

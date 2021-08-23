@@ -9,9 +9,9 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 MODULE_PATH = os.path.join(dir_path, "..")
 sys.path.append(MODULE_PATH)
 
-import bayesian
-importlib.reload(bayesian)
-import bayesian.utils as butils
+import wrapper
+importlib.reload(wrapper)
+import wrapper.utils as butils
 
 # from utils import setup_logger
 
@@ -77,7 +77,7 @@ class AcquisitionFunction:
         """
             
             Parameter:
-                model (BayesModel): The model to use for the computation of acquistion functions.
+                model (Model): The model to use for the computation of acquistion functions.
                 pool (Pool): The pool of unlabeled data.
                 step_size (int): Number of datapoints to collect for next active learning iteration.
 

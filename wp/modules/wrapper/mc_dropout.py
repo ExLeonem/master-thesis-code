@@ -5,7 +5,7 @@ import logging as log
 from sklearn.metrics import accuracy_score
 import tensorflow.keras as keras
 
-from . import  BayesModel, ModelType, Mode
+from . import  Model, ModelType, Mode
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 MODULE_PATH = os.path.join(dir_path, "..")
@@ -15,7 +15,7 @@ import tensorflow as tf
 
 
 
-class McDropout(BayesModel):
+class McDropout(Model):
     """
         Wrapper class for neural networks.
 

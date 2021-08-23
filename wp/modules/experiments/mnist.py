@@ -18,7 +18,7 @@ MODULES_PATH = os.path.join(BASE_PATH, "..")
 sys.path.append(MODULES_PATH)
 
 from active_learning import Config, Dataset, ExperimentSuitMetrics, ExperimentSuit, AcquisitionFunction
-from bayesian import McDropout, MomentPropagation, BayesModel
+from wrapper import McDropout, MomentPropagation, Model
 from data import BenchmarkData, DataSetType
 from models import fchollet_cnn, ygal_cnn, setup_growth, disable_tf_logs
 from utils import setup_logger, init_pools
@@ -198,7 +198,7 @@ if __name__ == "__main__":
         dataset,
         step_size=step_size,
         # runs=2,
-        limit=3,
+        max_rounds=3,
         seed=SEED,
         no_save_state=True,
         metrics_handler=metrics_handler,

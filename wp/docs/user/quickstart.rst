@@ -16,7 +16,7 @@ How to create an :ref:`link to a different section<Active Learning Loop>`
 .. code-block:: python
 
    from active_learning import AcquistionFunction, Dataset, ActiveLearningLoop
-   from bayesian import McDropout
+   from wrapper import McDropout
    import tensorflow as tf
    from tensorflow.keras import Sequential
    from tensorflow.keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense, Softmax

@@ -1,7 +1,7 @@
 
 import pytest
 import numpy as np
-from modules.bayesian import BayesModel
+from modules.wrapper import Model
 from modules.active_learning import AcquisitionFunction, UnlabeledPool, LabeledPool, Pool
 from modules.utils import init_pools
 
@@ -32,7 +32,7 @@ class TestAcquisitionFunction:
         inputs = np.random.randn(10)
         targets = np.random.choice([0, 1, 2, 3], 10)
 
-        model = BayesModel(MockModel(10))
+        model = Model(MockModel(10))
         pool = Pool(inputs)
 
         acf = AcquisitionFunction("random", verbose=True)
@@ -44,7 +44,7 @@ class TestAcquisitionFunction:
         inputs = np.random.randn(10)
         targets = np.random.choice([0, 1, 2, 3], 10)
 
-        model = BayesModel(MockModel(10))
+        model = Model(MockModel(10))
         pool = Pool(inputs)
 
         acf = AcquisitionFunction("random", verbose=True)
@@ -56,7 +56,7 @@ class TestAcquisitionFunction:
         inputs = np.random.randn(10)
         targets = np.random.choice([0, 1, 2, 3], 10)
 
-        model = BayesModel(MockModel(10))
+        model = Model(MockModel(10))
         pool = Pool(inputs)
 
         acf = AcquisitionFunction("bald", verbose=True)
@@ -68,7 +68,7 @@ class TestAcquisitionFunction:
         inputs = np.random.randn(10)
         targets = np.random.choice([0, 1, 2, 3], 10)
 
-        model = BayesModel(MockModel(10))
+        model = Model(MockModel(10))
         pool = Pool(inputs, targets)
         pool.init(5)
 

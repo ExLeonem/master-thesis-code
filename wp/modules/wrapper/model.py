@@ -26,7 +26,7 @@ class ModelType(Enum):
     SWAG=3
 
 
-class BayesModel:
+class Model:
     """
         Base class for encapsulation of a bayesian deep learning model. 
 

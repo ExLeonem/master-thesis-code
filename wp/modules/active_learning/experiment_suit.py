@@ -8,7 +8,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 MODULE_PATH = os.path.join(dir_path, "..")
 sys.path.append(MODULE_PATH)
 
-from bayesian import BayesModel
+from wrapper import Model
 from utils import setup_logger
 
 class ExperimentSuit:
@@ -17,10 +17,10 @@ class ExperimentSuit:
     Iterating over given models and methods.
 
     Parameters:
-        models (list(BayesianModel)): The models to iterate over.
+        models (list(Model)): The models to iterate over.
         query_fns (list(str)|list(AcquisitionFunction)|str|AcquisitionFunction): A list of query functions to use
         dataset (Dataset): A dataset for experiment execution.
-        limit (int): iteration limit per experiment.
+        max_rounds (int): The max. number of rounds to query for datapoints per experiment run. If not set, perform query operation as long as there is data.
         acceptance_timeout (int): Timeout in seconds in which experiment can be proceeded or aborted, after successfull (model,query function) iteration. Setting None will automatically proceed. (default: None)
         metrics_handler (ExperimentSuitMetrics): A configured metrics handler to use.
         verbose (bool): Printing log messages?
@@ -32,7 +32,7 @@ class ExperimentSuit:
         query_fns,
         dataset,
         step_size=1,
-        limit=None,
+        max_rounds=None,
         runs=1,
         seed=None,
         no_save_state=False,
@@ -49,7 +49,7 @@ class ExperimentSuit:
         self.logger = setup_logger(verbose, name="ExperimentSuit")
 
         self.dataset = dataset
-        self.limit = limit
+        self.max_rounds = max_rounds
         self.runs = runs
         self.step_size = step_size
         self.acceptance_timeout = acceptance_timeout
@@ -149,7 +149,7 @@ class ExperimentSuit:
 
             Parameters:
                 run (int): The number of experiment of this type (combination of acquisition funciton and model)
-                model (BayesianModel): A model wrapper.
+                model (Model): A model wrapper.
                 query_ fn (str|AcquisitionFunction): The acquisition function to use.
         """
 
@@ -164,7 +164,7 @@ class ExperimentSuit:
             self.dataset, 
             query_fn, 
             step_size=self.step_size,
-            limit=self.limit,
+            max_rounds=self.max_rounds,
             pseudo=True,
             verbose=self.verbose
         )

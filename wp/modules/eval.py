@@ -12,7 +12,7 @@ from models import default_model, setup_growth
 
 from acl import ActiveLearning
 from active_learning import TrainConfig, Config, Metrics, aggregates_per_key
-from bayesian import McDropout, MomentPropagation
+from wrapper import McDropout, MomentPropagation
 
 
 def select_model(model_switch, base_model):

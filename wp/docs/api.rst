@@ -36,24 +36,24 @@ Acquisition Function
 Models
 ===========================
 
-Bayesian Model
+Model Wrapper
 ----------------
 
-.. autoclass:: bayesian.BayesModel
+.. autoclass:: wrapper.Model
    :members:
 
 
 MC Dropout
 -----------------
 
-.. autoclass:: bayesian.McDropout
+.. autoclass:: wrapper.McDropout
    :members:
 
 
 Moment Propagation
 ---------------------
 
-.. autoclass:: bayesian.MomentPropagation
+.. autoclass:: wrapper.MomentPropagation
    :members:
 
 
@@ -116,7 +116,7 @@ Config
 Checkpoint
 ----------------------
 
-.. autoclass:: bayesian.Checkpoint
+.. autoclass:: wrapper.Checkpoint
    :members:
 
 

@@ -23,9 +23,8 @@ class ActiveLearningLoop:
                     do_something()
                     progress_bar.update(1) # update progress
 
-
         Parameters:
-            model (BayesianModel): A model wrapped into a BayesianModel type object.
+            model (Model): A model wrapped into a Model type object.
             dataset (Dataset): The dataset to use (inputs, targets)
             query_fn (list(str)|str): The query function to use.
 
@@ -45,7 +44,7 @@ class ActiveLearningLoop:
         dataset,
         query_fn,
         step_size=1,
-        limit=None,
+        max_rounds=None,
         pseudo=True,
         verbose=False,
         **kwargs
@@ -64,7 +63,7 @@ class ActiveLearningLoop:
         
         # Loop parameters
         self.step_size = step_size
-        self.iteration_user_limit = limit
+        self.iteration_user_limit = max_rounds
         self.iteration_max = int(self.pool.get_length_unlabeled())
         self.i = 0
 
