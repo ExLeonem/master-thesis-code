@@ -24,17 +24,17 @@ class MomentPropagation(BayesModel):
 
         super(MomentPropagation, self).__init__(model, config, model_type=model_type, **kwargs)
 
-        self.__mp_model = self.__create_mp_model(model)
+        self.__mp_model = self._create_mp_model(model)
         self.__compile_params = None
 
 
     def __call__(self, inputs, **kwargs):
-        return self._model.predict(inputs, **kwargs)
+        return self.__mp_model.predict(inputs, **kwargs)
 
     
     def fit(self, *args, **kwargs):
         history = super().fit(*args, **kwargs)
-        self.__mp_model = self.__create_mp_model(self._model)
+        self.__mp_model = self._create_mp_model(self._model)
         return history
 
 
@@ -103,7 +103,7 @@ class MomentPropagation(BayesModel):
         return dict(zip(metric_names, values))
 
 
-    def __create_mp_model(self, model):
+    def _create_mp_model(self, model):
         """
             Transforms the set base model into an moment propagation model.
 

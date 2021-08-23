@@ -360,7 +360,6 @@ class ExperimentSuitMetrics:
     # ------------------
 
     def __get_mode(self, experiment_name):
-        
         default_mode = "a"
         if experiment_name not in self.experiment_files:
             return default_mode
@@ -400,6 +399,7 @@ class ExperimentSuitMetrics:
         
         meta = self.read_meta()
         return meta.get("dataset", None)
+
 
     def get_experiment_meta(self, experiment_name):
         """

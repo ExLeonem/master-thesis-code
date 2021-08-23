@@ -1,8 +1,11 @@
+# Name Progression
+
+- etch
+- chisel
+- dissect
 
 
 # TODO
-
-
 https://github.com/tensorflow/tensorflow/issues/31842
 
 
@@ -12,10 +15,24 @@ https://github.com/tensorflow/tensorflow/issues/31842
     - [ ] Try custom fitting loop?
 
 - [ ] Pool initialization and annotation using different targets (regression, one-hot vectors, ...)
+- [ ] Create Abstraction for metric accumulation
+- [ ] Add option to set initial labeled pool indices
+
+- Export of experiment files to share experimental setups. (!IMPORTANT)
+    - Seed
+    - Dataset
+    - Splits, Initial Pool indices
+    - Data Normalization
+    - Trainin Parameter
+    - ModelWrapper
+    - ...
+
 - [ ] Adding experiment suit for multiple expirement execution
     - [ ] Adding running metrics writer
     - [ ] Adding confirmation to proceed with experiments with timeout
     - [ ] Adding seed switch
+    - [ ] ExperimentSuitMetrics creates when trying to only read old metrics. (FIX)
+    - [ ] Use initial indices over different experiments
 
 
 # Index

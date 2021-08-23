@@ -213,7 +213,7 @@ class MetricsTransformer:
             return "Max. Entropy"
 
         elif "std_mean" in filename:
-            return "Std. Mean"
+            return "Mean Std."
 
         elif "max_var_ratio" in filename:
             return "Max. Var. Ratio"
@@ -234,4 +234,4 @@ class MetricsTransformer:
             return "Moment Propagation"
 
         
-        raise ValueErro("Unknown model name.")
+        raise ValueError("Unknown model name.")

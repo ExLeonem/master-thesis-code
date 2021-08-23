@@ -51,7 +51,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Gal Experiment")
     parser.add_argument("-n", "--name", default="gal", help="")
     parser.add_argument("-d", "--debug", default=False, action="store_true", help="Activate debug output?")
-    parser.add_argument("-s", "--seed", default=1, type=int, help="Seed for random number generation process.")
+    parser.add_argument("-s", "--seed", default=42, type=int, help="Seed for random number generation process.")
     parser.add_argument("-e", "--epochs", default=20, type=int, help="How many epochs the network to train.")
     parser.add_argument("-p", "--prediction-runs", default=10, type=int, help="How often to sample from posterior distribution.")
     parser.add_argument("-a", "--acquisition", default="max_entropy", help="The aquisition function to use for the experiment")
@@ -69,11 +69,11 @@ if __name__ == "__main__":
     logger.info("----------")
     logger.info("------------------------")
 
-    # seed = 10
-    # if not (args.seed is None):
-    #     print("Settings seed {}".format(args.seed))
-    #     np.random.seed(args.seed)
-    #     tf.random.set_seed(args.seed)
+    SEED = args.seed
+    if SEED is not None:
+        print("Settings seed {}".format(args.seed))
+        np.random.seed(SEED)
+        tf.random.set_seed(SEED)
 
     # Pool/Dataset parameters
     val_set_size = 100
@@ -108,7 +108,8 @@ if __name__ == "__main__":
     base_model = fchollet_cnn(output=num_classes)
     # base_model = ygal_cnn(initial_pool_size, output=num_classes)
 
-    # MC Dropout Model    
+    # ---------------------
+    # MC Dropout   
     early_stopping = keras.callbacks.EarlyStopping(
         monitor="sparse_categorical_accuracy",
         min_delta=0.01,
@@ -123,7 +124,6 @@ if __name__ == "__main__":
         query={"sample_size": sample_size},
         eval={"batch_size": 900, "sample_size": sample_size}
     )
-
 
     mc_model = McDropout(base_model, config=mc_config, verbose=verbose)
     # optimizer = keras.optimizers.SGD(
@@ -152,14 +152,29 @@ if __name__ == "__main__":
         # self.load_weights()
     setattr(McDropout, "reset", reset_step)
 
-    # # Moment Propagation
-    # mp_config = Config(
-    #     fit={"epochs": 100, "batch_size": batch_size},
-    #     eval={"batch_size": 900}
-    # )
-    # setattr(MomentPropagation, "reset", reset_step)
-    # mp_model = MomentPropagation(base_model, mp_config, verbose=verbose)
-    # mp_model.compile(optimizer="sgd", loss=loss,  metrics=[keras.metrics.SparseCategoricalAccuracy()])
+    # ---------------------
+    # Moment Propagation
+    mp_config = Config(
+        fit={"epochs": 100, "batch_size": batch_size},
+        eval={"batch_size": 900}
+    )
+    mp_model = MomentPropagation(base_model, mp_config, verbose=verbose)
+    mp_model.compile(optimizer=optimizer, loss=loss,  metrics=metrics)
+
+    def reset_step(self, pool, dataset):
+        """
+            Reset The moment propagation model and freshly start training.
+
+            Parameters:
+                pool (Pool): Pool of labeled datapoints
+                dataset (Dataset): dataset object containing train,t est and eval sets.
+        """
+        # print(dir(self))
+        self._model = fchollet_cnn(output=num_classes)
+        self._model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+        self.__mp_model = self._create_mp_model(self._model)
+
+    setattr(MomentPropagation, "reset", reset_step)
 
     # Setup metrics handler
     METRICS_PATH = os.path.join(BASE_PATH, "metrics", "temp")
@@ -167,13 +182,13 @@ if __name__ == "__main__":
 
     # Setup experiment Suit
     # models = [mc_model, mp_model]
-    models = [mc_model]
+    models = [mp_model]
     query_fns = [
         AcquisitionFunction("random", batch_size=900, verbose=verbose),
         AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
-        AcquisitionFunction("bald", batch_size=900, verbose=verbose),
         AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
-        AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
+        AcquisitionFunction("std_mean", batch_size=900, verbose=verbose),
+        # AcquisitionFunction("bald", batch_size=900, verbose=verbose)
     ]
 
     # 
@@ -183,8 +198,8 @@ if __name__ == "__main__":
         dataset,
         step_size=step_size,
         # runs=2,
-        limit=2,
-        seed=10,
+        limit=3,
+        seed=SEED,
         no_save_state=True,
         metrics_handler=metrics_handler,
         verbose=verbose

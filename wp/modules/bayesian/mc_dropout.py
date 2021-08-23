@@ -252,7 +252,6 @@ class McDropout(BayesModel):
         # Missing dimension in binary case?
         predictions = self.extend_binary_predictions(predictions)
         
-
         inner_sum = np.sum(predictions*np.log(np.abs(predictions) + .001), axis=1)
         self.logger.info("_bald/inner-shape: {}".format(inner_sum.shape))
 
