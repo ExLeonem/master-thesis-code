@@ -1,11 +1,3 @@
-import sys, os
-
-CONF_PATH = os.path.abspath(__file__)
-MODULE_PATH = os.path.join(CONF_PATH, "..", "modules")
-
-sys.path.insert(0, os.path.abspath("../modules"))
-
-
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
@@ -21,6 +13,12 @@ sys.path.insert(0, os.path.abspath("../modules"))
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
+
+import sys, os
+
+# CONF_PATH = os.path.abspath(__file__)
+# MODULE_PATH = os.path.join(CONF_PATH, "..", "modules")
+sys.path.insert(0, os.path.abspath("../modules"))
 
 
 # -- Project information -----------------------------------------------------
@@ -60,15 +58,20 @@ todo_include_toods = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 # html_theme = 'alabaster'
-html_theme = "sphinx_book_theme"
+# html_theme_options = {
+#     "show_powered_by": False,
+#     "github_user": "exleonem",
+#     "github_repo": "",
+#     "github_banner": True,
+#     "show_related": False,
+#     "fixed_sidebar": True
+# }
 
+# https://sphinx-book-theme.readthedocs.io/en/latest/customize/index.html
+html_theme = "sphinx_book_theme"
 html_theme_options = {
-    "show_powered_by": False,
-    "github_user": "exleonem",
-    "github_repo": "",
-    "github_banner": True,
-    "show_related": False,
-    "fixed_sidebar": True
+    "repository_url": "https://github.com/ExLeonem/active-learning",
+    "use_issues_button": True,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

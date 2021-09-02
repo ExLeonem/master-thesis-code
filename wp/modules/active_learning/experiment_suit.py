@@ -214,7 +214,7 @@ class ExperimentSuit:
             raising an error when one of the models can't be processed.
         """
 
-        if isinstance(models, BayesModel):
+        if isinstance(models, Model):
             return [models]
 
         verified_models = []
@@ -222,7 +222,7 @@ class ExperimentSuit:
             for model in models:
                 
                 # Passed model can be used in context of ActiveLearningLoop?
-                if not isinstance(model, BayesModel):
+                if not isinstance(model, Model):
                     raise ValueError("Error in ExperimentSuit.__init__(). One of the passed models is no sub-class of BayesModel.")
 
         else:

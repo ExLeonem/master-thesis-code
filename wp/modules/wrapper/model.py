@@ -70,7 +70,7 @@ class Model:
 
 
     def __call__(self, *args, **kwargs):
-        return self._model(inputs, training=self.in_mode(Mode.TRAIN))
+        return self._model(*args, training=self.in_mode(Mode.TRAIN))
 
 
     def predict(self, inputs, **kwargs):

@@ -244,22 +244,22 @@ class McDropout(Model):
         predictions = self.__call__(data, sample_size=sample_size)
 
         self.logger.info("_bald/predictions-shape: {}".format(predictions.shape))
-        posterior = self.expectation(predictions)
-        self.logger.info("_bald/posterior-shape: {}".format(posterior.shape))
+        exp = self.expectation(predictions)
+        self.logger.info("_bald/expectation-shape: {}".format(exp.shape))
 
-        first_term = -np.sum(posterior*np.log(np.abs(posterior) + .001), axis=1)
+        entropy = -np.sum(exp*np.log(exp + .001), axis=1)
 
         # Missing dimension in binary case?
         predictions = self.extend_binary_predictions(predictions)
         
-        inner_sum = np.sum(predictions*np.log(np.abs(predictions) + .001), axis=1)
+        entropy_samples = np.sum(predictions*np.log(predictions + .001), axis=1)
         self.logger.info("_bald/inner-shape: {}".format(inner_sum.shape))
 
-        second_term = np.sum(inner_sum, axis=1)/predictions.shape[1]
+        disagreement = np.sum(entropy_samples, axis=1)/predictions.shape[1]
 
-        self.logger.info("_bald/first-term-shape: {}".format(first_term.shape))
-        self.logger.info("_bald/second-term-shape: {}".format(second_term.shape))
-        return first_term + second_term
+        self.logger.info("_bald/first-term-shape: {}".format(entropy.shape))
+        self.logger.info("_bald/second-term-shape: {}".format(disagreement.shape))
+        return entropy + disagreement
 
 
     def __max_var_ratio(self, data, sample_size=10, **kwargs):

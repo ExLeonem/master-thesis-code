@@ -104,6 +104,7 @@ class BenchmarkData:
     def get_inputs(self):
         return self.inputs
 
-    
+    def get_data(self):
+        return self.inputs, self.targets
 
     

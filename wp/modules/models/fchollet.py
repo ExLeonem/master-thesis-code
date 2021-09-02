@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras import Model, Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dropout, Dense, Input, Flatten
+# from tensorflow.keras.activations import Softmax
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dropout, Dense, Input, Flatten, Activation, Softmax
 
 
 def fchollet_cnn(input_shape=(28, 28, 1), output=128):
@@ -12,7 +13,8 @@ def fchollet_cnn(input_shape=(28, 28, 1), output=128):
         Flatten(),
         Dense(128, activation=tf.nn.relu),
         Dropout(.5),
-        Dense(output, activation="softmax")        
+        Dense(output),
+        Softmax()  
     ])
 
 

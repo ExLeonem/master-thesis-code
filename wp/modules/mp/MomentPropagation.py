@@ -372,6 +372,7 @@ class MP:
         ESIG = GSIG[0]
         VSIG = GSIG[1]
         sig_sum = tf.math.reduce_sum(tf.math.divide(1.0 , ESIG), axis=2)
+
         E_SM = tf.math.divide(1.0, (tf.cast(-C, dtype=tf.float32) + sig_sum))
 
         # Todo: need to be investigated if this is correct for the variance (but is not necessary)

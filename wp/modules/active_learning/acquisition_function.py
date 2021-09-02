@@ -79,7 +79,7 @@ class AcquisitionFunction:
             Parameter:
                 model (Model): The model to use for the computation of acquistion functions.
                 pool (Pool): The pool of unlabeled data.
-                step_size (int): Number of datapoints to collect for next active learning iteration.
+                step_size (int): Number of datapoints to collect for next active learning iteration. (default=20)
 
             Returns:
                 (numpy.ndarray) Indices
