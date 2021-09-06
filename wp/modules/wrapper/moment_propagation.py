@@ -229,15 +229,15 @@ class MomentPropagation(Model):
         return -np.sum(class_probs*class_prob_logs, axis=1)
 
     
-    def __bald(self, data, num_samples=10, **kwargs):
+    def __bald(self, data, num_samples=100, **kwargs):
         """
             [ ] Check if information about variance is needed here. Compare to mc dropout bald.
         """
         exp, var = self.__mp_model.predict(x=data)
 
         exp_shape = list(exp.shape)
-        output_shape = tuple([num_samples] + exp_shape) # (sample_size, num datapoints, num_classes)
-        sampled_data = norm(exp, var).rvs(size=output_shape)
+        output_shape = tuple([num_samples] + exp_shape) # (num samples, num datapoints, num_classes)
+        sampled_data = norm(exp, np.sqrt(var)).rvs(size=output_shape)
         class_sample_probs = tf.keras.activations.softmax(tf.convert_to_tensor(sampled_data))
 
         sample_entropy = np.sum(class_sample_probs*np.log(class_sample_probs+.001), axis=-1)
@@ -245,10 +245,8 @@ class MomentPropagation(Model):
 
         exp, _var = mp.MP.Gaussian_Softmax(exp, var)
         entropy = np.sum(exp*np.log(exp+.001), axis=1)
-        # print(-entropy)
-        # print(disagreement)
 
-        return entropy - disagreement
+        return -entropy+disagreement
 
 
     def __max_var_ratio(self, data, **kwargs):

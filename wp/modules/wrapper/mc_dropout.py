@@ -253,11 +253,10 @@ class McDropout(Model):
         predictions = self.extend_binary_predictions(predictions)
         
         entropy_samples = np.sum(predictions*np.log(predictions + .001), axis=1)
-        self.logger.info("_bald/inner-shape: {}".format(inner_sum.shape))
+        self.logger.info("_bald/entropy-shape: {}".format(entropy_samples.shape))
 
         disagreement = np.sum(entropy_samples, axis=1)/predictions.shape[1]
 
-        self.logger.info("_bald/first-term-shape: {}".format(entropy.shape))
         self.logger.info("_bald/second-term-shape: {}".format(disagreement.shape))
         return entropy + disagreement
 

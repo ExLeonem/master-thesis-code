@@ -51,7 +51,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Gal Experiment")
     parser.add_argument("-n", "--name", default="gal", help="")
     parser.add_argument("-d", "--debug", default=False, action="store_true", help="Activate debug output?")
-    parser.add_argument("-s", "--seed", default=20432, type=int, help="Seed for random number generation process.")
+    parser.add_argument("-s", "--seed", default=83152, type=int, help="Seed for random number generation process.")
     parser.add_argument("-e", "--epochs", default=20, type=int, help="How many epochs the network to train.")
     parser.add_argument("-p", "--prediction-runs", default=10, type=int, help="How often to sample from posterior distribution.")
     parser.add_argument("-a", "--acquisition", default="max_entropy", help="The aquisition function to use for the experiment")
@@ -181,13 +181,13 @@ if __name__ == "__main__":
     metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
     # Setup experiment Suit
-    # models = [mc_model, mp_model]
-    models = [mp_model]
+    models = [mc_model, mp_model]
+    # models = [mp_model]
     query_fns = [
-        # AcquisitionFunction("random", batch_size=900, verbose=verbose),
-        # AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
-        # AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
-        # AcquisitionFunction("std_mean", batch_size=900, verbose=verbose),
+        AcquisitionFunction("random", batch_size=900, verbose=verbose),
+        AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
+        AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
+        AcquisitionFunction("std_mean", batch_size=900, verbose=verbose),
         AcquisitionFunction("bald", batch_size=900, verbose=verbose)
     ]
 
