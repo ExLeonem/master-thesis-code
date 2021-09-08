@@ -158,11 +158,13 @@ class AcquisitionFunction:
                 (function): The function to use for acquisition.
         """
 
+
         query_fn = model.get_query_fn(self.name)
+        if self.name == "random":
+            query_fn = self._random
+
         if query_fn is None:
-            self.logger.debug("Set acquisition function: random baseline.")
-            self.name = "random"
-            return self._random
+            raise ValueError("Error in AcquisitionFunction. Received invalid acquisition functio name \"{}\".".format(self.name))
 
         else:
             return query_fn
@@ -217,14 +219,6 @@ class AcquisitionFunction:
 
 
     # ----------
-    # Dunder
-    # ------------------
-
-    def __str__(self):
-        return self.name
-
-
-    # ----------
     # Getter-/Setter
     # ------------------
     
@@ -232,4 +226,15 @@ class AcquisitionFunction:
         self.fn = fn
 
     def get_name(self):
+        return self.name
+
+    def reset_fn(self, model):
+        self.set_fn(None)
+        self._set_fn(model)
+
+    # ----------
+    # Dunder
+    # ------------------
+
+    def __str__(self):
         return self.name

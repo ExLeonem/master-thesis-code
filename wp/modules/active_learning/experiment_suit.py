@@ -127,11 +127,14 @@ class ExperimentSuit:
             if i != 0:
                 print("#"*10)
 
+            # Update acquisition functions to use model defined acquisition functions
+
             metrics = None
             for j in number_of_query_fns:
                 query_fn = self.query_functions[j]
 
                 print("Running experiment (Run: {} | Model: {} | Query-Function: {})".format(run, model, query_fn))
+                self.__update_query_functions(model, query_fn)
                 self.__run_experiment(run, model, query_fn, seed)
 
                 if (j != (len(self.query_functions)-1) or i != (len(self.models)-1)) \
@@ -256,3 +259,27 @@ class ExperimentSuit:
             raise ValueError("Error in ExperimentSuit.__init__(). Got type {} for qury_fns. Expected a list of strings, AcqusitionFunctions, singel strings or a single AcquisitionFunction.".format(type(query_fns)))
 
         return fns
+
+    
+    def __update_query_functions(self, model, functions):
+        """
+            Update the acquisition function to use new model.
+
+            Parameters:
+                functions (AcquisitionFunction|list(AcquisitionFunction)): The acquisition functions of the experiment
+                model (Model): The model wrapper to use.
+        """
+
+        is_obj = isinstance(functions, AcquisitionFunction)
+        is_list = isinstance(functions, list)
+
+        if not (is_obj or is_list):
+            raise ValueError("Error in ActiveLearningLoop.run(). Failed to update acquisition function for model \"{}\".".format(model.__class__.__name__))
+
+        if is_obj:
+            functions.reset_fn(model)
+            return
+        
+        # Update a list of AcquisitionFunction objects
+        for function in functions:
+            function.reset_fn(model)

@@ -193,7 +193,8 @@ class MomentPropagation(Model):
         if isinstance(values, np.ndarray):
             return values
 
-        values = tf.make_ndarray(values)
+        values = values.numpy()
+        # values = tf.make_ndarray(values)
         return values
 
 

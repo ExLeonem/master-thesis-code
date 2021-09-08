@@ -1,0 +1,35 @@
+name: active_learning
+channels:
+  - conda-forge
+  - anaconda
+  - main
+  - defaults
+dependencies:
+  - python=3.8.8=hdb3f193_5
+  - pip=21.0.1=py38h06a4308_0
+  - tensorflow=2.2.0=gpu_py38hb782248_0
+  - tensorflow-base=2.2.0=gpu_py38h83e3d50_0
+  - tensorflow-gpu=2.2.0=h0d30ee6_0
+  - tensorflow-probability=0.7=py_2
+  - pandas=0.25.3=py38hb3f55d8_0
+  - scikit-learn=0.24.1=py38ha9443f7_0
+  - scipy=1.6.2=py38hf56f3a7_1
+  - seaborn=0.11.1=hd8ed1ab_1
+  - seaborn-base=0.11.1=pyhd8ed1ab_1
+
+  - sphinx=3.2.1=py_0
+  - sphinxcontrib-applehelp=1.0.2=py_0
+  - sphinxcontrib-devhelp=1.0.2=py_0
+  - sphinxcontrib-htmlhelp=1.0.3=py_0
+  - sphinxcontrib-jsmath=1.0.1=py_0
+  - sphinxcontrib-qthelp=1.0.3=py_0
+  - sphinxcontrib-serializinghtml=1.1.4=py_0
+
+  - pip:
+    - matplotlib==3.3.4
+    - numpy==1.18.5
+    - tqdm==4.59.0
+    - pytest==6.2.4
+    - pytest-cov==2.12.1
+  
+prefix: /home/exleonem/.anaconda/envs/active_learning
