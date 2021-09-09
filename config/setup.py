@@ -17,7 +17,7 @@ if __name__ == "__main__":
     if not "datasets" in workspace_content:
         logger.info("CREATING: datasets directory")
         dataset_dir = os.path.join(workspace_path, "datasets")
-        # os.mkdir(dataset_dir)
+        os.mkdir(dataset_dir)
 
     else:
         logger.info("SKIP: Datasets directory already existing")
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     if "metrics" not in workspace_content:
         logger.info("CREATING: metrics directory")
         metrics_dir = os.path.join(workspace_path, "metrics")
-        # os.mkdir(metrics_dir)
+        os.mkdir(metrics_dir)
     else:
         logger.info("SKIP: Metrics directory already ")
 

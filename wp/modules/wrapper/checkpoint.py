@@ -27,7 +27,7 @@ class Checkpoint:
             filename (str): The filename prefix to use for checkpoints.
     """
 
-    def __init__(self,filename="model", path=DEFAULT_PATH, extension=None, sub_dir=True):
+    def __init__(self, filename="model", path=DEFAULT_PATH, extension=None, sub_dir=True):
         self.PATH = path if not sub_dir else os.path.join(path, filename)
         self.FILENAME = filename
         self.EXTENSION = extension if not (extension is None) else "pb"
