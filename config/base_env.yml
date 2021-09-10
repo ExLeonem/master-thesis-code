@@ -30,5 +30,6 @@ dependencies:
     - tqdm==4.59.0
     - pytest==6.2.4
     - pytest-cov==2.12.1
+    - tf-al=^0.0.1
   
 prefix: /home/exleonem/.anaconda/envs/active_learning

@@ -18,7 +18,6 @@ def fchollet_cnn(input_shape=(28, 28, 1), output=128):
     ])
 
 
-
 class FcholletCNN(Model):
     """
         CNN used for benchmarking in paper
