@@ -12,13 +12,14 @@ import tensorflow.keras as keras
 from tensorflow.keras.losses import SparseCategoricalCrossentropy, Reduction
 from tensorflow.keras.optimizers import Adam
 
+from tf_al import Config, Dataset, ExperimentSuitMetrics, ExperimentSuit, AcquisitionFunction
+from tf_al.wrapper import McDropout
+from tf_al_mp.wrapper import MomentPropagation
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 MODULES_PATH = os.path.join(BASE_PATH, "..")
 sys.path.append(MODULES_PATH)
 
-from active_learning import Config, Dataset, ExperimentSuitMetrics, ExperimentSuit, AcquisitionFunction
-from wrapper import McDropout, MomentPropagation, Model
 from data import BenchmarkData, DataSetType
 from models import fchollet_cnn, ygal_cnn, setup_growth, disable_tf_logs
 from utils import setup_logger, init_pools
