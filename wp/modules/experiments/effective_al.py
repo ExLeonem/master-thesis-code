@@ -21,10 +21,9 @@ MODULES_PATH = os.path.join(BASE_PATH, "..")
 sys.path.append(MODULES_PATH)
 
 from data import BenchmarkData, DataSetType
-from models import fchollet_cnn, ygal_cnn, setup_growth, disable_tf_logs
-from utils import setup_logger, init_pools
+from models import fchollet_cnn, setup_growth, disable_tf_logs
 
-BASE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
+BASE_PATH = os.path.join(BASE_PATH, "..", "..")
 DATASET_PATH = os.path.join(BASE_PATH, "datasets")
 
 

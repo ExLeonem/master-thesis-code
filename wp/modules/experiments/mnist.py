@@ -1,11 +1,9 @@
 import argparse
-import os, sys, time
+import os, sys
 
 import numpy as np
 from sklearn.model_selection import train_test_split
-from tqdm import tqdm
 import tensorflow as tf
-# import tensorflow_addons as tfa
 import tensorflow.keras as keras
 
 # from tensorflow_addons.optimizers import extend_with_decoupled_weight_decay, AdamW
@@ -21,9 +19,8 @@ BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 MODULES_PATH = os.path.join(BASE_PATH, "..")
 sys.path.append(MODULES_PATH)
 
-from data import BenchmarkData, DataSetType
-from models import fchollet_cnn, ygal_cnn, setup_growth, disable_tf_logs
-from utils import setup_logger, init_pools
+from models import fchollet_cnn, setup_growth, disable_tf_logs
+from utils import setup_logger
 
 
 def keys_to_dict(**kwargs):
