@@ -5,10 +5,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import tensorflow.keras as keras
-
-# from tensorflow_addons.optimizers import extend_with_decoupled_weight_decay, AdamW
-from tensorflow.keras.losses import SparseCategoricalCrossentropy, Reduction
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -61,7 +58,13 @@ if __name__ == "__main__":
 
     # Split data into (x, 10K, 100) = (train/test/valid)
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
-    inputs = np.expand_dims(np.vstack([x_train, x_test])/255., axis=-1)
+    
+    # Concat and normalize data
+    x_stack = np.expand_dims(np.vstack([x_train, x_test]), axis=-1).astype(np.float32)
+    datagen = ImageDataGenerator(featurewise_center=True, featurewise_std_normalization=True)
+    datagen.fit(x_stack)
+
+    inputs = datagen.standardize(x_stack)
     targets = np.hstack([y_train, y_test])
     x_train, x_test, y_train, y_test = train_test_split(inputs, targets, test_size=test_set_size)
     x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=val_set_size)
@@ -86,7 +89,6 @@ if __name__ == "__main__":
     # Define Models
     num_classes = len(np.unique(targets))
     base_model = fchollet_cnn(output=num_classes)
-    # base_model = ygal_cnn(initial_pool_size, output=num_classes)
 
     # ---------------------
     # MC Dropout   
@@ -161,8 +163,7 @@ if __name__ == "__main__":
         query_fns,
         dataset,
         step_size=step_size,
-        # runs=2,
-        max_rounds=2,
+        max_rounds=100,
         seed=[SEED, 20432, 10942, 59138, 49970, 10109],
         no_save_state=True,
         metrics_handler=metrics_handler,

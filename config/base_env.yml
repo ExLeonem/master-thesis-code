@@ -10,7 +10,6 @@ dependencies:
   - tensorflow=2.2.0=gpu_py38hb782248_0
   - tensorflow-base=2.2.0=gpu_py38h83e3d50_0
   - tensorflow-gpu=2.2.0=h0d30ee6_0
-  - tensorflow-probability=0.7=py_2
   - pandas=0.25.3=py38hb3f55d8_0
   - scikit-learn=0.24.1=py38ha9443f7_0
   - scipy=1.6.2=py38hf56f3a7_1
@@ -25,6 +24,7 @@ dependencies:
   - sphinxcontrib-serializinghtml=1.1.4=py_0
 
   - pip:
+    - tensorflow-probability==0.10.0
     - matplotlib==3.3.4
     - numpy==1.18.5
     - pytest==6.2.4
