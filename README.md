@@ -11,6 +11,15 @@ A simple workspace template for deep-/machine-learning projects using python/ana
 [Probability concepts explained](https://towardsdatascience.com/probability-concepts-explained-maximum-likelihood-estimation-c7b4342fdbb1#:~:text=Maximum%20likelihood%20estimation%20is%20a%20method%20that%20will%20find%20the,that%20best%20fits%20the%20data.&text=The%20goal%20of%20maximum%20likelihood,probability%20of%20observing%20the%20data.)
 
 
+# Create Gaussian Process model and compare
+[GPFlow](https://github.com/GPflow/GPflow)
+https://gpflow.readthedocs.io/en/master/notebooks/intro.html#Advanced-needs
+
+
+# Create Adaption for Batch Active Learning
+
+
+
 # Index
 
 1. [Prerequisite](#Prerequisite)

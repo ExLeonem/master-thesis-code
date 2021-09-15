@@ -18,6 +18,7 @@
 /.env
 **__pycache__
 **.coverage
+**.log
 
 # Exclude documentation build
 /wp/docs/_build
@@ -29,3 +30,6 @@
 
 # Exclude Config files
 /config/kaggle.json
+
+# Sub packages
+/wp/tf_al
