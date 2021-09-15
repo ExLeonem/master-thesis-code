@@ -4,13 +4,16 @@ from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import tensorflow.keras as keras
 
-from tf_al import Config, Dataset, ExperimentSuitMetrics, ExperimentSuit, AcquisitionFunction
-from tf_al.wrapper import McDropout
-from tf_al_mp.wrapper import MomentPropagation
-
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 MODULES_PATH = os.path.join(BASE_PATH, "..")
 sys.path.append(MODULES_PATH)
+
+TF_PATH = os.path.join(BASE_PATH, "..", "..", "tf_al")
+sys.path.append(TF_PATH)
+
+from tf_al import Config, Dataset, ExperimentSuitMetrics, ExperimentSuit, AcquisitionFunction
+from tf_al.wrapper import McDropout
+# from tf_al_mp.wrapper import MomentPropagation
 
 from models import fchollet_cnn, setup_growth, disable_tf_logs
 
@@ -22,6 +25,11 @@ tf.random.set_seed(SEED)
 
 # Create dataset
 (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
+x_train = x_train/255.
+x_test = x_test/255.
+
+y_train = y_train.flatten()
+y_test = y_test.flatten()
 
 init_pool_size = 20
 dataset = Dataset(
@@ -32,13 +40,17 @@ dataset = Dataset(
 
 
 # Model params
+setup_growth()
+
+verbose = False
 optimizer = "adam"
 loss = "sparse_categorical_crossentropy"
 metrics = [keras.metrics.SparseCategoricalAccuracy()]
 
 # Create McModel
-num_classes = 10
-base_model = fchollet_cnn(output=num_classes)
+num_classes = len(list(np.unique(y_test)))
+input_shape = tuple(x_train.shape[1:])
+base_model = fchollet_cnn(input_shape=input_shape, output=num_classes)
 batch_size = 10
 sample_size = 25
 
@@ -47,7 +59,7 @@ config = Config(
     query={"sample_size": sample_size},
     eval={"batch_size": batch_size, "sample_size": sample_size}
 )
-mc_model = McDropout(base_model, config=config)
+mc_model = McDropout(base_model, config=config, verbose=verbose)
 mc_model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
 def reset_step(self, pool, dataset):
@@ -58,7 +70,7 @@ def reset_step(self, pool, dataset):
                 pool (Pool): Pool of labeled datapoints.
                 dataset (Dataset): dataset object containing train, test and eval sets.
         """
-        self._model = fchollet_cnn(output=num_classes)
+        self._model = fchollet_cnn(input_shape=input_shape, output=num_classes)
         self._model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
 setattr(McDropout, "reset", reset_step)
@@ -70,11 +82,11 @@ metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
 models = [mc_model]
 query_fns = [
-    AcquisitionFunction("random", batch_size=900),
-    AcquisitionFunction("max_entropy", batch_size=900),
-    AcquisitionFunction("max_var_ratio", batch_size=900),
-    AcquisitionFunction("bald", batch_size=900),
-    AcquisitionFunction("std_mean", batch_size=900)
+    AcquisitionFunction("random", batch_size=900, verbose=verbose),
+    AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
+    AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
+    AcquisitionFunction("bald", batch_size=900, verbose=verbose),
+    AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
 ]
 
 step_size = 10
@@ -87,6 +99,7 @@ experiments = ExperimentSuit(
     step_size=step_size,
     no_save_state=True,
     max_rounds=max_rounds,
-    metrics_handler=metrics_handler
+    metrics_handler=metrics_handler,
+    verbose=verbose
 )
 experiments.start()

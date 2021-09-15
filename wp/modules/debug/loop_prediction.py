@@ -108,7 +108,7 @@ while True:
     result = []
     for batch in batches:
         sub_result = max_entropy(tf.convert_to_tensor(batch), sample_size=sample_size)
-        result.append(sub_result))
+        result.append(sub_result)
 
     i+=1
     np.hstack(result)
