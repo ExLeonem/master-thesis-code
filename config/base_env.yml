@@ -7,8 +7,11 @@ channels:
 dependencies:
   - python=3.8.8=hdb3f193_5
   - pip=21.0.1=py38h06a4308_0
+  - tensorboard=2.2.1=pyh532a8cf_0
+  - tensorboard-plugin-wit=1.6.0=py_0
   - tensorflow=2.2.0=gpu_py38hb782248_0
   - tensorflow-base=2.2.0=gpu_py38h83e3d50_0
+  - tensorflow-estimator=2.2.0=pyh208ff02_0
   - tensorflow-gpu=2.2.0=h0d30ee6_0
   - pandas=0.25.3=py38hb3f55d8_0
   - scikit-learn=0.24.1=py38ha9443f7_0
@@ -24,7 +27,7 @@ dependencies:
   - sphinxcontrib-serializinghtml=1.1.4=py_0
 
   - pip:
-    - tensorflow-probability==0.10.0
+    - tensorflow-probability==0.11.1
     - matplotlib==3.3.4
     - numpy==1.18.5
     - pytest==6.2.4
