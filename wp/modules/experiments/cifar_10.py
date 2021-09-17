@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import tensorflow.keras as keras
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 MODULES_PATH = os.path.join(BASE_PATH, "..")
@@ -25,8 +26,12 @@ tf.random.set_seed(SEED)
 
 # Create dataset
 (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
-x_train = x_train/255.
-x_test = x_test/255.
+datagen = ImageDataGenerator(featurewise_center=True, featurewise_std_normalization=True)
+datagen.fit(x_train)
+x_train = datagen.standardize(x_train.astype(np.float32))
+
+datagen.fit(x_test)
+x_test = datagen.standardize(x_test.astype(np.float32))
 
 y_train = y_train.flatten()
 y_test = y_test.flatten()
@@ -40,6 +45,7 @@ dataset = Dataset(
 
 
 # Model params
+disable_tf_logs()
 setup_growth()
 
 verbose = False
