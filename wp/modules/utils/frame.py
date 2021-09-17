@@ -3,7 +3,7 @@ import numpy as np
 
 class Frame:
     """
-        Uitiliy methods for dataframe transformations
+        Uitiliy methods for dataframe operations across multiple dataframes.
     """
 
 
