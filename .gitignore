@@ -31,5 +31,6 @@
 # Exclude Config files
 /config/kaggle.json
 
-# Sub packages
+# Exclude sub packages
 /wp/tf_al
+/wp/tf_al_mp
