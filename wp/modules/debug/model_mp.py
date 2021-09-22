@@ -15,12 +15,11 @@ BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 MODULES_PATH = os.path.join(BASE_PATH, "..")
 sys.path.append(MODULES_PATH)
 
-TF_PATH = os.path.join(BASE_PATH, "..", "..", "tf_al")
+TF_PATH = os.path.join(BASE_PATH, "..", "..", "tf_al_mp")
 sys.path.append(TF_PATH)
 
 from tf_al import Config, Dataset, ExperimentSuitMetrics, ExperimentSuit, AcquisitionFunction
-from tf_al.wrapper import McDropout
-# from tf_al_mp.wrapper import MomentPropagation
+from tf_al_mp.wrapper import MomentPropagation
 
 from models import dnn_dense_dropout, setup_growth, disable_tf_logs
 from utils import setup_logger
@@ -61,23 +60,23 @@ dataset = Dataset(x_train, y_train, test=(x_test, y_test), init_size=3)
 disable_tf_logs()
 setup_growth()
 
-sample_size = 100
-config = Config(
-    fit={"epochs": 120, "batch_size": 1},
-    query={"sample_size": sample_size},
-    eval={"batch_size": 900, "sample_size": sample_size}
+config = Config(fit={"epochs": 100, "batch_size": 5})
+n_features = x.shape[1]
+n_classes = len(np.unique(y))
+base_model = dnn_dense_dropout(n_features, n_classes, n_layers=3)
+print(base_model.summary())
+
+mp_model = MomentPropagation(base_model, config)
+mp_model.compile(
+    optimizer="adam",
+    loss="mean_squared_error",
+    metrics=["accuracy"]
 )
-base_model = dnn_dense_dropout(n_features, n_classes, n_layers=2)
-mc_model = McDropout(base_model, config)
-mc_model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["categorical_accuracy"])
-
-
-METRICS_PATH = os.path.join(BASE_PATH, "metrics", "iris_temp")
-metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
 all_seeds = [SEED] + list(np.random.randint(1000, 10000, 9))
+print("Seeds:", all_seeds)
 experiments = ExperimentSuit(
-    [mc_model],
+    [mp_model],
     [
         "random",
         "max_entropy",
@@ -88,8 +87,7 @@ experiments = ExperimentSuit(
     dataset,
     max_rounds=50,
     no_save_state=True,
-    seed=all_seeds,
-    metrics_handler=metrics_handler
+    seed=all_seeds
 )
 
 experiments.start()
