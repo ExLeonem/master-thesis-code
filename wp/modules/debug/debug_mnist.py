@@ -144,15 +144,15 @@ if __name__ == "__main__":
     # setattr(MomentPropagation, "reset", reset_step)
 
     # Setup metrics handler
-    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "debug_mnist")
+    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "debug_mnist_baba")
     metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
     # Setup experiment Suit
     # models = [mc_model, mp_model]
     models = [mc_model]
     query_fns = [
-        AcquisitionFunction("random", batch_size=900, verbose=verbose),
-        AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
+        AcquisitionFunction("baba", batch_size=900, verbose=verbose),
+        # AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
         # AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
         # AcquisitionFunction("bald", batch_size=900, verbose=verbose),
         # AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
@@ -164,7 +164,7 @@ if __name__ == "__main__":
         query_fns,
         dataset,
         step_size=step_size,
-        max_rounds=1,
+        max_rounds=100,
         seed=[SEED, 20432, 10942],
         no_save_state=True,
         metrics_handler=metrics_handler,

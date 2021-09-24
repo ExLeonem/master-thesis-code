@@ -7,17 +7,16 @@ import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 MODULES_PATH = os.path.join(BASE_PATH, "..")
 sys.path.append(MODULES_PATH)
 
-TF_PATH = os.path.join(BASE_PATH, "..", "..", "tf_al")
+TF_PATH = os.path.join(BASE_PATH, "..", "..", "tf_al_mp")
 sys.path.append(TF_PATH)
 
 from tf_al import Config, Dataset, ExperimentSuitMetrics, ExperimentSuit, AcquisitionFunction
 from tf_al.wrapper import McDropout
-# from tf_al_mp.wrapper import MomentPropagation
+from tf_al_mp.wrapper import MomentPropagation
 
 from models import fchollet_cnn, setup_growth, disable_tf_logs
 from utils import setup_logger
@@ -46,10 +45,11 @@ if __name__ == "__main__":
     # Paths
     BASE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
 
-    SEED = 83152
-    print("Settings initial seed {}".format(SEED))
-    np.random.seed(SEED)
-    tf.random.set_seed(SEED)
+    seeds = list(np.random.randint(10000, 99999, 10))
+    print("Initial seeds {}".format(seeds))
+    first_seed = seeds[0]
+    np.random.seed(first_seed)
+    tf.random.set_seed(first_seed)
 
     # Pool/Dataset parameters
     val_set_size = 100
@@ -121,51 +121,50 @@ if __name__ == "__main__":
 
     # ---------------------
     # Moment Propagation
-    # mp_config = Config(
-    #     fit={"epochs": 100, "batch_size": batch_size},
-    #     eval={"batch_size": 900}
-    # )
-    # mp_model = MomentPropagation(base_model, mp_config, verbose=verbose)
-    # mp_model.compile(optimizer=optimizer, loss=loss,  metrics=metrics)
+    mp_config = Config(
+        fit={"epochs": 100, "batch_size": batch_size},
+        eval={"batch_size": 900}
+    )
+    mp_model = MomentPropagation(base_model, mp_config, verbose=verbose)
+    mp_model.compile(optimizer=optimizer, loss=loss,  metrics=metrics)
 
-    # def reset_step(self, pool, dataset):
-    #     """
-    #         Reset The moment propagation model and freshly start training.
+    def reset_step(self, pool, dataset):
+        """
+            Reset The moment propagation model and freshly start training.
 
-    #         Parameters:
-    #             pool (Pool): Pool of labeled datapoints
-    #             dataset (Dataset): dataset object containing train,t est and eval sets.
-    #     """
-    #     # print(dir(self))
-    #     self._model = fchollet_cnn(output=num_classes)
-    #     self._model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
-    #     self.__mp_model = self._create_mp_model(self._model)
+            Parameters:
+                pool (Pool): Pool of labeled datapoints
+                dataset (Dataset): dataset object containing train,t est and eval sets.
+        """
+        # print(dir(self))
+        self._model = fchollet_cnn(output=num_classes)
+        self._model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+        self.__mp_model = self._create_mp_model(self._model)
 
-    # setattr(MomentPropagation, "reset", reset_step)
+    setattr(MomentPropagation, "reset", reset_step)
 
     # Setup metrics handler
     METRICS_PATH = os.path.join(BASE_PATH, "metrics", "temp")
     metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
     # Setup experiment Suit
-    # models = [mc_model, mp_model]
-    models = [mc_model]
+    models = [mp_model]
     query_fns = [
         AcquisitionFunction("random", batch_size=900, verbose=verbose),
+        AcquisitionFunction("bald", batch_size=900, verbose=verbose),
         AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
         AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
-        AcquisitionFunction("bald", batch_size=900, verbose=verbose),
         AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
     ]
 
-    # 
+
     experiments = ExperimentSuit(
         models,
         query_fns,
         dataset,
         step_size=step_size,
-        max_rounds=100,
-        seed=[SEED, 20432, 10942, 59138, 49970, 10109],
+        max_rounds=15,
+        seed=seeds,
         no_save_state=True,
         metrics_handler=metrics_handler,
         verbose=verbose

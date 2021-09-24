@@ -1,4 +1,3 @@
-import argparse
 import os, sys
 
 import numpy as np
@@ -8,7 +7,6 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 import tensorflow as tf
 import tensorflow.keras as keras
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -23,15 +21,8 @@ from tf_al.wrapper import McDropout
 # from tf_al_mp.wrapper import MomentPropagation
 
 from models import dnn_dense_dropout, setup_growth, disable_tf_logs
-from utils import setup_logger
 
 
-# Paths 
-BASE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
-
-
-# https://janakiev.com/blog/keras-iris/
-# Set initial random seed 
 SEED = 841312
 np.random.seed(SEED)
 tf.random.set_seed(SEED)
@@ -57,6 +48,7 @@ n_classes = y_encoded.shape[1]
 dataset = Dataset(x_train, y_train, test=(x_test, y_test), init_size=3)
 
 
+
 # Create and configure models
 disable_tf_logs()
 setup_growth()
@@ -72,21 +64,8 @@ mc_model = McDropout(base_model, config)
 mc_model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["categorical_accuracy"])
 
 
-METRICS_PATH = os.path.join(BASE_PATH, "metrics", "baba_test")
-metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
+baba = mc_model.get_query_fn("baba")
+output = baba(x_train[:10])
 
-all_seeds = [SEED] + list(np.random.randint(1000, 10000, 9))
-experiments = ExperimentSuit(
-    [mc_model],
-    [
-        "random",
-        "baba"
-    ],
-    dataset,
-    max_rounds=50,
-    no_save_state=True,
-    seed=all_seeds,
-    metrics_handler=metrics_handler
-)
 
-experiments.start()
+print(output)

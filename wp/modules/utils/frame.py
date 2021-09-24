@@ -98,8 +98,39 @@ class Frame:
 
         meaned = []
         for frame in frames:
-            
+
             mean_frame = frame.groupby(groupby_key).mean()
+            if ids is not None:
+                mean_len = mean_frame.shape[0]
+                copied_columns = Frame.get_columns(frame, ids)[:mean_len]
+                Frame.update(mean_frame, copied_columns)
+
             meaned.append(mean_frame)
         
         return meaned
+
+
+    @staticmethod
+    def std():
+        pass
+
+    @staticmethod
+    def update(frame, series):
+        
+        if isinstance(series, pd.Series):
+            frame.insert(0, series.name, series)
+        
+        column_names = series.columns
+        for idx in range(len(column_names)):
+            column_name = column_names[idx]
+            frame.insert(idx, column_name, series[column_name])
+
+
+    @staticmethod
+    def get_columns(df, names):
+
+        if names is str:
+            names = [names]
+        
+        return df[names]
+
