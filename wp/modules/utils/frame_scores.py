@@ -52,6 +52,7 @@ class FrameScores:
 
             col_idx = frame.columns.get_loc(self.__query_time)
             frame.insert(col_idx, "mean_qeff", mean_qeff[idx])
+            frame.insert(col_idx, "std_qeff", std_qeff[idx])
 
 
     def transform_runtime(self, frame):

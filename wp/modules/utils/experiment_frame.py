@@ -57,9 +57,9 @@ class ExperimentFrame:
 
     def __process_experiment_iteration(self, frame, baseline):
         
-        if not ("iteration" in frame):
+        if not ("run" in frame and len(np.unique(frame["run"])) > 1):
             return frame
-        
+
         baseline_by_experiments = Frame.split_by(baseline, "run")
         frames_by_experiments = Frame.split_by(frame, "run")
 
@@ -136,10 +136,12 @@ class ExperimentFrame:
         return frame
 
     
-    def get_frame(self, method=None, model=None, exclude=None):
+    def get_frame(self, method=None, model=None, exclude=None, **kwargs):
         """
             Filter the frame to select by method and model name. If none passed
             all of the methods/models selected.
+
+
         """
 
         frame = self.__frame

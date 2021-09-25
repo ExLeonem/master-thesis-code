@@ -16,7 +16,7 @@ class Stats:
 
     @staticmethod
     def qeff(frame, model=True, method=True):
-        keys = ["model", "method", "std_query_time", "mean_qeff", "std_qeff"]
+        keys = ["model", "method", "mean_qeff", "std_qeff"]
         keys = Stats.clear_keys(keys, model, method)
         frames = Stats.split_by(frame, model, method)
         return Stats.extract_first_from(frames, keys)
