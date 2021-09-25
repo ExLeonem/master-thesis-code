@@ -7,7 +7,23 @@ class Frame:
     """
 
     @staticmethod
+    def set_columns(frame, new_names):
+        frame.columns = new_names
+        return frame
+
+
+    @staticmethod
     def filter(frame, exclude):
+
+        if isinstance(exclude, list):
+            column_names = frame.columns
+            filtered_names = []
+            for col_name in column_names:
+                if col_name not in exclude:
+                    filtered_names.append(col_name)
+
+            return frame.filter(filtered_names)
+
 
         if not isinstance(exclude, dict):
             raise ValueError("Error while trying to filter the frame. Expected parameter exclude to be of type dict. Got {}".format(type(exclude)))

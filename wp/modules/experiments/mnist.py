@@ -49,7 +49,8 @@ if __name__ == "__main__":
     # Paths
     BASE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
 
-    seeds = gen_seeds(10)
+    # seeds = gen_seeds(10)
+    seeds = [24925]
     print("Initial seeds {}".format(seeds))
     first_seed = seeds[0]
     np.random.seed(first_seed)
