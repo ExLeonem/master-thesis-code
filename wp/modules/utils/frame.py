@@ -6,6 +6,27 @@ class Frame:
         Uitiliy methods for dataframe operations across multiple dataframes.
     """
 
+    @staticmethod
+    def filter(frame, exclude):
+
+        if not isinstance(exclude, dict):
+            raise ValueError("Error while trying to filter the frame. Expected parameter exclude to be of type dict. Got {}".format(type(exclude)))
+
+        filtered = frame
+        for key, value in exclude.items():
+
+            # Filter by multiple values
+            if isinstance(value, list):
+                for x in value:
+                    selector = filtered[key] != x
+                    filtered = filtered[selector]
+                continue
+
+            selector = filtered[key] != value
+            filtered = filtered[selector]
+
+        return filtered
+
 
     @staticmethod
     def split_by(composite_frame, key, force=False):
@@ -93,13 +114,13 @@ class Frame:
                 (list(pandas.DataFrame)) a list of dataframes each grouped by given key and meaned.
         """
 
-        if len(frames) <= 1:
+        if len(frames) < 1:
             raise ValueError("Error in Frame.mean(). Can't mean over list of <= 1 dataframe.")
 
         meaned = []
         for frame in frames:
 
-            mean_frame = frame.groupby(groupby_key).mean()
+            mean_frame = frame.groupby(groupby_key, as_index=False).mean()
             if ids is not None:
                 mean_len = mean_frame.shape[0]
                 copied_columns = Frame.get_columns(frame, ids)[:mean_len]

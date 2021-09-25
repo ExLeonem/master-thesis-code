@@ -7,7 +7,7 @@ BASE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)) , "..", "..
 TF_PATH = os.path.join(BASE_PATH, "tf_al")
 sys.path.append(TF_PATH)
 
-from tf_al.score import leff, qeff
+from tf_al.score import leff, qeff, runtime
 
 
 class FrameScores:
@@ -33,25 +33,34 @@ class FrameScores:
         """
         frame_acc = frame[self.__acc_col].to_numpy()
         base_acc = baseline[self.__acc_col].to_numpy()
-
         mean_leff, std_leff = leff(frame_acc, base_acc)
 
-        # print(len(mean_leff))
-        # print(len(frame_acc))
-        # print(len(base_acc))
-
-        frame.insert(0, "mean_leff", mean_leff)
-        # frame.insert(-1, "std_leff", std_leff)
+        idx = frame.columns.get_loc(self.__acc_col)
+        frame.insert(idx, "mean_leff", mean_leff)
+        frame.insert(idx, "std_leff", std_leff)
 
     
-    def add_qeff(self, frame, baseline):
+    def add_qeff(self, frames):
         
-        frame_query_time = frame[self.__query_time].to_numpy()
-        base_query_time = baseline[self.__query_time].to_numpy()
+        times = []
+        for frame in frames:
+            times.append(frame[self.__query_time])
 
-        mean_qeff, std_qeff = qeff(frame_query_time, base_query_time)
+        mean_qeff, std_qeff = qeff(*times)
+        for idx in range(len(frames)):
+            frame = frames[idx]
 
-        frame.insert(0, "mean_qeff", mean_qeff)
+            col_idx = frame.columns.get_loc(self.__query_time)
+            frame.insert(col_idx, "mean_qeff", mean_qeff[idx])
+
+
+    def transform_runtime(self, frame):
+        query_time = frame[self.__query_time]
+        mean_time, std_time = runtime(query_time)
+
+        idx = frame.columns.get_loc(self.__query_time)
+        frame.insert(idx, "mean_" + self.__query_time, mean_time)
+        frame.insert(idx, "std_" + self.__query_time, std_time)
 
 
     def add_percentage(self, frame):
