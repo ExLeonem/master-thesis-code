@@ -19,10 +19,12 @@ class FrameScores:
         self, 
         accuracy_column="eval_accuracy",
         labeled_pool_column="labeled_pool_size",
+        unlabeled_pool_size="unlabeled_pool_size",
         query_time_column="query_time"
     ):
         self.__acc_col = accuracy_column
         self.__lab_pool_size = labeled_pool_column
+        self.__unlabeled_pool_size = unlabeled_pool_size
         self.__query_time = query_time_column
 
 
@@ -57,11 +59,23 @@ class FrameScores:
 
     def transform_runtime(self, frame):
         query_time = frame[self.__query_time]
-        mean_time, std_time = runtime(query_time)
-
         idx = frame.columns.get_loc(self.__query_time)
-        frame.insert(idx, "mean_" + self.__query_time, mean_time)
-        frame.insert(idx, "std_" + self.__query_time, std_time)
+        new_values = query_time / (frame[self.__unlabeled_pool_size] + 10)
+        frame.loc[:, self.__query_time] = new_values
+        # mean_time, std_time = runtime(query_time)
+        # idx = frame.columns.get_loc(self.__query_time)
+        # frame.insert(idx, "mean_" + self.__query_time, mean_time)
+        # frame.insert(idx, "std_" + self.__query_time, std_time)
+
+
+    def add_auc(self, frame):
+        labeled_pool_sizes = frame[self.__lab_pool_size].to_numpy()
+        scaled_sizes = labeled_pool_sizes/np.max(labeled_pool_sizes)
+        accuracies = frame[self.__acc_col].to_numpy()
+        auc = np.trapz(accuracies, scaled_sizes)
+        frame.insert(0, "auc", auc)
+
+
 
 
     def add_percentage(self, frame):

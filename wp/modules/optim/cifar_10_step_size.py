@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from hyperopt import tpe, fmin, hp, space_eval
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 MODULES_PATH = os.path.join(BASE_PATH, "..")
@@ -12,18 +13,11 @@ sys.path.append(MODULES_PATH)
 TF_PATH = os.path.join(BASE_PATH, "..", "..", "tf_al")
 sys.path.append(TF_PATH)
 
-from tf_al import Config, Dataset, ExperimentSuitMetrics, ExperimentSuit, AcquisitionFunction
-from tf_al.utils import gen_seeds
+from tf_al import Config, Dataset, ActiveLearningLoop, AcquisitionFunction
 from tf_al.wrapper import McDropout
 # from tf_al_mp.wrapper import MomentPropagation
 
 from models import fchollet_cnn, setup_growth, disable_tf_logs
-
-# Set a seed
-seeds = gen_seeds(5)
-print("Initial seeds: ", seeds)
-np.random.seed(seeds[0])
-tf.random.set_seed(seeds[0])
 
 
 # Create dataset
@@ -38,7 +32,7 @@ x_test = datagen.standardize(x_test.astype(np.float32))
 y_train = y_train.flatten()
 y_test = y_test.flatten()
 
-init_pool_size = 1000
+init_pool_size = 840
 dataset = Dataset(
     x_train, y_train,
     test=(x_test, y_test),
@@ -58,7 +52,7 @@ metrics = [keras.metrics.SparseCategoricalAccuracy()]
 num_classes = len(list(np.unique(y_test)))
 input_shape = tuple(x_train.shape[1:])
 base_model = fchollet_cnn(input_shape=input_shape, output=num_classes)
-batch_size = 100
+batch_size = 32
 sample_size = 25
 
 config = Config(
@@ -69,31 +63,44 @@ config = Config(
 mc_model = McDropout(base_model, config=config, verbose=verbose)
 mc_model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-
 # Create and run active learning loop
-METRICS_PATH = os.path.join(BASE_PATH, "..", "..", "metrics", "cifar_10")
-metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
+
 
 models = [mc_model]
-query_fns = [
-    AcquisitionFunction("random", batch_size=900, verbose=verbose),
-    AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
-    AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
-    AcquisitionFunction("bald", batch_size=900, verbose=verbose),
-    AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
-]
-
-step_size = 300
+step_size = 10
 max_rounds = 100
-experiments = ExperimentSuit(
-    models,
-    query_fns,
-    dataset,
-    seed=seeds,
-    step_size=step_size,
-    no_save_state=True,
-    max_rounds=max_rounds,
-    metrics_handler=metrics_handler,
-    verbose=verbose
-)
-experiments.start()
+best_loss = 500
+def objective(space):
+    global dataset
+    global acf
+    global mc_model
+    global best_loss
+
+    acl = ActiveLearningLoop(
+        mc_model,
+        dataset,
+        "random",
+        step_size=space["step_size"],
+        max_rounds=3
+    )
+
+    loss = None
+    for metrics in acl:
+        loss = metrics["eval"]["sparse_categorical_crossentropy"]
+
+    if loss < best_loss:
+        best_loss = loss
+    
+    mc_model.reset(None, None)
+    return loss
+    
+
+
+space = {
+    "step_size": hp.choice("al_step_size", np.arange(10, 200, 10))
+}
+
+
+best = fmin(objective, space,algo=tpe.suggest, max_evals=10)
+print(best)
+print(space_eval(space, best))

@@ -64,7 +64,8 @@ class Frame:
             values = np.unique(composite_frame[key])
 
             if len(values) == 1:
-                raise ValueError("Error in Frame.split_by(). Column {} has only one unique value {}.".format(key, values[0]))
+                return [composite_frame]
+                # raise ValueError("Error in Frame.split_by(). Column {} has only one unique value {}.".format(key, values[0]))
 
             for unique_value in values:
                 selector = composite_frame[key] == unique_value
@@ -148,8 +149,25 @@ class Frame:
 
 
     @staticmethod
-    def std():
-        pass
+    def merge_mean_std(frame, decimals=None, mean_col="Mean", std_col="Std"):
+
+        frame = frame.copy()
+        mean_values = Frame.round_values(frame[mean_col].to_numpy(), decimals)
+        std_values = Frame.round_values(frame[std_col].to_numpy(), decimals)
+
+        zipped = zip(mean_values, std_values)
+        mean_std_values = list(map(lambda x: str(x[0]) + " \u00B1 " + str(x[1]), zipped))
+
+        mean_std_label = "Mean \u00B1 Std."
+
+        previous_columns = frame.columns
+        frame.insert(0, mean_std_label, mean_std_values)
+
+        for column in previous_columns:
+            frame = frame.drop(column, axis=1)
+            
+        return frame
+
 
     @staticmethod
     def update(frame, series):
@@ -171,3 +189,56 @@ class Frame:
         
         return df[names]
 
+
+    @staticmethod
+    def transpose_index(frame, index):
+        """
+        
+        """
+
+        transposed = frame.copy()
+        multi_index = frame.index.to_numpy()
+        names = list(frame.index.names)
+
+        index_idx = names.index(index)
+        new_column = []
+        new_index = []
+        
+        for row in multi_index:
+
+            # Select the index corresponding to to index that should be transposed
+            if isinstance(row, tuple) and len(row) > 1:
+                new_column.append(row[index_idx])
+                new_index.append(Frame.__from_tuple_except(row, index_idx))
+            
+
+        new_column = np.unique(new_column)
+        values = frame.to_numpy()
+        new_dim = int(values.shape[0]/len(new_column))
+        values.reshape(tuple([new_dim] + values.shape))
+    
+        return transposed
+
+    
+
+    @staticmethod
+    def __from_tuple_except(values, except_index):
+
+        new_tuple = []
+        for idx in range(len(values)):
+            if idx != except_index:
+                new_tuple.append(values[idx])
+            
+        if len(new_tuple) == 1:
+            return new_tuple[0]
+
+        return tuple(new_tuple)
+
+
+    @staticmethod
+    def round_values(values, decimals):
+
+        if decimals is None:
+            return values
+
+        return np.round(values, decimals)

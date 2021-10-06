@@ -8,3 +8,6 @@ from .frame import Frame
 from .frame_scores import FrameScores
 from .experiment_frame import ExperimentFrame
 from .stats import Stats
+from .table import Table
+from .stat_writer import StatWriter
+from .search import search_initial_pool_size

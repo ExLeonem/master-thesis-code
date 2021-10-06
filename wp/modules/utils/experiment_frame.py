@@ -48,6 +48,11 @@ class ExperimentFrame:
         method_frames = Frame.split_by(model_frame, "method")
         baseline_frame = self.get_baseline_frame(method_frames)
         processed_frames = []
+
+        # Skip calculation of relative metrics
+        if baseline_frame is None:
+            return pd.concat(method_frames)
+
         for frame in method_frames:
             processed_frames.append(self.__process_experiment_iteration(frame, baseline_frame))
 
@@ -68,6 +73,7 @@ class ExperimentFrame:
             exp_baseline = baseline_by_experiments[idx]
             self._scores.add_leff(exp_frame, exp_baseline)
             self._scores.transform_runtime(exp_frame)
+            self._scores.add_auc(exp_frame)
 
         return pd.concat(frames_by_experiments)
 

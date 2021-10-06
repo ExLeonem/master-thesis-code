@@ -23,9 +23,44 @@ class Stats:
 
 
     @staticmethod
-    def per_points(frame, each_labeled_size, model=True, method=True, key="eval_accuracy"):
+    def query_time_per_datapoints(frame, sizes):
+        
+        methods = np.unique(frame["method"])
+        query_times = {"method": [], "size": [], "times": []}
+        for method in methods:
+            selector = frame["method"] == method
+            query_time = frame[selector]["query_time"]
+
+            times_per_dp = []
+            for num_datapoints in sizes:
+
+                query_times["size"].append([num_datapoints]*len(query_time))
+                query_times["times"].append(query_time*num_datapoints)
+
+            query_times["method"].append(np.array([method]*len(query_time)*len(sizes)))
+
+
+        for key, value in query_times.items():
+            query_times[key] = np.hstack(value)
+
+        return pd.DataFrame(query_times)
+
+
+    @staticmethod
+    def per_points(frame, each_labeled_size, key="eval_accuracy", model=True, method=True, mean_std=True, decimals=None):
         """
             Calculates table for accuracy per n datapoints
+
+            Parameters:
+                frame (pandas.DataFrame): A composite pandas dataframe including experiments for different acquisition methods and models.
+                each_labeled_size (int): Collect values for every nth datapoints collected as labeled points.
+                key (str): The key for which to aggregate the information. (default='eval_accuracy')
+                model (bool): Display model information? (default=True)
+                method (bool): Display method information? (default=True)
+                mean_std (bool): Aggregate information as mean \u00B1 std. information. (default=True)
+
+            Returns:
+                (pandas.DataFrame) with aggregated information.
         """
         base_keys = ["model", "method", "labeled_pool_size"]
         base_keys = Stats.clear_keys(base_keys, model, method)
@@ -53,11 +88,9 @@ class Stats:
         return merged
 
 
-
     @staticmethod
-    def grouped_mean(frame, keys):
-        return 
-
+    def mean_std(frame, decimals=None, mean_col="Mean", std_col="Std"):
+        return  Frame.merge_mean_std(frame, decimals, mean_col, std_col)
 
 
     @staticmethod
@@ -70,10 +103,16 @@ class Stats:
         return pd.concat(frames)
 
 
-
     @staticmethod
     def write(frame, file_path):
         return frame.to_csv(file_path)
+
+
+    @staticmethod
+    def write_latex(frame, file_path, **kwargs):
+        with open(file_path, "w") as tex_file:
+            tex_file.write(frame.to_latex(**kwargs))
+
 
     @staticmethod
     def read(file_path):
@@ -84,6 +123,7 @@ class Stats:
     # Utilities
     # ------------------
 
+   
     @staticmethod
     def clear_keys(keys, model, method):
         if not model and not method:

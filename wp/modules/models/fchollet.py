@@ -1,3 +1,5 @@
+import os, sys
+
 import tensorflow as tf
 from tensorflow.keras import Model, Sequential
 # from tensorflow.keras.activations import Softmax
@@ -46,3 +48,9 @@ class FcholletCNN(Model):
         x = self.dense1(x)
         x = self.dp2(x)
         return self.dense2(x)
+
+
+
+
+
+    

@@ -24,6 +24,7 @@
 /wp/docs/_build
 /wp/modules/logs
 /wp/metrics
+/wp/stats
 
 # Exclude datasets
 # /datasets

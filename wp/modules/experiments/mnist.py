@@ -50,7 +50,8 @@ if __name__ == "__main__":
     BASE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
 
     # seeds = gen_seeds(10)
-    seeds = [24925]
+    # seeds = []
+    seeds = [20432, 10942, 83152, 59138, 49976, 10109, 74983, 66781, 93135]
     print("Initial seeds {}".format(seeds))
     first_seed = seeds[0]
     np.random.seed(first_seed)
@@ -98,7 +99,7 @@ if __name__ == "__main__":
     loss = "sparse_categorical_crossentropy"
     metrics = [keras.metrics.SparseCategoricalAccuracy()]
 
-    # ---------------------
+    # --------------- ------
     # MC Dropout Model
     fit_params = {"epochs": 200, "batch_size": batch_size}
     mc_config = Config(
@@ -121,17 +122,17 @@ if __name__ == "__main__":
 
 
     # Setup metrics handler
-    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "temp")
+    METRICS_PATH = os.path.join(BASE_PATH, "metrics", "mnist_std_new")
     metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
 
     # Setup experiment Suit
-    models = [mc_model, mp_model]
+    models = [mc_model]
     query_fns = [
-        AcquisitionFunction("random", batch_size=900, verbose=verbose),
-        AcquisitionFunction("bald", batch_size=900, verbose=verbose)
+        # AcquisitionFunction("random", batch_size=900, verbose=verbose),
+        # AcquisitionFunction("bald", batch_size=900, verbose=verbose),
         # AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
         # AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
-        # AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
+        AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
     ]
 
 
@@ -144,6 +145,6 @@ if __name__ == "__main__":
         seed=seeds,
         no_save_state=True,
         metrics_handler=metrics_handler,
-        verbose=verbose
+        verbose=verbose,
     )
     experiments.start()
