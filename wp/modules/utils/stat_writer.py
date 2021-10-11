@@ -103,15 +103,17 @@ class StatWriter:
 
     def compare_models_accuracy(self, frame, method, key="eval_sparse_categorical_accuracy", save=True):
         selector = frame["method"] == method
-        fig = sns.lineplot(data=frame[selector], x="labeled_pool_size", y=key, hue="model")
+        baseline = frame["method"] == "Random"
+        selector = np.logical_or(selector, baseline)
+        fig = sns.lineplot(data=frame[selector], x="labeled_pool_size", y=key, hue="method", style="model")
         fig.set(xlabel="Labeled pool size", ylabel="Test Accuracy")
-        fig.legend(title="Model")  
+        handels, labels = fig.get_legend_handles_labels()
+        fig.legend(handels, list(map(lambda x: x.capitalize(), labels)))
 
         if save:
             method = method.replace(".", "")
             method = self.__prepare_name(method)
             plt.savefig(os.path.join(self.__path, "methods", method+"_comparison.png"))
-
 
 
     # -------------

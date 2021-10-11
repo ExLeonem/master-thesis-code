@@ -1,4 +1,7 @@
+import argparse
+import copy
 import os, sys
+
 import numpy as np
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
@@ -24,15 +27,7 @@ from models import fchollet_cnn, setup_growth, disable_tf_logs
 from utils import setup_logger
 
 
- # Paths
 BASE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
-
-# Setting seeds
-seeds = [20432, 10942, 83152, 59138, 49976, 10109, 74983, 66781, 93135, 39919]
-print("Initial seeds {}".format(seeds))
-first_seed = seeds[0]
-np.random.seed(first_seed)
-tf.random.set_seed(first_seed)
 
 # Pool/Dataset parameters
 val_set_size = 100
@@ -52,76 +47,50 @@ targets = np.hstack([y_train, y_test])
 x_train, x_test, y_train, y_test = train_test_split(inputs, targets, test_size=test_set_size)
 x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=val_set_size)
 
-dataset = Dataset(
-    x_train, y_train, 
-    val=(x_val, y_val), 
-    test=(x_test, y_test), 
-    init_size=initial_pool_size
-)
-
-# Active Learning parameters
-step_size = 10
-batch_size = 10
-verbose = False
-sample_size = 25
-
-# Configure Tensorflow
 disable_tf_logs()
 setup_growth()
 
-# Define Models and compilation parameter
+# seeds = gen_seeds(10)
+# seeds = []
+seeds = [20432, 10942, 83152, 59138, 49976, 10109, 74983, 66781, 93135]
+print("Initial seeds {}".format(seeds))
+first_seed = seeds[0]
+np.random.seed(first_seed)
+tf.random.set_seed(first_seed)
+
 num_classes = len(np.unique(targets))
-base_model = fchollet_cnn(output=num_classes)
 optimizer = "adam"
 loss = "sparse_categorical_crossentropy"
 metrics = [keras.metrics.SparseCategoricalAccuracy()]
 
-# --------------- ------
-# MC Dropout Model
+step_size = 1
+batch_size = 10
+verbose = False
+sample_size = 25
 fit_params = {"epochs": 200, "batch_size": batch_size}
+base_model = fchollet_cnn(output=num_classes)
 mc_config = Config(
     fit=fit_params,
     query={"sample_size": sample_size},
     eval={"batch_size": 900, "sample_size": sample_size}
 )
+
 mc_model = McDropout(base_model, config=mc_config)
 mc_model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-
-# Moment Propagation Model
-mp_config = Config(
-    fit={"epochs": 100, "batch_size": batch_size},
-    eval={"batch_size": 900}
-)
-mp_model = MomentPropagation(base_model, mp_config, verbose=verbose)
-mp_model.compile(optimizer=optimizer, loss=loss,  metrics=metrics)
-# -----------------------------------------------------------------
+print(mc_model.evaluate(x_test, y_test, batch_size=900))
 
 
-# Setup metrics handler
-METRICS_PATH = os.path.join(BASE_PATH, "metrics", "mnist_local")
-metrics_handler = ExperimentSuitMetrics(METRICS_PATH)
+# first_seed = seeds[1]
+# np.random.seed(first_seed)
+# tf.random.set_seed(first_seed)
 
-# Setup experiment Suit
-models = [mp_model]
-query_fns = [
-    AcquisitionFunction("random", batch_size=900, verbose=verbose),
-    AcquisitionFunction("bald", batch_size=900, verbose=verbose),
-    AcquisitionFunction("max_entropy", batch_size=900, verbose=verbose),
-    AcquisitionFunction("max_var_ratio", batch_size=900, verbose=verbose),
-    AcquisitionFunction("std_mean", batch_size=900, verbose=verbose)
-]
+# keras.backend.clear_session()
+# model = keras.models.clone_model(base_model)
+# model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-
-experiments = ExperimentSuit(
-    models,
-    query_fns,
-    dataset,
-    step_size=step_size,
-    max_rounds=100,
-    seed=seeds,
-    no_save_state=True,
-    metrics_handler=metrics_handler,
-    verbose=verbose,
-)
-experiments.start()
+first_seed = seeds[0]
+np.random.seed(first_seed)
+tf.random.set_seed(first_seed)
+o_model = copy.copy(mc_model)
+print(o_model.evaluate(x_test, y_test, batch_size=900))

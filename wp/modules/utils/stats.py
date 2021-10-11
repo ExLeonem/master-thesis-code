@@ -1,4 +1,5 @@
 import numpy as np
+import ast
 import pandas as pd
 from . import Frame
 
@@ -6,6 +7,79 @@ class Stats:
     """
         Collect stats for tables.
     """
+
+    @staticmethod
+    def selected_indices(frame, num_iterations=2):
+        """
+            Returns:
+                (dict) contains the selected indices per active learning round for specific methods
+        """
+        methods = np.unique(frame["method"])
+        selected = {}
+        for method in methods:
+            method_selector = frame["method"] == method
+            method_frame = frame[method_selector]
+            iteration_filter = method_frame["iteration"] <= num_iterations
+            filtered_frame = method_frame[iteration_filter]
+            runs = np.unique(filtered_frame["run"])
+
+            if selected.get(method, None) is None:
+                selected[method] = {}
+
+            # Collect information experiment wise
+            for run in runs:
+                run_selector = filtered_frame["run"] == run
+                exp_frame = filtered_frame[run_selector]
+                
+                selected_indices = list(map(lambda x: ast.literal_eval(x), exp_frame["indices_selected"].to_numpy()))
+                selected[method][run] = selected_indices
+
+        return selected
+
+
+    @staticmethod
+    def collapse_indices_list(indices):
+        from functools import reduce
+        
+        methods = indices.keys()
+        collapsed_indices = {}
+        for method in methods:
+            collapsed_indices[method] = {}
+
+            runs = indices[method].keys()
+            for run in runs:
+                collapsed_indices[method][run] = list(reduce(lambda a, b: a+b, indices[method][run]))
+        
+        return collapsed_indices
+
+
+    @staticmethod
+    def plot_single_idx_dist(indices, targets, class_labels, alpha=.1):
+        import matplotlib.pyplot as plt
+        from collections import Counter
+        initial_counts = dict(zip(class_labels, np.zeros(len(class_labels), dtype=int)))
+        cnt = Counter(initial_counts)
+        target_labels = targets[indices]
+        cnt.update(target_labels)
+
+        class_labels = cnt.keys()
+        counts = cnt.values()
+        plt.bar(class_labels, counts, alpha=alpha, color="b")    
+
+
+    
+    @staticmethod
+    def plot_class_dist(method, indices, targets, class_labels, alpha=.1):
+
+        # Prepare dictionary of indices
+        collapsed_indices = Stats.collapse_indices_list(indices)
+        indices_per_experiment = collapsed_indices[method]
+        runs = indices_per_experiment.keys()
+
+        # Create barplot per experiment
+        for run in runs:
+            Stats.plot_single_idx_dist(indices_per_experiment[run], targets, class_labels, alpha)
+
 
     @staticmethod    
     def query_time(frame, model=True, method=True):

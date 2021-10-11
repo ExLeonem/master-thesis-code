@@ -11,3 +11,4 @@ from .stats import Stats
 from .table import Table
 from .stat_writer import StatWriter
 from .search import search_initial_pool_size
+from .gal_plot import load_gal, plot_gal, plot_gal_sub, plot_mean_frame

@@ -51,20 +51,33 @@ class Table:
         models = np.unique(frame["model"])
 
         values = {"Model": [], "Method": [], "Mean": [], "Std": []}
-        for model in models:
-            model_selector = frame["model"] == model
-            model_frame = frame[model_selector]
+        for method in methods:
+            method_selector = frame["method"] == method
+            method_frame = frame[method_selector]
 
-            for method in methods:
-                method_selector = model_frame["method"] == method
-                method_frame = model_frame[method_selector]
+            for model in models:
+                model_selector = method_frame["model"] == model
+                model_frame = method_frame[model_selector]
 
-                mean = np.mean(method_frame["query_time"])
-                std = np.std(method_frame["query_time"])
+                mean = np.mean(model_frame["query_time"])
+                std = np.std(model_frame["query_time"])
+                if decimals is not None:
+                    mean = np.round(mean, decimals)
+                    std = np.round(std, decimals)
+                
+                values["Mean"].append(mean)
+                values["Std"].append(std)
+                values["Model"].append(model)
+                values["Method"].append(method)
 
 
         if len(models) > 1:
-            pass
+            index_tuples = list(zip(values["Method"], values["Model"]))
+            index = pd.MultiIndex.from_tuples(index_tuples, names=["Method", "Model"])
+
+            del values["Model"]
+            del values["Method"]
+            return pd.DataFrame(values, index=index)
 
         return pd.DataFrame(values)
             
