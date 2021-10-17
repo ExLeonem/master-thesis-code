@@ -1,0 +1,196 @@
+{
+    "experiments": [
+        {
+            "experiment_name": "0_74983_mc_dropout_random",
+            "model": "mc_dropout",
+            "query_fn": "random",
+            "params": {
+                "iterations": 100,
+                "step_size": 10,
+                "initial_size": 20,
+                "initial_indices": [
+                    5198,
+                    9803,
+                    10953,
+                    12061,
+                    17032,
+                    21889,
+                    23761,
+                    26627,
+                    28380,
+                    28417,
+                    28712,
+                    32095,
+                    32564,
+                    35543,
+                    40889,
+                    45007,
+                    47963,
+                    53927,
+                    55914,
+                    58130
+                ]
+            }
+        },
+        {
+            "experiment_name": "0_74983_mc_dropout_random",
+            "model": "mc_dropout",
+            "query_fn": "random",
+            "params": {
+                "iterations": 100,
+                "step_size": 10,
+                "initial_size": 20,
+                "initial_indices": [
+                    5198,
+                    9803,
+                    10953,
+                    12061,
+                    17032,
+                    21889,
+                    23761,
+                    26627,
+                    28380,
+                    28417,
+                    28712,
+                    32095,
+                    32564,
+                    35543,
+                    40889,
+                    45007,
+                    47963,
+                    53927,
+                    55914,
+                    58130
+                ]
+            }
+        },
+        {
+            "experiment_name": "0_74983_mc_dropout_bald",
+            "model": "mc_dropout",
+            "query_fn": "bald",
+            "params": {
+                "iterations": 100,
+                "step_size": 10,
+                "initial_size": 20,
+                "initial_indices": [
+                    5198,
+                    9803,
+                    10953,
+                    12061,
+                    17032,
+                    21889,
+                    23761,
+                    26627,
+                    28380,
+                    28417,
+                    28712,
+                    32095,
+                    32564,
+                    35543,
+                    40889,
+                    45007,
+                    47963,
+                    53927,
+                    55914,
+                    58130
+                ]
+            }
+        },
+        {
+            "experiment_name": "0_74983_mc_dropout_max_entropy",
+            "model": "mc_dropout",
+            "query_fn": "max_entropy",
+            "params": {
+                "iterations": 100,
+                "step_size": 10,
+                "initial_size": 20,
+                "initial_indices": [
+                    5198,
+                    9803,
+                    10953,
+                    12061,
+                    17032,
+                    21889,
+                    23761,
+                    26627,
+                    28380,
+                    28417,
+                    28712,
+                    32095,
+                    32564,
+                    35543,
+                    40889,
+                    45007,
+                    47963,
+                    53927,
+                    55914,
+                    58130
+                ]
+            }
+        },
+        {
+            "experiment_name": "0_74983_mc_dropout_max_var_ratio",
+            "model": "mc_dropout",
+            "query_fn": "max_var_ratio",
+            "params": {
+                "iterations": 100,
+                "step_size": 10,
+                "initial_size": 20,
+                "initial_indices": [
+                    5198,
+                    9803,
+                    10953,
+                    12061,
+                    17032,
+                    21889,
+                    23761,
+                    26627,
+                    28380,
+                    28417,
+                    28712,
+                    32095,
+                    32564,
+                    35543,
+                    40889,
+                    45007,
+                    47963,
+                    53927,
+                    55914,
+                    58130
+                ]
+            }
+        },
+        {
+            "experiment_name": "0_74983_mc_dropout_std_mean",
+            "model": "mc_dropout",
+            "query_fn": "std_mean",
+            "params": {
+                "iterations": 100,
+                "step_size": 10,
+                "initial_size": 20,
+                "initial_indices": [
+                    5198,
+                    9803,
+                    10953,
+                    12061,
+                    17032,
+                    21889,
+                    23761,
+                    26627,
+                    28380,
+                    28417,
+                    28712,
+                    32095,
+                    32564,
+                    35543,
+                    40889,
+                    45007,
+                    47963,
+                    53927,
+                    55914,
+                    58130
+                ]
+            }
+        }
+    ]
+}

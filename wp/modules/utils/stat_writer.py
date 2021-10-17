@@ -108,7 +108,10 @@ class StatWriter:
         fig = sns.lineplot(data=frame[selector], x="labeled_pool_size", y=key, hue="method", style="model")
         fig.set(xlabel="Labeled pool size", ylabel="Test Accuracy")
         handels, labels = fig.get_legend_handles_labels()
-        fig.legend(handels, list(map(lambda x: x.capitalize(), labels)))
+        labels[0] = labels[0].capitalize()
+        labels[-3] = labels[-3].capitalize()
+        fig.legend(handels, labels)
+
 
         if save:
             method = method.replace(".", "")

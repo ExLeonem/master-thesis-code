@@ -1,0 +1,228 @@
+{
+    "experiments": [
+        {
+            "experiment_name": "0_20432_moment_propagation_bald",
+            "model": "moment_propagation",
+            "query_fn": "bald",
+            "params": {
+                "iterations": 1000,
+                "step_size": 1,
+                "initial_size": 20,
+                "initial_indices": [
+                    3138,
+                    8276,
+                    14805,
+                    14939,
+                    15765,
+                    19707,
+                    21636,
+                    25348,
+                    28476,
+                    30061,
+                    33283,
+                    36982,
+                    38112,
+                    41149,
+                    43649,
+                    52839,
+                    56840,
+                    57113,
+                    58789,
+                    59161
+                ]
+            }
+        },
+        {
+            "experiment_name": "1_10942_moment_propagation_bald",
+            "model": "moment_propagation",
+            "query_fn": "bald",
+            "params": {
+                "iterations": 1000,
+                "step_size": 1,
+                "initial_size": 20,
+                "initial_indices": [
+                    3620,
+                    5084,
+                    17146,
+                    19220,
+                    27869,
+                    29775,
+                    33457,
+                    35922,
+                    37136,
+                    41276,
+                    44262,
+                    47126,
+                    50586,
+                    51129,
+                    52728,
+                    53775,
+                    54390,
+                    54503,
+                    56971,
+                    57445
+                ]
+            }
+        },
+        {
+            "experiment_name": "2_83152_moment_propagation_bald",
+            "model": "moment_propagation",
+            "query_fn": "bald",
+            "params": {
+                "iterations": 1000,
+                "step_size": 1,
+                "initial_size": 20,
+                "initial_indices": [
+                    915,
+                    1977,
+                    2675,
+                    6554,
+                    7333,
+                    11341,
+                    11937,
+                    12188,
+                    17900,
+                    18346,
+                    20955,
+                    27209,
+                    32515,
+                    34933,
+                    37860,
+                    39627,
+                    42670,
+                    45773,
+                    51341,
+                    56937
+                ]
+            }
+        },
+        {
+            "experiment_name": "3_59138_moment_propagation_bald",
+            "model": "moment_propagation",
+            "query_fn": "bald",
+            "params": {
+                "iterations": 1000,
+                "step_size": 1,
+                "initial_size": 20,
+                "initial_indices": [
+                    2991,
+                    8110,
+                    11219,
+                    15637,
+                    17092,
+                    23733,
+                    24607,
+                    28682,
+                    28781,
+                    29303,
+                    35981,
+                    36584,
+                    38377,
+                    48011,
+                    48070,
+                    50613,
+                    51690,
+                    53828,
+                    55281,
+                    57810
+                ]
+            }
+        },
+        {
+            "experiment_name": "4_49976_moment_propagation_bald",
+            "model": "moment_propagation",
+            "query_fn": "bald",
+            "params": {
+                "iterations": 1000,
+                "step_size": 1,
+                "initial_size": 20,
+                "initial_indices": [
+                    4574,
+                    9672,
+                    13191,
+                    14860,
+                    19170,
+                    19406,
+                    25096,
+                    26975,
+                    27908,
+                    28301,
+                    32302,
+                    32312,
+                    38749,
+                    41134,
+                    44310,
+                    48576,
+                    56913,
+                    56986,
+                    57486,
+                    57551
+                ]
+            }
+        },
+        {
+            "experiment_name": "5_10109_moment_propagation_bald",
+            "model": "moment_propagation",
+            "query_fn": "bald",
+            "params": {
+                "iterations": 1000,
+                "step_size": 1,
+                "initial_size": 20,
+                "initial_indices": [
+                    6890,
+                    7661,
+                    28609,
+                    29488,
+                    30281,
+                    31737,
+                    33902,
+                    35261,
+                    39715,
+                    41024,
+                    41997,
+                    42327,
+                    42369,
+                    46314,
+                    48519,
+                    48984,
+                    53578,
+                    54135,
+                    55152,
+                    59718
+                ]
+            }
+        },
+        {
+            "experiment_name": "6_74983_moment_propagation_bald",
+            "model": "moment_propagation",
+            "query_fn": "bald",
+            "params": {
+                "iterations": 1000,
+                "step_size": 1,
+                "initial_size": 20,
+                "initial_indices": [
+                    4090,
+                    6893,
+                    8290,
+                    9026,
+                    14148,
+                    18985,
+                    20318,
+                    23931,
+                    26679,
+                    30244,
+                    31504,
+                    35280,
+                    35715,
+                    36921,
+                    42738,
+                    45156,
+                    46279,
+                    50116,
+                    53272,
+                    57889
+                ]
+            }
+        }
+    ]
+}
