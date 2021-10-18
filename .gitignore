@@ -33,4 +33,4 @@
 
 # Exclude sub packages
 /wp/tf_al
-/wp/tf_al_mp
+#/wp/tf_al_mp
